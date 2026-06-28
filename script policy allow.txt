@@ -1,0 +1,39 @@
+-- Autoriser l'upload dans le bucket documents
+
+create policy "allow_upload_documents"
+on storage.objects
+for insert
+to public
+with check (
+bucket_id = 'documents'
+);
+
+-- Autoriser la lecture des fichiers du bucket documents
+
+create policy "allow_read_documents"
+on storage.objects
+for select
+to public
+using (
+bucket_id = 'documents'
+);
+
+-- Autoriser la suppression (utile pendant le développement)
+
+create policy "allow_delete_documents"
+on storage.objects
+for delete
+to public
+using (
+bucket_id = 'documents'
+);
+
+-- Autoriser la mise à jour (utile pendant le développement)
+
+create policy "allow_update_documents"
+on storage.objects
+for update
+to public
+using (
+bucket_id = 'documents'
+);

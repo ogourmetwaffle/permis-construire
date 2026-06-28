@@ -1,0 +1,14 @@
+Numéro :
+4242 4242 4242 4242
+
+Date d'expiration :
+12/34
+
+CVC :
+123
+
+Nom :
+Jean Dupont
+
+Code postal :
+75001
