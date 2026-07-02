@@ -1,12 +1,13 @@
-'use client'
-
 import Header from '@/components/Header'
 import Hero from '@/components/Hero'
 import Benefits from '@/components/Benefits'
+import Services from '@/components/Services'
 import Process from '@/components/Process'
+import WhyUs from '@/components/WhyUs'
+import Realisations from '@/components/Realisations'
+import Testimonials from '@/components/Testimonials'
 import FAQ from '@/components/FAQ'
 import Contact from '@/components/Contact'
-import Pricing from '@/components/Pricing'
 import Footer from '@/components/Footer'
 
 export default function Home() {
@@ -14,32 +15,37 @@ export default function Home() {
     <div className="min-h-screen flex flex-col">
       <Header />
 
-      <main className="flex-1">
+      <main className="flex-1 pt-18">
+        {/* Hero */}
         <Hero />
 
-        <section className="max-w-5xl mx-auto px-6 py-10">
-          <Benefits />
-        </section>
-
-        <section className="bg-gray-50">
-          <div className="max-w-5xl mx-auto px-6 py-12">
-            <Process />
+        {/* Trust badges */}
+        <section className="py-16 bg-white">
+          <div className="max-w-7xl mx-auto px-6">
+            <Benefits />
           </div>
         </section>
 
-        <section className="max-w-5xl mx-auto px-6 py-12">
-          <Pricing />
-        </section>
+        {/* Services */}
+        <Services />
 
-        <section className="max-w-5xl mx-auto px-6 py-12">
-          <FAQ />
-        </section>
+        {/* Process / Timeline */}
+        <Process />
 
-        <section className="bg-blue-900 text-white">
-          <div className="max-w-5xl mx-auto px-6 py-12">
-            <Contact />
-          </div>
-        </section>
+        {/* Why us */}
+        <WhyUs />
+
+        {/* Réalisations */}
+        <Realisations />
+
+        {/* Testimonials */}
+        <Testimonials />
+
+        {/* FAQ */}
+        <FAQ />
+
+        {/* Contact */}
+        <Contact />
       </main>
 
       <Footer />
