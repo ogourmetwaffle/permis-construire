@@ -51,33 +51,61 @@ export default function Wizard() {
       })
   }, [data.typeClient, data.typeProjet])
 
-  const uploadFiles = async (numeroDossier: string) => {
-    // UX: simulate per-file progress to show a smooth upload bar
-    if (!data.files || data.files.length === 0) return
-    setUploading(true)
-    setUploadProgress(0)
-    for (let i = 0; i < data.files.length; i++) {
-      const file = data.files[i]
-      try {
-        const baseName = file.name.replace(/[^a-z0-9.\-_]/gi, '_')
-        const path = `${numeroDossier}/${Date.now()}_${baseName}`
-        // show start of this file
-        setUploadProgress(Math.round((i / data.files.length) * 100))
-        await supabase.storage.from('documents').upload(path, file, {
-          contentType: file.type,
-          upsert: false,
-        })
-        // after upload of this file, advance progress
-        setUploadProgress(Math.round(((i + 1) / data.files.length) * 100))
-      } catch (err) {
-        console.error('File upload error:', err)
+  const uploadFiles = (numeroDossier: string, dossierId?: number) => {
+    return new Promise<void>((resolve, reject) => {
+      if (!data.files || data.files.length === 0) return resolve()
+      setUploading(true)
+      setUploadProgress(0)
+
+      const form = new FormData()
+      form.append('numeroDossier', numeroDossier)
+      if (dossierId) form.append('dossierId', String(dossierId))
+      data.files.forEach(f => form.append('files', f))
+
+      const xhr = new XMLHttpRequest()
+      xhr.open('POST', '/api/upload')
+
+      xhr.upload.onprogress = (ev: ProgressEvent) => {
+        if (ev.lengthComputable) {
+          const percent = Math.round((ev.loaded / ev.total) * 100)
+          setUploadProgress(percent)
+        }
       }
-    }
-    // Ensure progress hits 100%
-    setUploadProgress(100)
-    // Keep the success state visible briefly
-    await new Promise(res => setTimeout(res, 800))
-    setUploading(false)
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const json = JSON.parse(xhr.responseText)
+            // success
+            setUploadProgress(100)
+            setTimeout(() => setUploading(false), 500)
+            resolve()
+          } catch (e) {
+            setUploading(false)
+            const msg = 'Réponse invalide du serveur lors du téléversement.'
+            console.error(msg, e)
+            reject(new Error(msg))
+          }
+        } else {
+          setUploading(false)
+          let msg = 'Erreur lors du téléversement.'
+          try {
+            const json = JSON.parse(xhr.responseText)
+            if (json && json.error) msg = json.error
+          } catch {}
+          console.error('Upload failed:', xhr.status, msg)
+          reject(new Error(msg))
+        }
+      }
+
+      xhr.onerror = () => {
+        setUploading(false)
+        console.error('Network error during upload')
+        reject(new Error('Erreur réseau lors du téléversement.'))
+      }
+
+      xhr.send(form)
+    })
   }
 
   const handleSubmit = async (modePaiement: ModePaiement) => {
@@ -110,7 +138,7 @@ export default function Wizard() {
           setSubmitError(json.error || 'Une erreur est survenue. Veuillez réessayer.')
           return
         }
-        await uploadFiles(json.numeroDossier)
+        await uploadFiles(json.numeroDossier, json.dossierId)
         setVirementInfo({
           numeroDossier: json.numeroDossier,
           iban: json.iban,
@@ -146,7 +174,7 @@ export default function Wizard() {
         }
         // Upload files before redirect (best effort)
         if (json.numeroDossier) {
-          await uploadFiles(json.numeroDossier)
+          await uploadFiles(json.numeroDossier, json.dossierId)
         }
         if (json.url) {
           window.location.href = json.url

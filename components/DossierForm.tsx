@@ -5,6 +5,7 @@ import FileUpload from './FileUpload'
 import Button from '@/components/Button'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+// Note: upload to storage is handled server-side via /api/upload
 
 export default function DossierForm() {
   const [form, setForm] = useState({ nom: '', prenom: '', email: '', telephone: '', pays_permis: '' })
@@ -64,12 +65,21 @@ export default function DossierForm() {
 
       const dossierId = (dossierData as { id: number }).id
 
-      for (const f of uploadedFiles) {
+      if (uploadedFiles.length > 0) {
         try {
-          const baseName = f.name.replace(/[^a-z0-9.\-_.]/gi, '_')
-          const path = `${numeroDossier}/${Date.now()}_${baseName}`
-          // Supabase expects a File or Blob in browser
-          await supabase.storage.from('documents').upload(path, f, { contentType: f.type, upsert: false })
+          const form = new FormData()
+          form.append('numeroDossier', numeroDossier)
+          form.append('dossierId', String(dossierId))
+          uploadedFiles.forEach(f => form.append('files', f))
+
+          const respUpload = await fetch('/api/upload', {
+            method: 'POST',
+            body: form,
+          })
+          const jsonUpload = await respUpload.json()
+          if (!respUpload.ok || jsonUpload?.error) {
+            console.error('Upload error', jsonUpload)
+          }
         } catch (err) {
           console.error('upload', err)
         }
