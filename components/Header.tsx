@@ -25,11 +25,7 @@ export default function Header() {
   }, [])
 
   return (
-    <header
-      className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
-        scrolled ? 'bg-white/95 backdrop-blur-md shadow-sm' : 'bg-transparent'
-      }`}
-    >
+    <header className="fixed top-0 left-0 right-0 z-40 transition-all duration-300 bg-white/95 backdrop-blur-md shadow-sm">
       <div className="max-w-7xl mx-auto px-6 h-18 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3 shrink-0">
           <Image
@@ -41,24 +37,16 @@ export default function Header() {
             priority
           />
           <div className="leading-tight">
-            <div className="text-base font-bold text-white [header.scrolled_&]:text-[#1e3a5f]">
+            <div className="text-base font-bold text-[#1e3a5f]">
               Esquiss <span>Habitat</span>
             </div>
-            <div className="text-xs text-white/60 hidden sm:block">Permis de construire &amp; plans</div>
+            <div className="text-xs text-gray-600 hidden sm:block">Permis de construire &amp; plans</div>
           </div>
         </Link>
 
         <nav aria-label="Navigation principale" className="hidden lg:flex items-center gap-7">
           {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`text-sm font-medium transition-colors ${
-                scrolled
-                  ? 'text-gray-600 hover:text-[#1e3a5f]'
-                  : 'text-white/80 hover:text-white'
-              }`}
-            >
+            <Link key={link.href} href={link.href} className="text-sm font-medium text-gray-700 hover:text-[#1e3a5f] transition-colors">
               {link.label}
             </Link>
           ))}
@@ -70,13 +58,7 @@ export default function Header() {
           </Link>
         </nav>
 
-        <button
-          aria-label="Ouvrir le menu"
-          onClick={() => setOpen(true)}
-          className={`lg:hidden p-2 rounded-lg transition-colors ${
-            scrolled ? 'text-gray-600 hover:bg-gray-100' : 'text-white hover:bg-white/10'
-          }`}
-        >
+        <button aria-label="Ouvrir le menu" onClick={() => setOpen(true)} className="lg:hidden p-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
           </svg>
