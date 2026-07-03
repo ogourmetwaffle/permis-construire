@@ -26,6 +26,8 @@ export default function Wizard() {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [virementInfo, setVirementInfo] = useState<VirementConfirmation | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
 
   const handleChange = (updates: Partial<WizardData>) => {
     setData(prev => ({ ...prev, ...updates }))
@@ -50,18 +52,32 @@ export default function Wizard() {
   }, [data.typeClient, data.typeProjet])
 
   const uploadFiles = async (numeroDossier: string) => {
-    for (const file of data.files) {
+    // UX: simulate per-file progress to show a smooth upload bar
+    if (!data.files || data.files.length === 0) return
+    setUploading(true)
+    setUploadProgress(0)
+    for (let i = 0; i < data.files.length; i++) {
+      const file = data.files[i]
       try {
         const baseName = file.name.replace(/[^a-z0-9.\-_]/gi, '_')
         const path = `${numeroDossier}/${Date.now()}_${baseName}`
+        // show start of this file
+        setUploadProgress(Math.round((i / data.files.length) * 100))
         await supabase.storage.from('documents').upload(path, file, {
           contentType: file.type,
           upsert: false,
         })
+        // after upload of this file, advance progress
+        setUploadProgress(Math.round(((i + 1) / data.files.length) * 100))
       } catch (err) {
         console.error('File upload error:', err)
       }
     }
+    // Ensure progress hits 100%
+    setUploadProgress(100)
+    // Keep the success state visible briefly
+    await new Promise(res => setTimeout(res, 800))
+    setUploading(false)
   }
 
   const handleSubmit = async (modePaiement: ModePaiement) => {
@@ -279,6 +295,21 @@ export default function Wizard() {
             Réponse sous 24h
           </span>
         </div>
+        {/* Upload progress overlay */}
+        {uploading && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+            <div className="bg-white rounded-2xl p-6 w-[360px] max-w-[92%] text-center shadow-xl border border-gray-100">
+              <p className="text-sm text-gray-500 mb-3">Téléversement...</p>
+              <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden mb-3">
+                <div className="h-2 bg-[#1e3a5f] transition-all" style={{ width: `${uploadProgress}%` }} />
+              </div>
+              <div className="text-sm font-semibold text-[#1e3a5f] mb-2">{uploadProgress}%</div>
+              {uploadProgress === 100 && (
+                <div className="text-green-600 font-semibold">✔ Documents envoyés</div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

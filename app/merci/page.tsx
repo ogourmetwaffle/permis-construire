@@ -80,7 +80,7 @@ export default function Merci({ searchParams }: Props) {
               </div>
 
               <div>
-                <h4 className="font-semibold text-gray-800">Besoin d'aide ?</h4>
+                <h4 className="font-semibold text-gray-800">Besoin d&apos;aide ?</h4>
                 <p className="mt-2">Pour toute question, contactez-nous :</p>
                 <p className="mt-2 font-medium text-[#1e3a5f]">+33 7 50 89 64 86</p>
                 <p className="text-sm text-gray-500">contact@esquisshabitat.com</p>
