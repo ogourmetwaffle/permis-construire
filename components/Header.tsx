@@ -3,25 +3,35 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useEffect } from 'react'
+import { usePathname } from 'next/navigation'
 import MobileNav from '@/components/MobileNav'
 
 const navLinks = [
-  { href: '#accueil', label: 'Accueil' },
-  { href: '#prestations', label: 'Prestations' },
-  { href: '#processus', label: 'Processus' },
-  { href: '#realisations', label: 'Réalisations' },
-  { href: '#faq', label: 'FAQ' },
-  { href: '#contact', label: 'Contact' },
+  { href: '/#accueil', label: 'Accueil' },
+  { href: '/#prestations', label: 'Prestations' },
+  { href: '/#processus', label: 'Processus' },
+  { href: '/#realisations', label: 'Réalisations' },
+  { href: '/#faq', label: 'FAQ' },
+  { href: '/#contact', label: 'Contact' },
 ]
 
 export default function Header() {
   const [open, setOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const pathname = usePathname()
+  const [hash, setHash] = useState('')
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20)
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  useEffect(() => {
+    const updateHash = () => setHash(window.location.hash.replace('#', ''))
+    updateHash()
+    window.addEventListener('hashchange', updateHash)
+    return () => window.removeEventListener('hashchange', updateHash)
   }, [])
 
   return (
@@ -45,11 +55,22 @@ export default function Header() {
         </Link>
 
         <nav aria-label="Navigation principale" className="hidden lg:flex items-center gap-7">
-          {navLinks.map((link) => (
-            <Link key={link.href} href={link.href} className="text-sm font-medium text-gray-700 hover:text-[#1e3a5f] transition-colors">
-              {link.label}
-            </Link>
-          ))}
+          {navLinks.map((link) => {
+            // determine active state
+            const isAnchor = link.href.includes('#')
+            const anchor = isAnchor ? link.href.split('#')[1] : ''
+            const isActive = isAnchor ? pathname === '/' && hash === anchor : pathname === link.href
+
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`text-sm font-medium transition-colors ${isActive ? 'text-[#7b2020] font-semibold' : 'text-gray-700 hover:text-[#1e3a5f]'}`}
+              >
+                {link.label}
+              </Link>
+            )
+          })}
           <Link
             href="/deposer-dossier"
             className="ml-2 px-5 py-2.5 bg-[#7b2020] hover:bg-[#6a1a1a] text-white text-sm font-semibold rounded-lg shadow-sm transition-all hover:shadow-md"

@@ -1,12 +1,23 @@
 "use client"
 
 import Link from 'next/link'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { usePathname } from 'next/navigation'
 
 type NavLink = { href: string; label: string }
 type Props = { isOpen: boolean; onClose: () => void; links: NavLink[] }
 
 export default function MobileNav({ isOpen, onClose, links }: Props) {
+  const pathname = usePathname()
+  const [hash, setHash] = useState('')
+
+  useEffect(() => {
+    const updateHash = () => setHash(window.location.hash.replace('#', ''))
+    updateHash()
+    window.addEventListener('hashchange', updateHash)
+    return () => window.removeEventListener('hashchange', updateHash)
+  }, [])
+
   useEffect(() => {
     if (isOpen) document.body.style.overflow = 'hidden'
     else document.body.style.overflow = ''
@@ -33,17 +44,23 @@ export default function MobileNav({ isOpen, onClose, links }: Props) {
         </div>
 
         <ul className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
-          {links.map((link) => (
-            <li key={link.href}>
-              <Link
-                href={link.href}
-                onClick={onClose}
-                className="block px-4 py-3 rounded-lg text-gray-700 hover:bg-[#f5f6f8] hover:text-[#1e3a5f] font-medium transition-colors"
-              >
-                {link.label}
-              </Link>
-            </li>
-          ))}
+          {links.map((link) => {
+            const isAnchor = link.href.includes('#')
+            const anchor = isAnchor ? link.href.split('#')[1] : ''
+            const isActive = isAnchor ? pathname === '/' && hash === anchor : pathname === link.href
+
+            return (
+              <li key={link.href}>
+                <Link
+                  href={link.href}
+                  onClick={onClose}
+                  className={`block px-4 py-3 rounded-lg font-medium transition-colors ${isActive ? 'bg-[#f5f6f8] text-[#1e3a5f]' : 'text-gray-700 hover:bg-[#f5f6f8] hover:text-[#1e3a5f]'}`}
+                >
+                  {link.label}
+                </Link>
+              </li>
+            )
+          })}
         </ul>
 
         <div className="px-4 pb-8">
