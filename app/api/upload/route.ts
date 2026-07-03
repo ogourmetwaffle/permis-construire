@@ -1,4 +1,7 @@
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { uploadDocuments, deleteDocuments, UPLOAD_CONCURRENCY } from '@/lib/storage'
+
+export const runtime = 'nodejs'
 
 const MAX_SIZE = 50 * 1024 * 1024 // 50 Mo
 const ACCEPTED_EXTENSIONS = ['.pdf', '.png', '.jpg', '.jpeg', '.zip', '.skp', '.webp']
@@ -9,100 +12,127 @@ function sanitizeFileName(name: string) {
 }
 
 export async function POST(req: Request) {
+  console.time('upload:total')
   try {
+    console.time('upload:parseForm')
     const contentType = req.headers.get('content-type') || ''
     if (!contentType.includes('multipart/form-data')) {
+      console.timeEnd('upload:parseForm')
+      console.timeEnd('upload:total')
       return new Response(JSON.stringify({ error: 'Content-Type must be multipart/form-data' }), { status: 400 })
     }
 
     const form = await req.formData()
+    console.timeEnd('upload:parseForm')
+
     const numeroDossier = form.get('numeroDossier') as string | null
     const dossierIdRaw = form.get('dossierId') as string | null
     const dossierId = dossierIdRaw ? parseInt(dossierIdRaw, 10) : null
 
     if (!numeroDossier && !dossierId) {
+      console.timeEnd('upload:total')
       return new Response(JSON.stringify({ error: 'numeroDossier or dossierId is required' }), { status: 400 })
     }
 
     const files = form.getAll('files') as File[]
     if (!files || files.length === 0) {
+      console.timeEnd('upload:total')
       return new Response(JSON.stringify({ error: 'Aucun fichier envoyé' }), { status: 400 })
     }
 
-    const uploaded: Array<Record<string, unknown>> = []
-
+    // Validation pass (single)
+    console.time('upload:validation')
+    const problems: string[] = []
     for (const f of files) {
-      // Basic validations
-      const name = typeof (f as any).name === 'string' ? (f as any).name as string : 'file'
-      const size = typeof (f as any).size === 'number' ? (f as any).size as number : (await (f as any).arrayBuffer()).byteLength
-      const type = typeof (f as any).type === 'string' ? (f as any).type as string : ''
-
+      const name = f.name || 'file'
+      const size = typeof f.size === 'number' ? f.size : (await f.arrayBuffer()).byteLength
+      const type = f.type || ''
       const ext = '.' + name.split('.').pop()?.toLowerCase()
-      if (!ACCEPTED_EXTENSIONS.includes(ext)) {
-        return new Response(JSON.stringify({ error: `Extension non autorisée pour ${name}` }), { status: 400 })
-      }
-      if (!ACCEPTED_MIMES.includes(type)) {
-        return new Response(JSON.stringify({ error: `Type MIME non autorisé pour ${name}` }), { status: 400 })
-      }
-      if (size > MAX_SIZE) {
-        return new Response(JSON.stringify({ error: `Le fichier ${name} dépasse la taille maximale autorisée (50 Mo).` }), { status: 400 })
-      }
-
-      // Read file data
-      const arrayBuffer = await (f as any).arrayBuffer()
-      const buffer = Buffer.from(arrayBuffer)
-
-      const safeName = sanitizeFileName(name)
-      const storagePath = `${numeroDossier ?? dossierId}/${Date.now()}_${safeName}`
-
-      // Upload to Supabase Storage
-      const { error: uploadError } = await supabaseAdmin.storage.from('documents').upload(storagePath, buffer, {
-        contentType: type,
-        upsert: false,
-      })
-      if (uploadError) {
-        console.error('Upload error for', name, uploadError)
-        return new Response(JSON.stringify({ error: `Erreur lors du téléversement de ${name}` }), { status: 500 })
-      }
-
-      // Insert metadata in documents table
-      const dossier_id_final = dossierId ?? null
-      // If dossierId not provided, try to fetch by numero_dossier
-      let finalDossierId = dossier_id_final
-      if (!finalDossierId && numeroDossier) {
-        const { data: dossierRow, error: dossierErr } = await supabaseAdmin
-          .from('dossiers')
-          .select('id')
-          .eq('numero_dossier', numeroDossier)
-          .maybeSingle()
-        if (dossierErr) {
-          console.error('Error fetching dossier id for', numeroDossier, dossierErr)
-        }
-        if (dossierRow && (dossierRow as any).id) finalDossierId = (dossierRow as any).id
-      }
-
-      const { error: insertErr } = await supabaseAdmin
-        .from('documents')
-        .insert({
-          dossier_id: finalDossierId,
-          nom_fichier: name,
-          chemin_storage: storagePath,
-          taille: size,
-          type_mime: type,
-        })
-
-      if (insertErr) {
-        console.error('Insert documents metadata error for', name, insertErr)
-        return new Response(JSON.stringify({ error: `Erreur lors de l'enregistrement des métadonnées pour ${name}` }), { status: 500 })
-      }
-
-      uploaded.push({ name, size, type, path: storagePath })
+      if (!ACCEPTED_EXTENSIONS.includes(ext)) problems.push(`Extension non autorisée: ${name}`)
+      if (!ACCEPTED_MIMES.includes(type)) problems.push(`Type MIME non autorisé: ${name}`)
+      if (size > MAX_SIZE) problems.push(`Taille dépassée: ${name}`)
+    }
+    console.timeEnd('upload:validation')
+    if (problems.length) {
+      console.error('Validation errors:', problems)
+      console.timeEnd('upload:total')
+      return new Response(JSON.stringify({ error: problems.join('; ') }), { status: 400 })
     }
 
-    return new Response(JSON.stringify({ uploaded }), { status: 200 })
+    // Resolve dossier id once
+    console.time('upload:resolveDossier')
+    let finalDossierId: number | null = dossierId ?? null
+    if (!finalDossierId && numeroDossier) {
+      const { data: dossierRow, error: dossierErr } = await supabaseAdmin
+        .from('dossiers')
+        .select('id')
+        .eq('numero_dossier', numeroDossier)
+        .maybeSingle()
+      if (dossierErr) {
+        console.error('Error fetching dossier id for', numeroDossier, dossierErr)
+      }
+      if (dossierRow && typeof (dossierRow as Record<string, unknown>).id === 'number') {
+        finalDossierId = Number((dossierRow as Record<string, unknown>).id)
+      }
+    }
+    console.timeEnd('upload:resolveDossier')
+
+    // Prepare base path (per-dossier directory in bucket)
+    const basePath = `${sanitizeFileName(numeroDossier ?? String(finalDossierId))}`
+
+    // Upload in parallel with concurrency
+    console.time('upload:uploadFiles')
+    let uploadedResults: { name: string; size: number; type: string; path: string }[] = []
+    try {
+      uploadedResults = await uploadDocuments(files, basePath, UPLOAD_CONCURRENCY)
+      console.timeEnd('upload:uploadFiles')
+    } catch (uploadErr) {
+      console.error('Upload error:', uploadErr)
+      // Attempt cleanup if partial
+      try {
+        const attemptedPaths = [] as string[]
+        // uploadedResults may contain some results
+        for (const r of uploadedResults) attemptedPaths.push(r.path)
+        if (attemptedPaths.length) await deleteDocuments(attemptedPaths)
+      } catch (cleanupErr) {
+        console.error('Cleanup error after failed upload:', cleanupErr)
+      }
+      console.timeEnd('upload:total')
+      return new Response(JSON.stringify({ error: 'Erreur lors du téléversement des fichiers.' }), { status: 500 })
+    }
+
+    // Insert metadata in a single query
+    console.time('upload:insertMetadata')
+    const rows = uploadedResults.map(u => ({
+      dossier_id: finalDossierId,
+      nom_fichier: u.name,
+      chemin_storage: u.path,
+      taille: u.size,
+      type_mime: u.type,
+    }))
+
+    const { error: insertErr } = await supabaseAdmin.from('documents').insert(rows)
+    console.timeEnd('upload:insertMetadata')
+
+    if (insertErr) {
+      console.error('Insert metadata error:', insertErr)
+      // rollback: delete uploaded files
+      try {
+        const paths = uploadedResults.map(r => r.path)
+        await deleteDocuments(paths)
+      } catch (cleanupErr) {
+        console.error('Cleanup error after failed insert:', cleanupErr)
+      }
+      console.timeEnd('upload:total')
+      return new Response(JSON.stringify({ error: 'Erreur lors de l enregistrement des métadonnées.' }), { status: 500 })
+    }
+
+    console.timeEnd('upload:total')
+    return new Response(JSON.stringify({ uploaded: uploadedResults }), { status: 200 })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err)
     console.error('Upload route error:', message)
+    console.timeEnd('upload:total')
     return new Response(JSON.stringify({ error: message }), { status: 500 })
   }
 }
