@@ -3,36 +3,9 @@
 import React, { useEffect, useState } from 'react'
 import AdminDossierList from './AdminDossierList'
 import AdminDossierDetail from './AdminDossierDetail'
+import AdminStats from './AdminStats'
 import { supabase } from '@/lib/supabase'
 import { normalizeStatus, getStatusConfig, STATUS } from '@/lib/status'
-
-const STAT_STYLES: Record<string, { bg: string; iconBg: string; iconColor: string; icon: string }> = {
-  en_attente_paiement: { bg: 'from-amber-50 to-orange-50', iconBg: 'bg-amber-100', iconColor: 'text-amber-600', icon: '💳' },
-  nouveau:             { bg: 'from-blue-50 to-indigo-50', iconBg: 'bg-blue-100', iconColor: 'text-blue-600', icon: '📋' },
-  en_cours:            { bg: 'from-indigo-50 to-violet-50', iconBg: 'bg-indigo-100', iconColor: 'text-indigo-600', icon: '⚡' },
-  termine:             { bg: 'from-emerald-50 to-green-50', iconBg: 'bg-emerald-100', iconColor: 'text-emerald-600', icon: '✅' },
-  refuse:              { bg: 'from-red-50 to-rose-50', iconBg: 'bg-red-100', iconColor: 'text-red-500', icon: '✕' },
-}
-
-function StatCard({ status, label, value }: { status?: string; label?: string; value: number }) {
-  const cfg = status ? getStatusConfig(status) : null
-  const displayLabel = label || cfg?.label || 'Stat'
-  const style = status ? (STAT_STYLES[status] ?? STAT_STYLES.nouveau) : { bg: 'from-slate-50 to-gray-50', iconBg: 'bg-slate-100', iconColor: 'text-slate-600', icon: '📊' }
-
-  return (
-    <div className={`bg-linear-to-br ${style.bg} rounded-xl p-5 flex-1 min-w-35 shadow-sm border border-white`}>
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">{displayLabel}</div>
-          <div className="text-3xl font-bold text-slate-800 mt-1">{value}</div>
-        </div>
-        <div className={`${style.iconBg} ${style.iconColor} w-10 h-10 rounded-xl flex items-center justify-center text-lg`}>
-          {style.icon}
-        </div>
-      </div>
-    </div>
-  )
-}
 
 export default function AdminPanel() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -82,12 +55,8 @@ export default function AdminPanel() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <div className="flex gap-4 mb-6 flex-wrap">
-        <StatCard status={STATUS.EN_ATTENTE_PAIEMENT} value={counts.enAttente} />
-        <StatCard status={STATUS.NOUVEAU} value={counts.nouveaux} />
-        <StatCard status={STATUS.EN_COURS} value={counts.enCours} />
-        <StatCard status={STATUS.TERMINE} value={counts.termines} />
-        <StatCard status={STATUS.REFUSE} value={counts.refuses} />
+      <div className="mb-6">
+        <AdminStats counts={{ total: dossiers.length, nouveaux: counts.nouveaux, enAttente: counts.enAttente, enCours: counts.enCours, termines: counts.termines, refuses: counts.refuses }} />
       </div>
 
       <div>

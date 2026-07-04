@@ -6,7 +6,6 @@ import { Menu } from 'lucide-react'
 
 const titleMap: Record<string, { label: string; desc: string }> = {
   '/admin': { label: 'Tableau de bord', desc: 'Vue d\'ensemble des dossiers' },
-  '/admin/dossiers': { label: 'Dossiers', desc: 'Gérer tous les dossiers de permis' },
   '/admin/parametres': { label: 'Paramètres', desc: 'Configuration de la plateforme' },
 }
 

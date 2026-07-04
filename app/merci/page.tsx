@@ -53,7 +53,7 @@ export default function Merci({ searchParams }: Props) {
 
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link
-                href={numero ? `/admin/dossiers/${numero}` : '/admin/dossiers'}
+                href={numero ? `/admin/dossiers/${numero}` : '/admin'}
                 className="px-5 py-3 bg-[#1e3a5f] text-white rounded-lg font-semibold shadow-sm hover:opacity-95"
               >
                 Suivre l'avancement

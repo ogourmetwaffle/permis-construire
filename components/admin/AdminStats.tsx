@@ -15,41 +15,45 @@ const StatCard = ({ title, value, icon, accentClass }: { title: string; value: s
     </div>
   </div>
 )
-
-export default function AdminStats() {
+export default function AdminStats({
+  counts,
+}: {
+  counts?: { total?: number; nouveaux?: number; enAttente?: number; enCours?: number; termines?: number; refuses?: number }
+}) {
+  const c = counts || { total: 0, nouveaux: 0, enAttente: 0, enCours: 0, termines: 0, refuses: 0 }
   return (
     <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
       <StatCard
         title="Total dossiers"
-        value={124}
+        value={c.total ?? 0}
         icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-slate-500"><path d="M3 7h18M7 3v4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
         accentClass="bg-slate-100 text-slate-500"
       />
 
       <StatCard
         title={STATUS_CONFIG.NOUVEAU.label}
-        value={15}
+        value={c.nouveaux ?? 0}
         icon={React.createElement(STATUS_CONFIG.NOUVEAU.icon, { width: 18, height: 18, className: 'text-blue-600' })}
         accentClass="bg-blue-50 text-blue-600"
       />
 
       <StatCard
         title={STATUS_CONFIG.EN_COURS.label}
-        value={34}
+        value={c.enCours ?? 0}
         icon={React.createElement(STATUS_CONFIG.EN_COURS.icon, { width: 18, height: 18, className: 'text-indigo-600' })}
         accentClass="bg-indigo-50 text-indigo-600"
       />
 
       <StatCard
         title={STATUS_CONFIG.TERMINE.label}
-        value={72}
+        value={c.termines ?? 0}
         icon={React.createElement(STATUS_CONFIG.TERMINE.icon, { width: 18, height: 18, className: 'text-emerald-600' })}
         accentClass="bg-emerald-50 text-emerald-600"
       />
 
       <StatCard
         title={STATUS_CONFIG.REFUSE.label}
-        value={3}
+        value={c.refuses ?? 0}
         icon={React.createElement(STATUS_CONFIG.REFUSE.icon, { width: 18, height: 18, className: 'text-red-600' })}
         accentClass="bg-red-50 text-red-600"
       />

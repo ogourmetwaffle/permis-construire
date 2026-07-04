@@ -13,7 +13,6 @@ type Props = {
 
 const navItems = [
   { href: '/admin', label: 'Tableau de bord', icon: LayoutDashboard },
-  { href: '/admin/dossiers', label: 'Dossiers', icon: FolderOpen },
   { href: '/admin/parametres', label: 'Paramètres', icon: Settings },
 ]
 
