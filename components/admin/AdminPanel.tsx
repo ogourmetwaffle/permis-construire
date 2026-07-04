@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react'
 import AdminDossierList from './AdminDossierList'
 import AdminDossierDetail from './AdminDossierDetail'
 import AdminStats from './AdminStats'
+import StorageCard from './StorageCard'
 import { supabase } from '@/lib/supabase'
 import { normalizeStatus, getStatusConfig, STATUS } from '@/lib/status'
 
@@ -56,7 +57,10 @@ export default function AdminPanel() {
   return (
     <div className="max-w-7xl mx-auto">
       <div className="mb-6">
-        <AdminStats counts={{ total: dossiers.length, nouveaux: counts.nouveaux, enAttente: counts.enAttente, enCours: counts.enCours, termines: counts.termines, refuses: counts.refuses }} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <AdminStats counts={{ total: dossiers.length, nouveaux: counts.nouveaux, enAttente: counts.enAttente, enCours: counts.enCours, termines: counts.termines }} />
+          <StorageCard />
+        </div>
       </div>
 
       <div>
