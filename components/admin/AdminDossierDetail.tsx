@@ -28,21 +28,45 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    const fetch = async () => {
+    const fetchDossier = async () => {
       setLoading(true)
-      // Support fetching by numeric id or by numero_dossier (PE-...)
-      let query = supabase.from('dossiers').select('*')
-      if (typeof id === 'string' && id.startsWith('PE-')) {
-        query = query.eq('numero_dossier', id)
-      } else {
-        query = query.eq('id', id)
+      try {
+        const session = await supabase.auth.getSession()
+        const token = session.data?.session?.access_token
+        if (!token) {
+          console.error('No session token')
+          setDossier(null)
+          setLoading(false)
+          return
+        }
+
+        const res = await fetch('/api/admin/dossiers', { headers: { Authorization: `Bearer ${token}` } })
+        if (res.status === 401) {
+          console.error('Unauthorized when fetching dossier')
+          setDossier(null)
+          setLoading(false)
+          return
+        }
+
+        const json = await res.json()
+        if (!json.ok) {
+          console.error('api admin dossiers error', json.error)
+          setDossier(null)
+          setLoading(false)
+          return
+        }
+
+        const all: Dossier[] = json.data || []
+        // Support fetching by numeric id or by numero_dossier (PE-...)
+        const found = all.find((d) => (typeof id === 'string' && id.startsWith('PE-') ? d.numero_dossier === id : String(d.id) === String(id)))
+        setDossier(found || null)
+      } catch (err) {
+        console.error('fetch dossier', err)
+        setDossier(null)
       }
-      const { data, error } = await query.single()
-      if (error) console.error('fetch dossier', error)
-      setDossier(data)
       setLoading(false)
     }
-    fetch()
+    fetchDossier()
   }, [id])
 
   if (loading) return <div className="p-4">Chargement...</div>

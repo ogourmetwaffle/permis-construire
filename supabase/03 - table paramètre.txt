@@ -1,0 +1,43 @@
+create table public.parametres (
+
+    id bigint generated always as identity primary key,
+
+    cle text unique not null,
+
+    valeur text not null,
+
+    description text,
+
+    updated_at timestamp default now()
+);
+
+
+insert into public.parametres
+(cle,valeur,description)
+
+values
+
+('iban','FR7612345678912345678912345','IBAN'),
+
+('bic','ABCDEFGHXXX','Code BIC'),
+
+('titulaire','ESQUISS HABITAT','Titulaire du compte'),
+
+('telephone','+33XXXXXXXXX','Téléphone'),
+
+('email','contact@esquisshabitat.com','Email'),
+
+('surface_max','150','Surface maximale avant devis'),
+
+('devise','EUR','Devise');
+
+
+create policy "Public peut lire les paramètres"
+
+on public.parametres
+
+for select
+
+to public
+
+using (true);

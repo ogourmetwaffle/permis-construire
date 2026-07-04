@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase'
 import { File as FileIcon, Image as ImageIcon, Eye as EyeIcon, Download as DownloadIcon } from 'lucide-react'
 
 const iconFor = (name: string) => {
@@ -26,7 +27,16 @@ export default function DocumentList({ numero }: { numero?: string }) {
     const fetchDocs = async () => {
       setLoading(true)
       try {
-        const resp = await fetch(`/api/admin/docs?numero=${encodeURIComponent(numero)}`)
+        const session = await supabase.auth.getSession()
+        const token = session.data?.session?.access_token
+        if (!token) {
+          console.error('No session token')
+          setDocs([])
+          setLoading(false)
+          return
+        }
+
+        const resp = await fetch(`/api/admin/documents?numero=${encodeURIComponent(numero)}`, { headers: { Authorization: `Bearer ${token}` } })
         const text = await resp.text()
         if (!text) {
           console.error('api docs: empty response body')

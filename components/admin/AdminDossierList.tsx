@@ -25,9 +25,41 @@ export default function AdminDossierList({ dossiers: propDossiers, selectedId, o
 
   const fetchDossiers = async () => {
     setLoading(true)
-    const { data, error } = await supabase.from('dossiers').select('*').order('created_at', { ascending: false })
-    if (error) console.error('supabase fetch dossiers', error)
-    setLocalDossiers(((data) as unknown) as Dossier[] || [])
+    try {
+      const session = await supabase.auth.getSession()
+      const token = session.data?.session?.access_token
+      if (!token) {
+        console.error('No session token')
+        setLocalDossiers([])
+        setLoading(false)
+        return
+      }
+
+      const res = await fetch('/api/admin/dossiers', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+
+      if (res.status === 401) {
+        // Let the parent page handle redirect; clear list
+        console.error('Unauthorized when fetching dossiers')
+        setLocalDossiers([])
+        setLoading(false)
+        return
+      }
+
+      const json = await res.json()
+      if (!json.ok) {
+        console.error('api admin dossiers error', json.error)
+        setLocalDossiers([])
+        setLoading(false)
+        return
+      }
+
+      setLocalDossiers((json.data as Dossier[]) || [])
+    } catch (err) {
+      console.error('fetchDossiers error', err)
+      setLocalDossiers([])
+    }
     setLoading(false)
   }
 

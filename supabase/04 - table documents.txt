@@ -1,0 +1,16 @@
+create table public.documents (
+
+    id bigint generated always as identity primary key,
+
+    dossier_id bigint not null references dossiers(id) on delete cascade,
+
+    nom_fichier text not null,
+
+    chemin_storage text not null,
+
+    taille bigint,
+
+    type_mime text,
+
+    created_at timestamp default now()
+);

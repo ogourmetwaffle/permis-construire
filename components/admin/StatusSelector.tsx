@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { CheckCircle, XCircle, Clock, Circle } from 'lucide-react'
 import { toast } from 'react-hot-toast'
+import { supabase } from '@/lib/supabase'
 
 export default function StatusSelector({ currentStatus, dossierId, onUpdated }: { currentStatus?: string; dossierId: string; onUpdated?: () => void }) {
   const [status, setStatus] = useState(currentStatus)
@@ -11,9 +12,17 @@ export default function StatusSelector({ currentStatus, dossierId, onUpdated }: 
   const updateStatus = async () => {
     setLoading(true)
     try {
+      const session = await supabase.auth.getSession()
+      const token = session.data?.session?.access_token
+      if (!token) {
+        toast.error('Session expirée — veuillez vous reconnecter')
+        setLoading(false)
+        return
+      }
+
       const resp = await fetch('/api/admin/update-statut', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ dossierId, statut: status })
       })
       const json = await resp.json()

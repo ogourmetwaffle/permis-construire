@@ -1,0 +1,39 @@
+create table public.tarifs (
+
+    id bigint generated always as identity primary key,
+
+    type_client text not null,
+
+    type_projet text not null,
+
+    prix numeric not null,
+
+    actif boolean default true,
+
+    created_at timestamp default now()
+);
+
+
+insert into public.tarifs
+(type_client,type_projet,prix)
+
+values
+
+('PARTICULIER','DP',400),
+
+('PARTICULIER','PCMI',600),
+
+('PROFESSIONNEL','DP',300),
+
+('PROFESSIONNEL','PCMI',400);
+
+
+create policy "Public peut lire les tarifs"
+
+on public.tarifs
+
+for select
+
+to public
+
+using (true);

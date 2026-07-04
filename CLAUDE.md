@@ -1,270 +1,207 @@
-@AGENTS.md
 # CLAUDE.md
 
 ## Contexte du projet
 
-Permis Express est une plateforme web permettant aux utilisateurs de déposer un dossier de conversion de permis étranger vers permis français.
+Ce projet est une plateforme web de gestion de dossiers de permis de construire.
 
-L'utilisateur :
+L'objectif est de permettre aux particuliers et aux professionnels de déposer un dossier en ligne, téléverser leurs documents, effectuer un paiement et suivre l'avancement de leur demande.
 
-* Remplit un formulaire
-* Dépose ses documents
-* Effectue un paiement Stripe
-* Reçoit une confirmation
-
-L'administrateur :
-
-* Consulte les dossiers
-* Télécharge les documents
-* Vérifie le paiement
-* Met à jour le statut du dossier
+L'application comporte également un espace d'administration permettant de gérer les dossiers.
 
 ---
 
-## Stack technique
-
-### Frontend
+# Stack technique
 
 * Next.js (App Router)
+* React
 * TypeScript
 * Tailwind CSS
-
-### Backend
-
-* API Routes Next.js
-
-### Base de données
-
-* Supabase PostgreSQL
-
-### Stockage fichiers
-
-* Supabase Storage
-
-### Paiement
-
-* Stripe Checkout
-
-### Emails
-
-* Brevo API
-
-### Hébergement
-
-* Vercel
+* Supabase (PostgreSQL + Storage)
+* Stripe
+* Brevo
+* Déploiement sur Vercel
 
 ---
 
-## Objectifs du projet
+# Principes de développement
 
-Priorités absolues :
+Le code doit rester simple, lisible et facilement maintenable.
 
-1. Simplicité
-2. SEO
-3. Performance
-4. Mobile First
-5. Code maintenable
-6. Sécurité
+Toujours privilégier une solution simple plutôt qu'une architecture complexe.
 
-Toujours privilégier la solution la plus simple.
+Éviter les dépendances inutiles lorsque la fonctionnalité peut être réalisée avec React, TypeScript ou les API natives.
 
----
+Privilégier la réutilisation des composants.
 
-## Règles de développement
-
-### Dépendances
-
-Éviter d'ajouter des dépendances inutiles.
-
-Avant toute installation :
-
-* vérifier si Next.js permet déjà de faire la fonctionnalité
-* vérifier si TypeScript natif suffit
-* privilégier du code simple
-
-Ne jamais installer une librairie pour une fonctionnalité triviale.
+Ne jamais dupliquer du code lorsqu'un composant réutilisable est possible.
 
 ---
 
-### Architecture
+# Responsive Design
 
-Favoriser :
+Le site est conçu en **Mobile First**.
 
-* composants simples
-* fonctions courtes
-* logique métier isolée
-* code lisible
+Chaque nouvelle fonctionnalité doit fonctionner parfaitement sur :
 
-Éviter :
+* Mobile
+* Tablette
+* Desktop
 
-* sur-ingénierie
-* patterns complexes
-* abstractions inutiles
+Ne jamais développer une interface uniquement pour ordinateur.
 
 ---
 
-### TypeScript
+# Design
 
-Toujours typer :
+Le design doit être moderne, professionnel et épuré.
 
-* paramètres
-* retours de fonctions
-* objets métier
-
-Éviter :
-
-* any
-* unknown inutile
-* cast excessifs
-
----
-
-### Base de données
-
-Toujours :
-
-* requêtes simples
-* noms explicites
-* colonnes clairement nommées
+Éviter les interfaces surchargées.
 
 Privilégier :
 
-* SELECT ciblés
-* pagination si nécessaire
+* grands espaces
+* cartes simples
+* typographie lisible
+* peu de couleurs
+* animations discrètes
 
-Éviter :
-
-* SELECT *
-* requêtes inutiles
+L'expérience utilisateur doit rester fluide.
 
 ---
 
-### Supabase
+# SEO
 
-Utiliser :
+Toutes les pages publiques doivent être optimisées pour le référencement naturel.
 
-* RLS quand nécessaire
-* Service Role uniquement côté serveur
+Respecter les bonnes pratiques Next.js :
+
+* metadata
+* title
+* description
+* balises sémantiques
+* images optimisées
+* performances
+
+---
+
+# Sécurité
+
+Toutes les opérations sensibles doivent être réalisées côté serveur.
 
 Ne jamais exposer :
 
-* Service Role Key
-* secrets Stripe
-* secrets Brevo
+* Service Role Supabase
+* Stripe Secret Key
+* Clés privées
 
-dans le frontend.
+Toujours utiliser les variables d'environnement.
 
----
-
-## SEO
-
-Le SEO est une priorité.
-
-Pour chaque page publique :
-
-Ajouter :
-
-* title
-* description
-* open graph
-* canonical
-
-Utiliser :
-
-* Server Components quand possible
-* rendu serveur
-* HTML sémantique
-
-Privilégier :
-
-* h1 unique
-* h2 structurés
-* contenu indexable
-
-Éviter :
-
-* pages entièrement client-side
-* contenu important chargé après rendu
+Valider les données côté serveur avant toute écriture en base.
 
 ---
 
-## Responsive
+# Supabase
 
-Approche Mobile First.
+Supabase est utilisé pour :
 
-Le site doit fonctionner parfaitement sur :
+* PostgreSQL
+* Storage
+* API
 
-* smartphone
-* tablette
-* desktop
+Les documents sont stockés dans le bucket :
 
-Toujours tester :
+documents
 
-* largeur 375px
-* largeur 768px
-* largeur 1440px
-
-Éviter :
-
-* scroll horizontal
-* boutons trop petits
-* tableaux illisibles
+Les données métier sont enregistrées dans PostgreSQL.
 
 ---
 
-## Design
+# Architecture
 
-Style attendu :
+Privilégier des composants réutilisables.
 
-* professionnel
-* moderne
-* épuré
-* rassurant
+Séparer clairement :
 
-Couleurs principales :
+* UI
+* logique métier
+* accès aux données
+* API
 
-* Bleu : #173B8C
-* Rouge : #E30613
-
-Inspirations :
-
-* Stripe
-* Notion
-* Qonto
-
-Privilégier :
-
-* espace blanc
-* cartes simples
-* hiérarchie visuelle claire
+Ne jamais mélanger plusieurs responsabilités dans un même composant.
 
 ---
 
-## Dashboard Admin
+# Administration
 
-Le dashboard doit rester simple.
+L'espace administrateur doit permettre :
 
-Objectif :
-
+* consulter les dossiers
 * rechercher un dossier
 * consulter les documents
-* vérifier le paiement
+* télécharger les documents
 * modifier le statut
+* ajouter un commentaire
+* valider un paiement par virement
+* archiver un dossier
 
-Ne pas transformer l'application en ERP complexe.
+L'administration doit rester simple et rapide à utiliser.
 
 ---
 
-## Qualité du code
+# Qualité du code
 
-Avant de proposer une solution :
+Toujours utiliser TypeScript.
 
-Se demander :
+Éviter les "any".
 
-* Est-ce la solution la plus simple ?
-* Est-ce compatible mobile ?
-* Est-ce bon pour le SEO ?
-* Est-ce maintenable dans 1 an ?
-* Peut-on faire sans nouvelle dépendance ?
+Utiliser des noms explicites.
 
-Si oui, alors implémenter.
+Supprimer le code mort.
+
+Éviter les composants trop volumineux.
+
+---
+
+# UX
+
+Limiter le nombre de clics.
+
+Limiter le scroll.
+
+Privilégier des interfaces compactes.
+
+Les formulaires doivent rester simples à remplir.
+
+Toujours guider l'utilisateur.
+
+---
+
+# Performance
+
+Optimiser :
+
+* les images
+* les requêtes
+* les composants React
+
+Éviter les re-render inutiles.
+
+---
+
+# Philosophie du projet
+
+L'objectif n'est pas de créer une application complexe mais une plateforme robuste, rapide, simple à maintenir et agréable à utiliser.
+
+Chaque nouvelle fonctionnalité doit apporter une réelle valeur à l'utilisateur et rester cohérente avec cette philosophie.
+
+Avant d'installer une nouvelle librairie npm, toujours vérifier si la fonctionnalité peut être réalisée avec les outils déjà présents dans le projet (React, Next.js, TypeScript ou les API natives).
+
+Ne jamais ajouter une dépendance sans justification.
+
+---
+
+# API Admin
+
+- **Endpoint principal:** `/api/admin/documents` — fourni des URLs signées pour le téléchargement des documents et utilise `supabaseAdmin` côté serveur.
+- **Sécurité:** Toutes les routes sous `/api/admin/*` exigent l'en-tête `Authorization: Bearer <access_token>` contenant le token d'accès Supabase (récupéré côté client via `supabase.auth.getSession()`). Le serveur vérifie ce token avant d'effectuer des opérations sensibles.
+- **Bonne pratique:** Ne pas appeler directement les tables `dossiers`/`documents` ou le storage depuis le client pour des opérations administratives ; passer systématiquement par les API Next.js protégées.

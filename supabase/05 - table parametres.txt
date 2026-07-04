@@ -1,0 +1,16 @@
+-- Table parametres : stocke les paramètres de configuration (IBAN, BIC, etc.)
+-- À exécuter dans Supabase SQL Editor
+
+create table if not exists public.parametres (
+  id bigint generated always as identity primary key,
+  cle text unique not null,
+  valeur text not null,
+  created_at timestamp default now()
+);
+
+-- Coordonnées bancaires Wise (à modifier avec vos vraies coordonnées)
+insert into public.parametres (cle, valeur) values
+  ('iban', 'FR76 XXXX XXXX XXXX XXXX XXXX XXX'),
+  ('bic', 'TRWIBEB1XXX'),
+  ('titulaire', 'Esquiss Habitat')
+on conflict (cle) do nothing;
