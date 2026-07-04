@@ -6,17 +6,29 @@ import AdminDossierDetail from './AdminDossierDetail'
 import { supabase } from '@/lib/supabase'
 import { normalizeStatus, getStatusConfig, STATUS } from '@/lib/status'
 
-function StatCard({ status, label, value }: { status?: any; label?: string; value: number }) {
-  let cfg = null
-  if (status) cfg = getStatusConfig(status)
+const STAT_STYLES: Record<string, { bg: string; iconBg: string; iconColor: string; icon: string }> = {
+  en_attente_paiement: { bg: 'from-amber-50 to-orange-50', iconBg: 'bg-amber-100', iconColor: 'text-amber-600', icon: '💳' },
+  nouveau:             { bg: 'from-blue-50 to-indigo-50', iconBg: 'bg-blue-100', iconColor: 'text-blue-600', icon: '📋' },
+  en_cours:            { bg: 'from-indigo-50 to-violet-50', iconBg: 'bg-indigo-100', iconColor: 'text-indigo-600', icon: '⚡' },
+  termine:             { bg: 'from-emerald-50 to-green-50', iconBg: 'bg-emerald-100', iconColor: 'text-emerald-600', icon: '✅' },
+  refuse:              { bg: 'from-red-50 to-rose-50', iconBg: 'bg-red-100', iconColor: 'text-red-500', icon: '✕' },
+}
+
+function StatCard({ status, label, value }: { status?: string; label?: string; value: number }) {
+  const cfg = status ? getStatusConfig(status) : null
   const displayLabel = label || cfg?.label || 'Stat'
-  const badgeClasses = cfg?.badgeClass || 'bg-white text-gray-800'
+  const style = status ? (STAT_STYLES[status] ?? STAT_STYLES.nouveau) : { bg: 'from-slate-50 to-gray-50', iconBg: 'bg-slate-100', iconColor: 'text-slate-600', icon: '📊' }
 
   return (
-    <div className={`rounded-lg p-4 shadow-sm min-w-35 ring-1 ring-inset bg-white`}>
-      <div className="flex items-center justify-between">
-        <div className="text-xs text-gray-500">{displayLabel}</div>
-        <div className={`px-3 py-1 rounded-full text-sm font-semibold ${badgeClasses}`}>{value}</div>
+    <div className={`bg-linear-to-br ${style.bg} rounded-xl p-5 flex-1 min-w-35 shadow-sm border border-white`}>
+      <div className="flex items-start justify-between">
+        <div>
+          <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">{displayLabel}</div>
+          <div className="text-3xl font-bold text-slate-800 mt-1">{value}</div>
+        </div>
+        <div className={`${style.iconBg} ${style.iconColor} w-10 h-10 rounded-xl flex items-center justify-center text-lg`}>
+          {style.icon}
+        </div>
       </div>
     </div>
   )
@@ -70,15 +82,12 @@ export default function AdminPanel() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Tableau de bord</h1>
-      </div>
-
       <div className="flex gap-4 mb-6 flex-wrap">
         <StatCard status={STATUS.EN_ATTENTE_PAIEMENT} value={counts.enAttente} />
         <StatCard status={STATUS.NOUVEAU} value={counts.nouveaux} />
         <StatCard status={STATUS.EN_COURS} value={counts.enCours} />
         <StatCard status={STATUS.TERMINE} value={counts.termines} />
+        <StatCard status={STATUS.REFUSE} value={counts.refuses} />
       </div>
 
       <div>
@@ -86,15 +95,20 @@ export default function AdminPanel() {
       </div>
 
       {showModal && selectedId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setShowModal(false)} />
-          <div className="relative w-full max-w-4xl mx-4">
-            <div className="bg-white rounded-lg shadow-lg overflow-auto max-h-[90vh]">
-              <div className="flex items-center justify-between p-4 border-b">
-                <div className="text-lg font-semibold text-gray-800">Dossier</div>
-                <button onClick={() => setShowModal(false)} className="text-gray-600 hover:text-gray-900">Fermer</button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowModal(false)} />
+          <div className="relative w-full max-w-4xl">
+            <div className="bg-white rounded-2xl shadow-2xl overflow-auto max-h-[90vh]">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+                <div className="text-base font-semibold text-slate-800">Détail du dossier</div>
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="text-slate-400 hover:text-slate-700 text-sm px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+                >
+                  Fermer
+                </button>
               </div>
-              <div className="p-4">
+              <div className="p-6">
                 <AdminDossierDetail id={selectedId!} onUpdated={fetchDossiers} />
               </div>
             </div>

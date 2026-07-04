@@ -1,5 +1,3 @@
-"use client"
-
 import React, { useEffect, useState } from 'react'
 import AdminDossierRow from './AdminDossierRow'
 import AdminDossierDetail from './AdminDossierDetail'
@@ -113,14 +111,23 @@ export default function AdminDossierList({ dossiers: propDossiers, selectedId, o
   }, [query, filter, pageSize, propDossiers, localDossiers])
 
   return (
-    <div className="bg-white rounded-md shadow-sm border">
-      <div className="p-4 border-b">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-800">Liste des dossiers</h2>
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200">
+      <div className="px-5 py-4 border-b border-slate-100">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <h2 className="text-base font-semibold text-slate-800">Liste des dossiers</h2>
           <div className="flex gap-2">
-            <input value={query} onChange={(e) => setQuery(e.target.value)} className="border rounded px-2 py-1 text-sm" placeholder="Rechercher par nom, email, numéro" />
-            <select value={filter} onChange={(e) => setFilter(e.target.value)} className="border rounded px-2 py-1 text-sm">
-              <option value="">Tous</option>
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all placeholder:text-slate-400"
+              placeholder="Nom, email, numéro…"
+            />
+            <select
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all"
+            >
+              <option value="">Tous les statuts</option>
               {STATUS_ORDER.map((s) => {
                 const cfg = getStatusConfig(s)
                 return <option key={s} value={s}>{cfg?.label || s}</option>
@@ -130,43 +137,46 @@ export default function AdminDossierList({ dossiers: propDossiers, selectedId, o
         </div>
       </div>
 
-      <div className="p-2">
-        <div className="hidden md:grid text-xs text-gray-500 px-3 py-2 border-b" style={{ gridTemplateColumns: '220px 1fr 120px 110px 120px 120px 80px' }}>
-          <div className="">Numéro dossier</div>
-          <div className="">Client</div>
-          <div className="">Pays</div>
-          <div className="">Paiement</div>
-          <div className="">Statut</div>
-          <div className="">Date dépôt</div>
-          <div className="">Actions</div>
+      <div>
+        <div className="hidden md:grid text-xs font-semibold text-slate-400 uppercase tracking-wider px-5 py-3 border-b border-slate-100 bg-slate-50/60" style={{ gridTemplateColumns: '220px 1fr 120px 110px 120px 120px 80px' }}>
+          <div>Numéro dossier</div>
+          <div>Client</div>
+          <div>Pays</div>
+          <div>Paiement</div>
+          <div>Statut</div>
+          <div>Date dépôt</div>
+          <div>Actions</div>
         </div>
 
         <div>
-          {loading && <div className="p-4 text-sm text-gray-500">Chargement...</div>}
+          {loading && <div className="p-8 text-sm text-slate-400 text-center">Chargement...</div>}
           {!loading && paginated.map((d) => (
             <AdminDossierRow key={d.id} dossier={d} onOpen={handleOpen} selectedId={selectedId ?? localSelectedId ?? undefined} />
           ))}
-          {!loading && filtered.length === 0 && <div className="p-4 text-sm text-gray-500">Aucun dossier trouvé.</div>}
+          {!loading && filtered.length === 0 && (
+            <div className="p-10 text-center">
+              <div className="text-3xl mb-2">📂</div>
+              <div className="text-sm text-slate-400">Aucun dossier trouvé.</div>
+            </div>
+          )}
         </div>
 
-        <div className="p-3 border-t flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <div>Afficher</div>
-            <select value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))} className="border rounded px-2 py-1 text-sm">
+        <div className="px-5 py-3 border-t border-slate-100 flex items-center justify-between bg-slate-50/60 rounded-b-xl">
+          <div className="flex items-center gap-2 text-sm text-slate-500">
+            <span>Afficher</span>
+            <select value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))} className="border border-slate-200 rounded-lg px-2 py-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/30">
               <option value={5}>5</option>
               <option value={10}>10</option>
               <option value={20}>20</option>
               <option value={50}>50</option>
             </select>
-            <div>sur {total} résultats</div>
+            <span>sur <strong className="text-slate-700">{total}</strong> résultats</span>
           </div>
 
           <div className="flex items-center gap-2">
-            <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="px-3 py-1 border rounded text-sm">Préc</button>
-            <div className="text-sm">
-              Page {page} / {totalPages}
-            </div>
-            <button disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} className="px-3 py-1 border rounded text-sm">Suiv</button>
+            <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors">← Préc</button>
+            <span className="text-sm text-slate-500 px-1">Page {page} / {totalPages}</span>
+            <button disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors">Suiv →</button>
           </div>
         </div>
       </div>

@@ -4,11 +4,13 @@ import React, { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import AdminSidebar from '@/components/admin/AdminSidebar'
+import AdminHeader from '@/components/admin/AdminHeader'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const [checking, setChecking] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
     // Skip session check for the login page so it can render unauthenticated
@@ -34,11 +36,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (pathname === '/admin/login') return <>{children}</>
 
   return (
-    <div className="min-h-screen" style={{ background: '#F8FAFC' }}>
+    <div className="min-h-screen bg-slate-100">
       <div className="flex">
-        <AdminSidebar />
-        <main className="flex-1 p-6">
-          {children}
+        <AdminSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <main className="flex-1 min-h-screen flex flex-col">
+          <AdminHeader onToggleSidebar={() => setSidebarOpen((s) => !s)} />
+          <div className="flex-1 p-6">{children}</div>
         </main>
       </div>
     </div>
