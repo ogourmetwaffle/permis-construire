@@ -5,6 +5,7 @@ import FileUpload from './FileUpload'
 import Button from '@/components/Button'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { STATUS } from '@/lib/status'
 // Note: upload to storage is handled server-side via /api/upload
 
 export default function DossierForm() {
@@ -49,7 +50,7 @@ export default function DossierForm() {
           email: form.email,
           telephone: form.telephone,
           pays_permis: form.pays_permis,
-          statut: 'NOUVEAU',
+          statut: STATUS.NOUVEAU,
           montant: 49,
           paiement_effectue: false
         })

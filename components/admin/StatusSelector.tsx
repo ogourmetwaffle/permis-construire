@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from 'react'
-import { CheckCircle, XCircle, Clock, Circle } from 'lucide-react'
+import { STATUS_ORDER, getStatusConfig, normalizeStatus } from '@/lib/status'
 import { toast } from 'react-hot-toast'
 import { supabase } from '@/lib/supabase'
 
@@ -46,10 +46,10 @@ export default function StatusSelector({ currentStatus, dossierId, onUpdated }: 
     <div className="space-y-3">
       <div className="text-sm">Statut actuel: <span className="ml-2">{renderBadge(status)}</span></div>
       <select value={status} onChange={(e) => setStatus(e.target.value)} className="border rounded px-2 py-1 w-full">
-        <option value="NOUVEAU">Nouveau</option>
-        <option value="EN_COURS">En cours</option>
-        <option value="COMPLET">Terminé</option>
-        <option value="REFUSE">Refusé</option>
+        {STATUS_ORDER.map((s) => {
+          const cfg = getStatusConfig(s)
+          return <option key={s} value={s}>{cfg?.label || s}</option>
+        })}
       </select>
       <button type="button" onClick={updateStatus} disabled={loading} className="w-full bg-[#173B8C] text-white py-2 rounded cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">{loading ? 'Mise à jour...' : 'Mettre à jour'}</button>
     </div>
@@ -58,24 +58,13 @@ export default function StatusSelector({ currentStatus, dossierId, onUpdated }: 
 
 function renderBadge(status?: string) {
   const base = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold shadow-sm ring-1 ring-inset'
-  if (status === 'NOUVEAU' || !status) return (
-    <span role="status" aria-label="Nouveau" title="Nouveau" className={`${base} bg-orange-50 text-orange-700 ring-orange-100`}> 
-      <Circle size={12} className="mr-2" />Nouveau
-    </span>
-  )
-  if (status === 'EN_COURS') return (
-    <span role="status" aria-label="En cours" title="En cours" className={`${base} bg-blue-50 text-blue-800 ring-blue-100`}> 
-      <Clock size={12} className="mr-2" />En cours
-    </span>
-  )
-  if (status === 'COMPLET') return (
-    <span role="status" aria-label="Terminé" title="Terminé" className={`${base} bg-emerald-50 text-emerald-700 ring-emerald-100`}> 
-      <CheckCircle size={12} className="mr-2" />Terminé
-    </span>
-  )
+  const s = normalizeStatus(status)
+  const cfg = s ? getStatusConfig(s) : null
+  if (!cfg) return <span className={`${base} bg-gray-50 text-gray-700`}>{status || '-'}</span>
+  const Icon = cfg.icon
   return (
-    <span role="status" aria-label="Refusé" title="Refusé" className={`${base} bg-red-50 text-red-700 ring-red-100`}> 
-      <XCircle size={12} className="mr-2" />Refusé
+    <span role="status" aria-label={cfg.label} title={cfg.label} className={`${base} ${cfg.badgeClass}`}>
+      <Icon width={12} height={12} className="mr-2" />{cfg.label}
     </span>
   )
 }

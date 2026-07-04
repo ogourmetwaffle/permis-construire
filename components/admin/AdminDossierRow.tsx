@@ -2,7 +2,8 @@
 
 import React from 'react'
 import Link from 'next/link'
-import { CheckCircle, XCircle, Circle, Clock } from 'lucide-react'
+import { getStatusConfig, normalizeStatus } from '@/lib/status'
+import { CheckCircle, XCircle } from 'lucide-react'
 
 type Dossier = {
   id: string
@@ -20,29 +21,14 @@ export default function AdminDossierRow({ dossier, onOpen, selectedId }: { dossi
   const gridStyle = { gridTemplateColumns: '220px 1fr 120px 110px 120px 120px 80px' }
 
   const badge = () => {
-    const base = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold shadow-sm ring-1 ring-inset'
-
-    if (statut === 'NOUVEAU') return (
-      <span role="status" aria-label="Nouveau" title="Nouveau" className={`${base} bg-orange-50 text-orange-700 ring-orange-100 hover:scale-105 transition-transform`}> 
-        <Circle size={12} className="mr-2" />Nouveau
-      </span>
-    )
-
-    if (statut === 'EN_COURS') return (
-      <span role="status" aria-label="En cours" title="En cours" className={`${base} bg-blue-50 text-blue-800 ring-blue-100 hover:scale-105 transition-transform`}> 
-        <Clock size={12} className="mr-2" />En cours
-      </span>
-    )
-
-    if (statut === 'COMPLET') return (
-      <span role="status" aria-label="Terminé" title="Terminé" className={`${base} bg-emerald-50 text-emerald-700 ring-emerald-100 hover:scale-105 transition-transform`}> 
-        <CheckCircle size={12} className="mr-2" />Terminé
-      </span>
-    )
-
+    const base = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold shadow-sm ring-1 ring-inset hover:scale-105 transition-transform'
+    const s = normalizeStatus(statut)
+    const cfg = s ? getStatusConfig(s) : null
+    if (!cfg) return <span className={`${base} bg-gray-50 text-gray-700`}>{statut || '-'}</span>
+    const Icon = cfg.icon
     return (
-      <span role="status" aria-label="Refusé" title="Refusé" className={`${base} bg-red-50 text-red-700 ring-red-100 hover:scale-105 transition-transform`}> 
-        <XCircle size={12} className="mr-2" />Refusé
+      <span role="status" aria-label={cfg.label} title={cfg.label} className={`${base} ${cfg.badgeClass}`}>
+        <Icon width={12} height={12} className="mr-2" />{cfg.label}
       </span>
     )
   }

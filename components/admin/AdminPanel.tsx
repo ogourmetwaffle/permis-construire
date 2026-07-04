@@ -4,21 +4,19 @@ import React, { useEffect, useState } from 'react'
 import AdminDossierList from './AdminDossierList'
 import AdminDossierDetail from './AdminDossierDetail'
 import { supabase } from '@/lib/supabase'
+import { normalizeStatus, getStatusConfig, STATUS } from '@/lib/status'
 
-function StatCard({ label, value, tone }: { label: string; value: number; tone?: 'amber' | 'blue' | 'emerald' | 'red' }) {
-  const toneClasses: Record<string, string> = {
-    amber: 'bg-amber-50 text-amber-700 ring-amber-100',
-    blue: 'bg-blue-50 text-blue-800 ring-blue-100',
-    emerald: 'bg-emerald-50 text-emerald-700 ring-emerald-100',
-    red: 'bg-red-50 text-red-700 ring-red-100'
-  }
-  const toneClass = tone ? toneClasses[tone] : 'bg-white text-gray-800'
+function StatCard({ status, label, value }: { status?: any; label?: string; value: number }) {
+  let cfg = null
+  if (status) cfg = getStatusConfig(status)
+  const displayLabel = label || cfg?.label || 'Stat'
+  const badgeClasses = cfg?.badgeClass || 'bg-white text-gray-800'
 
   return (
-    <div className={`rounded-lg p-4 shadow-sm min-w-35 ring-1 ring-inset ${tone ? 'bg-white' : ''}`}>
+    <div className={`rounded-lg p-4 shadow-sm min-w-35 ring-1 ring-inset bg-white`}>
       <div className="flex items-center justify-between">
-        <div className="text-xs text-gray-500">{label}</div>
-        <div className={`px-3 py-1 rounded-full text-sm font-semibold ${tone ? toneClasses[tone] : ''}`}>{value}</div>
+        <div className="text-xs text-gray-500">{displayLabel}</div>
+        <div className={`px-3 py-1 rounded-full text-sm font-semibold ${badgeClasses}`}>{value}</div>
       </div>
     </div>
   )
@@ -63,10 +61,11 @@ export default function AdminPanel() {
   }, [])
 
   const counts = {
-    nouveaux: dossiers.filter(d => d.statut === 'NOUVEAU').length,
-    enCours: dossiers.filter(d => d.statut === 'EN_COURS').length,
-    termines: dossiers.filter(d => d.statut === 'COMPLET').length,
-    refuses: dossiers.filter(d => d.statut === 'REFUSE').length,
+    enAttente: dossiers.filter(d => normalizeStatus(d.statut) === STATUS.EN_ATTENTE_PAIEMENT).length,
+    nouveaux: dossiers.filter(d => normalizeStatus(d.statut) === STATUS.NOUVEAU).length,
+    enCours: dossiers.filter(d => normalizeStatus(d.statut) === STATUS.EN_COURS).length,
+    termines: dossiers.filter(d => normalizeStatus(d.statut) === STATUS.TERMINE).length,
+    refuses: dossiers.filter(d => normalizeStatus(d.statut) === STATUS.REFUSE).length,
   }
 
   return (
@@ -76,10 +75,10 @@ export default function AdminPanel() {
       </div>
 
       <div className="flex gap-4 mb-6 flex-wrap">
-        <StatCard label="Nouveaux" value={counts.nouveaux} tone="amber" />
-        <StatCard label="En cours" value={counts.enCours} tone="blue" />
-        <StatCard label="Terminés" value={counts.termines} tone="emerald" />
-        <StatCard label="Refusés" value={counts.refuses} tone="red" />
+        <StatCard status={STATUS.EN_ATTENTE_PAIEMENT} value={counts.enAttente} />
+        <StatCard status={STATUS.NOUVEAU} value={counts.nouveaux} />
+        <StatCard status={STATUS.EN_COURS} value={counts.enCours} />
+        <StatCard status={STATUS.TERMINE} value={counts.termines} />
       </div>
 
       <div>

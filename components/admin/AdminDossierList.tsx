@@ -5,6 +5,7 @@ import AdminDossierRow from './AdminDossierRow'
 import AdminDossierDetail from './AdminDossierDetail'
 import Modal from './Modal'
 import { supabase } from '@/lib/supabase'
+import { STATUS_ORDER, getStatusConfig, normalizeStatus } from '@/lib/status'
 
 type Dossier = {
   id: string
@@ -19,7 +20,7 @@ export default function AdminDossierList({ dossiers: propDossiers, selectedId, o
   const [localDossiers, setLocalDossiers] = useState<Dossier[]>([])
   const [loading, setLoading] = useState(false)
   const [query, setQuery] = useState('')
-  const [filter, setFilter] = useState('Tous')
+  const [filter, setFilter] = useState('')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
@@ -76,11 +77,8 @@ export default function AdminDossierList({ dossiers: propDossiers, selectedId, o
   const sourceDossiers = localDossiers
 
   const filtered = sourceDossiers.filter((d) => {
-    if (filter !== 'Tous') {
-      if (filter === 'Nouveau' && d.statut !== 'NOUVEAU') return false
-      if (filter === 'En cours' && d.statut !== 'EN_COURS') return false
-      if (filter === 'Terminé' && d.statut !== 'COMPLET') return false
-      if (filter === 'Refusé' && d.statut !== 'REFUSE') return false
+    if (filter) {
+      if (normalizeStatus(d.statut) !== filter) return false
     }
     if (!query) return true
     const q = query.toLowerCase()
@@ -122,11 +120,11 @@ export default function AdminDossierList({ dossiers: propDossiers, selectedId, o
           <div className="flex gap-2">
             <input value={query} onChange={(e) => setQuery(e.target.value)} className="border rounded px-2 py-1 text-sm" placeholder="Rechercher par nom, email, numéro" />
             <select value={filter} onChange={(e) => setFilter(e.target.value)} className="border rounded px-2 py-1 text-sm">
-              <option>Tous</option>
-              <option>Nouveau</option>
-              <option>En cours</option>
-              <option>Terminé</option>
-              <option>Refusé</option>
+              <option value="">Tous</option>
+              {STATUS_ORDER.map((s) => {
+                const cfg = getStatusConfig(s)
+                return <option key={s} value={s}>{cfg?.label || s}</option>
+              })}
             </select>
           </div>
         </div>
