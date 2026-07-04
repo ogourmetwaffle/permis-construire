@@ -3,7 +3,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { getStatusConfig, normalizeStatus } from '@/lib/status'
-import { CheckCircle, XCircle } from 'lucide-react'
+import { CheckCircle, XCircle, ArrowRight } from 'lucide-react'
 
 type Dossier = {
   id: string
@@ -34,7 +34,7 @@ export default function AdminDossierRow({ dossier, onOpen, selectedId }: { dossi
   }
 
   return (
-    <div className={`grid items-center px-3 py-3 hover:bg-gray-50`} style={gridStyle}>
+    <div className={`grid items-center px-3 py-2 hover:bg-gray-50`} style={gridStyle}>
       <div className="text-sm text-gray-700">{numero_dossier}</div>
       <div className="text-sm text-gray-800 truncate">{nom} {prenom}</div>
       <div className="text-sm text-gray-700">{pays_permis}</div>
@@ -43,9 +43,9 @@ export default function AdminDossierRow({ dossier, onOpen, selectedId }: { dossi
       <div className="text-sm text-gray-600">{created_at ? new Date(created_at).toLocaleDateString() : ''}</div>
       <div>
         {onOpen ? (
-          <button type="button" onClick={() => onOpen(id)} className="text-sm text-blue-600 underline cursor-pointer">Voir</button>
+          <button type="button" onClick={() => onOpen(id)} className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-md border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 shadow-sm transition">Ouvrir <ArrowRight size={14} /></button>
         ) : (
-          <Link href={`/admin/dossiers/${encodeURIComponent(numero_dossier)}`} className="text-sm text-blue-600 underline cursor-pointer">Voir</Link>
+          <Link href={`/admin/dossiers/${encodeURIComponent(numero_dossier)}`} className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-md border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 shadow-sm transition">Ouvrir <ArrowRight size={14} /></Link>
         )}
       </div>
     </div>

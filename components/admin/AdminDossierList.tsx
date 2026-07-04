@@ -112,7 +112,7 @@ export default function AdminDossierList({ dossiers: propDossiers, selectedId, o
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200">
-      <div className="px-5 py-4 border-b border-slate-100">
+      <div className="px-4 py-3 border-b border-slate-100">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <h2 className="text-base font-semibold text-slate-800">Liste des dossiers</h2>
           <div className="flex gap-2">
@@ -138,7 +138,7 @@ export default function AdminDossierList({ dossiers: propDossiers, selectedId, o
       </div>
 
       <div>
-        <div className="hidden md:grid text-xs font-semibold text-slate-400 uppercase tracking-wider px-5 py-3 border-b border-slate-100 bg-slate-50/60" style={{ gridTemplateColumns: '220px 1fr 120px 110px 120px 120px 80px' }}>
+        <div className="hidden md:grid text-xs font-semibold text-slate-400 uppercase tracking-wider px-5 py-2 border-b border-slate-100 bg-slate-50/60" style={{ gridTemplateColumns: '220px 1fr 120px 110px 120px 120px 80px' }}>
           <div>Numéro dossier</div>
           <div>Client</div>
           <div>Pays</div>
@@ -161,7 +161,7 @@ export default function AdminDossierList({ dossiers: propDossiers, selectedId, o
           )}
         </div>
 
-        <div className="px-5 py-3 border-t border-slate-100 flex items-center justify-between bg-slate-50/60 rounded-b-xl">
+        <div className="px-5 py-2 border-t border-slate-100 flex items-center justify-between bg-slate-50/60 rounded-b-xl">
           <div className="flex items-center gap-2 text-sm text-slate-500">
             <span>Afficher</span>
             <select value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))} className="border border-slate-200 rounded-lg px-2 py-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/30">

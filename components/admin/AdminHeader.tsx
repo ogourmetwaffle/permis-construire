@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { usePathname } from 'next/navigation'
-import { Menu, Bell } from 'lucide-react'
+import { Menu } from 'lucide-react'
 
 const titleMap: Record<string, { label: string; desc: string }> = {
   '/admin': { label: 'Tableau de bord', desc: 'Vue d\'ensemble des dossiers' },
@@ -36,11 +36,11 @@ export default function AdminHeader({ onToggleSidebar }: { onToggleSidebar?: () 
         <div className="hidden sm:block text-right">
           <div className="text-xs text-slate-400 capitalize">{today}</div>
         </div>
-        <button className="relative p-2 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors">
-          <Bell size={18} />
-        </button>
-        <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold shadow">
-          A
+        <div className="flex items-center">
+          <div className="flex flex-col items-center">
+            <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold shadow">A</div>
+            <div className="hidden sm:block text-xs text-slate-400 mt-0.5">Administrateur</div>
+          </div>
         </div>
       </div>
     </header>
