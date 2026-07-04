@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import AdminLoginCard from '@/components/admin/AdminLoginCard'
+import AdminLoginIllustration from '@/components/admin/AdminLoginIllustration'
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState('')
@@ -29,19 +31,31 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <form onSubmit={handleSubmit} className="w-full max-w-md bg-white p-6 rounded shadow">
-        <h2 className="text-2xl font-bold mb-4">Admin — Connexion</h2>
-
-        {error && <div className="text-red-600 mb-3">{error}</div>}
-
-        <input className="w-full border p-2 mb-3" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
-        <input className="w-full border p-2 mb-3" placeholder="Mot de passe" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-
-        <div className="flex items-center justify-between">
-          <button disabled={loading} className="bg-blue-900 text-white px-4 py-2 rounded">{loading ? 'Connexion...' : 'Se connecter'}</button>
+    <div className="min-h-screen flex flex-col md:flex-row">
+      <div
+        className="hidden md:flex md:w-1/2 items-center justify-center"
+        style={{ background: 'linear-gradient(135deg, var(--eh-primary) 0%, rgba(30,58,95,0.9) 60%)' }}
+      >
+        <div className="w-full h-full flex items-center justify-center p-12">
+          <div className="text-white max-w-lg">
+            <AdminLoginIllustration />
+          </div>
         </div>
-      </form>
+      </div>
+
+      <main className="flex-1 flex items-center justify-center p-6 bg-[var(--eh-light)]">
+        <div className="w-full max-w-lg">
+          <AdminLoginCard
+            email={email}
+            setEmail={setEmail}
+            password={password}
+            setPassword={setPassword}
+            loading={loading}
+            error={error}
+            onSubmit={handleSubmit}
+          />
+        </div>
+      </main>
     </div>
   )
 }
