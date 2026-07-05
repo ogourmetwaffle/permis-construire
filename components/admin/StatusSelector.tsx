@@ -57,14 +57,14 @@ export default function StatusSelector({ currentStatus, dossierId, onUpdated }: 
 }
 
 function renderBadge(status?: string) {
-  const base = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold shadow-sm ring-1 ring-inset'
+  const base = 'inline-flex items-center h-6 px-2 rounded-full text-[11px] font-semibold shadow-sm ring-1 ring-inset whitespace-nowrap'
   const s = normalizeStatus(status)
   const cfg = s ? getStatusConfig(s) : null
   if (!cfg) return <span className={`${base} bg-gray-50 text-gray-700`}>{status || '-'}</span>
   const Icon = cfg.icon
   return (
     <span role="status" aria-label={cfg.label} title={cfg.label} className={`${base} ${cfg.badgeClass}`}>
-      <Icon width={12} height={12} className="mr-2" />{cfg.label}
+      <Icon width={16} height={16} className="mr-1 flex-shrink-0" />{cfg.label}
     </span>
   )
 }

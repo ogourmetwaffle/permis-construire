@@ -14,7 +14,7 @@ export default function AdminHeader({ onToggleSidebar }: { onToggleSidebar?: () 
 
   const page = titleMap[pathname] ?? { label: 'Administration', desc: '' }
 
-  const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  const today = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
 
   return (
     <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-10">
@@ -31,15 +31,14 @@ export default function AdminHeader({ onToggleSidebar }: { onToggleSidebar?: () 
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
-        <div className="hidden sm:block text-right">
-          <div className="text-xs text-slate-400 capitalize">{today}</div>
+      <div className="flex items-center gap-4">
+        <div className="hidden sm:flex flex-col items-end text-right">
+          <div className="text-xs text-slate-400">{today}</div>
+          <div className="text-sm text-slate-600 mt-1">Bonjour,</div>
+          <div className="text-base font-semibold text-slate-900">Administrateur</div>
         </div>
         <div className="flex items-center">
-          <div className="flex flex-col items-center">
-            <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold shadow">A</div>
-            <div className="hidden sm:block text-xs text-slate-400 mt-0.5">Administrateur</div>
-          </div>
+          <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold shadow">A</div>
         </div>
       </div>
     </header>

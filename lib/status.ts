@@ -41,7 +41,7 @@ type StatusConfig = {
 
 export const STATUS_CONFIG: Record<Status, StatusConfig> = {
   EN_ATTENTE_PAIEMENT: {
-    label: 'En attente de paiement',
+    label: 'Paiement',
     icon: CreditCard,
     badgeClass: 'bg-amber-50 text-amber-700 ring-amber-100',
     textClass: 'text-amber-700',
@@ -68,7 +68,7 @@ export const STATUS_CONFIG: Record<Status, StatusConfig> = {
     order: 3,
   },
   INFORMATIONS_MANQUANTES: {
-    label: 'Informations manquantes',
+    label: 'À compléter',
     icon: Paperclip,
     badgeClass: 'bg-violet-50 text-violet-800 ring-violet-100',
     textClass: 'text-violet-800',

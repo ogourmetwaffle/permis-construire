@@ -18,34 +18,34 @@ type Dossier = {
 
 export default function AdminDossierRow({ dossier, onOpen, selectedId }: { dossier: Dossier; onOpen?: (id: string) => void; selectedId?: string }) {
   const { id, numero_dossier, nom, prenom, pays_permis, paiement_effectue, statut, created_at } = dossier
-  const gridStyle = { gridTemplateColumns: '220px 1fr 120px 110px 120px 120px 80px' }
+  const gridStyle = { gridTemplateColumns: '220px 1fr 120px 110px 140px 140px 96px' }
 
   const badge = () => {
-    const base = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold shadow-sm ring-1 ring-inset hover:scale-105 transition-transform'
+    const base = 'inline-flex items-center h-6 px-2 rounded-full text-[11px] font-semibold shadow-sm ring-1 ring-inset whitespace-nowrap'
     const s = normalizeStatus(statut)
     const cfg = s ? getStatusConfig(s) : null
     if (!cfg) return <span className={`${base} bg-gray-50 text-gray-700`}>{statut || '-'}</span>
     const Icon = cfg.icon
     return (
       <span role="status" aria-label={cfg.label} title={cfg.label} className={`${base} ${cfg.badgeClass}`}>
-        <Icon width={12} height={12} className="mr-2" />{cfg.label}
+        <Icon width={16} height={16} className="mr-1 flex-shrink-0" />{cfg.label}
       </span>
     )
   }
 
   return (
-    <div className={`grid items-center px-3 py-2 hover:bg-gray-50`} style={gridStyle}>
+    <div className={`grid items-center px-4 py-2 hover:bg-slate-50 transition-colors duration-150`} style={gridStyle}>
       <div className="text-sm text-gray-700">{numero_dossier}</div>
       <div className="text-sm text-gray-800 truncate">{nom} {prenom}</div>
       <div className="text-sm text-gray-700">{pays_permis}</div>
-      <div className="text-sm">{paiement_effectue ? <span className="text-[#16A34A]"><CheckCircle size={14} className="inline-block mr-1"/>Payé</span> : <span className="text-gray-500"><XCircle size={14} className="inline-block mr-1"/>Non</span>}</div>
-      <div>{badge()}</div>
+      <div className="flex items-center justify-center text-sm">{paiement_effectue ? <span className="text-[#16A34A]"><CheckCircle size={16} className="inline-block mr-1"/>Payé</span> : <span className="text-gray-500"><XCircle size={16} className="inline-block mr-1"/>Non</span>}</div>
+      <div className="flex items-center justify-center">{badge()}</div>
       <div className="text-sm text-gray-600">{created_at ? new Date(created_at).toLocaleDateString() : ''}</div>
-      <div>
+      <div className="flex items-center justify-center">
         {onOpen ? (
-          <button type="button" onClick={() => onOpen(id)} className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-md border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 shadow-sm transition">Ouvrir <ArrowRight size={14} /></button>
+          <button type="button" onClick={() => onOpen(id)} className="inline-flex items-center gap-3 px-3 py-1.5 text-sm rounded-md border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 shadow-sm transition">Ouvrir <ArrowRight size={16} /></button>
         ) : (
-          <Link href={`/admin/dossiers/${encodeURIComponent(numero_dossier)}`} className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-md border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 shadow-sm transition">Ouvrir <ArrowRight size={14} /></Link>
+          <Link href={`/admin/dossiers/${encodeURIComponent(numero_dossier)}`} className="inline-flex items-center gap-3 px-3 py-1.5 text-sm rounded-md border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 shadow-sm transition">Ouvrir <ArrowRight size={16} /></Link>
         )}
       </div>
     </div>

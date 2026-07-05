@@ -56,7 +56,7 @@ export default function AdminPanel() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <div className="mb-6">
+      <div className="mb-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           <AdminStats counts={{ total: dossiers.length, nouveaux: counts.nouveaux, enAttente: counts.enAttente, enCours: counts.enCours, termines: counts.termines }} />
           <StorageCard />

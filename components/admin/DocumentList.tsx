@@ -6,8 +6,8 @@ import { File as FileIcon, Image as ImageIcon, Eye as EyeIcon, Download as Downl
 
 const iconFor = (name: string) => {
   const ext = name.split('.').pop()?.toLowerCase()
-  if (ext === 'pdf') return <FileIcon size={18} className="text-indigo-600" />
-  return <ImageIcon size={18} className="text-indigo-600" />
+  if (ext === 'pdf') return <FileIcon size={16} className="text-indigo-600" />
+  return <ImageIcon size={16} className="text-indigo-600" />
 }
 
 type DocItem = {
@@ -142,7 +142,7 @@ export default function DocumentList({ numero }: { numero?: string }) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button type="button" onClick={() => handleOpen(d.url ?? undefined)} className="text-sm text-blue-600 flex items-center gap-1 cursor-pointer"><EyeIcon size={14}/>Prévisualiser</button>
+            <button type="button" onClick={() => handleOpen(d.url ?? undefined)} className="text-sm text-blue-600 flex items-center gap-2 cursor-pointer"><EyeIcon size={16}/>Prévisualiser</button>
             {(() => {
               const dlKey = d.url ?? `${numero}-${i}-${d.name}`
               return (
@@ -152,7 +152,7 @@ export default function DocumentList({ numero }: { numero?: string }) {
                   disabled={!!downloading[dlKey]}
                   className="text-sm text-gray-700 flex items-center gap-1 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  <DownloadIcon size={14}/>
+                  <DownloadIcon size={16}/>
                   {downloading[dlKey] ? 'Téléchargement...' : 'Télécharger'}
                 </button>
               )

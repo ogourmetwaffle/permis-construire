@@ -41,7 +41,8 @@ export default function StorageCard() {
   const limit = 1024 * 1024 * 1024 // 1 GB
   const percent = limit > 0 ? Math.round((used / limit) * 100) : 0
 
-  const percentColor = percent < 70 ? 'bg-emerald-500' : percent < 90 ? 'bg-amber-500' : 'bg-rose-500'
+  // Couleurs: vert <60%, orange 60-85%, rouge >85%
+  const percentColor = percent < 60 ? 'bg-emerald-500' : percent < 85 ? 'bg-amber-500' : 'bg-rose-500'
 
   const usedStr = formatBytes(used)
 
