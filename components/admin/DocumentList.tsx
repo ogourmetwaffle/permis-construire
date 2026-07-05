@@ -10,20 +10,32 @@ const iconFor = (name: string) => {
   return <ImageIcon size={16} className="text-indigo-600" />
 }
 
-type DocItem = {
+export type DocItem = {
   name: string
   size: number
   updated_at: string
   url?: string | null
 }
 
-export default function DocumentList({ numero }: { numero?: string }) {
-  const [docs, setDocs] = useState<DocItem[]>([])
+export default function DocumentList({ numero, items }: { numero?: string; items?: DocItem[] }) {
+  const [docs, setDocs] = useState<DocItem[]>(items ?? [])
   const [loading, setLoading] = useState(false)
   const [downloading, setDownloading] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
-    if (!numero) return
+    // If parent provides items, use them and skip fetching
+    if (items) {
+      setDocs(items)
+      setLoading(false)
+      return
+    }
+
+    if (!numero) {
+      setDocs([])
+      setLoading(false)
+      return
+    }
+
     const fetchDocs = async () => {
       setLoading(true)
       try {
@@ -41,7 +53,7 @@ export default function DocumentList({ numero }: { numero?: string }) {
         if (!text) {
           console.error('api docs: empty response body')
           setDocs([])
-          } else {
+        } else {
           let json: unknown = null
           try {
             json = JSON.parse(text)
@@ -55,7 +67,6 @@ export default function DocumentList({ numero }: { numero?: string }) {
               setDocs([])
             } else {
               const parsed = json as { items?: DocItem[] }
-              console.log('docs api items', parsed.items)
               setDocs(parsed.items || [])
             }
           }
@@ -67,12 +78,10 @@ export default function DocumentList({ numero }: { numero?: string }) {
       setLoading(false)
     }
     fetchDocs()
-  }, [numero])
+  }, [numero, items])
 
   const handleOpen = (url?: string) => {
     if (!url) return
-    console.log('preview click', url)
-    // Create an anchor and click it synchronously to avoid popup blockers
     const a = document.createElement('a')
     a.href = url
     a.target = '_blank'
@@ -100,7 +109,6 @@ export default function DocumentList({ numero }: { numero?: string }) {
       setTimeout(() => URL.revokeObjectURL(blobUrl), 10000)
     } catch (err) {
       console.error('download failed, falling back to opening in new tab', err)
-      // Fallback: open in new tab (may let user save manually)
       try {
         const a2 = document.createElement('a')
         a2.href = url
@@ -118,7 +126,7 @@ export default function DocumentList({ numero }: { numero?: string }) {
     }
   }
 
-  if (!numero) return <div className="text-sm text-gray-400 py-2">Aucun numéro de dossier fourni.</div>
+  if (!numero && !items) return <div className="text-sm text-gray-400 py-2">Aucun numéro de dossier fourni.</div>
 
   return (
     <div className="space-y-1.5">
