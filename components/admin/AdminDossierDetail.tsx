@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react'
 import DocumentList, { DocItem } from './DocumentList'
 import ProjectCard from './ProjectCard'
 import Timeline from './Timeline'
-import { CheckCircle, XCircle, Mail, Download, CreditCard, Archive, Tag, Clock, User } from 'lucide-react'
+import { CheckCircle, XCircle, Mail, Download, CreditCard, Archive, Tag, Clock, User, ArrowLeft } from 'lucide-react'
 import StatusSelector from './StatusSelector'
 import { supabase } from '@/lib/supabase'
 import { getStatusConfig, normalizeStatus } from '@/lib/status'
@@ -164,12 +164,20 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
   return (
     <div className="w-full">
 
-      {/* Header */}
+      {/* Header: back arrow + dossier label */}
       <div className="flex items-center justify-between gap-4 mb-6 pb-4 border-b border-gray-100">
         <div>
-          <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Dossier</div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight leading-none">{dossier.numero_dossier}</h1>
+          <a href="/admin" className="inline-flex items-center gap-3 group rounded-lg bg-white border border-gray-100 shadow-sm p-3 hover:shadow-md transition-shadow">
+            <div className="w-9 h-9 rounded-md bg-[var(--eh-primary)] flex items-center justify-center text-white">
+              <ArrowLeft size={16} />
+            </div>
+            <div className="flex flex-col justify-center">
+              <div className="text-sm font-medium text-gray-600">Dossiers</div>
+              <div className="mt-1 inline-flex items-center px-3 py-1 rounded-md bg-gray-50 border border-gray-100 text-base font-semibold text-gray-900">{dossier.numero_dossier}</div>
+            </div>
+          </a>
         </div>
+
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">{renderStatusBadge()}{renderPaymentBadge()}</div>
           <div className="flex items-center gap-2">

@@ -14,12 +14,7 @@ export default function AdminDossierPage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
       <div className="max-w-7xl mx-auto p-6">
-        <div className="mb-6">
-          <Link href="/admin" className="inline-flex items-center gap-2 text-sm text-slate-700 hover:text-slate-900">
-            <ArrowLeft size={16} />
-            <span>Retour aux dossiers</span>
-          </Link>
-        </div>
+        {/* Old global back link removed — header now handled by AdminDossierDetail */}
 
         <AdminDossierDetail id={id ?? ''} />
       </div>
