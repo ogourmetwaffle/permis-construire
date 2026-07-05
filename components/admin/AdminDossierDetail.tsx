@@ -256,19 +256,19 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">{renderStatusBadge()}{renderPaymentBadge()}</div>
           <div className="flex items-center gap-2">
-            <a href={`mailto:${dossier.email ?? ''}`} className="inline-flex items-center gap-2 h-9 px-3 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 hover:bg-gray-50 shadow-sm"> <Mail size={14} /> Email</a>
+            <a href={`mailto:${dossier.email ?? ''}`} className="inline-flex items-center gap-2 h-9 px-3 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-150 shadow-sm"> <Mail size={14} /> Email</a>
             <button
               type="button"
               onClick={handleDownloadZip}
               disabled={zipDownloading}
               aria-busy={zipDownloading}
-              className="inline-flex items-center gap-2 h-9 px-3 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 hover:bg-gray-50 shadow-sm"
+              className="inline-flex items-center gap-2 h-9 px-3 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-150 shadow-sm"
             >
               <Download size={14} className={zipDownloading ? 'animate-spin' : ''} />
               {zipDownloading ? 'Téléchargement…' : 'Télécharger ZIP'}
             </button>
-            <a href={"#"} className="inline-flex items-center gap-2 h-9 px-3 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 hover:bg-gray-50 shadow-sm"><CreditCard size={14} /> Paiement</a>
-            <button type="button" onClick={openArchiveModal} className="inline-flex items-center gap-2 h-9 px-3 rounded-lg border border-gray-200 bg-white text-sm text-gray-400 hover:bg-red-50 hover:text-red-500"> <Archive size={14} /> Archiver</button>
+            <a href={"#"} className="inline-flex items-center gap-2 h-9 px-3 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-150 shadow-sm"><CreditCard size={14} /> Paiement</a>
+            <button type="button" onClick={openArchiveModal} className="inline-flex items-center gap-2 h-9 px-3 rounded-lg border border-gray-200 bg-white text-sm text-gray-400 hover:bg-red-100 hover:text-red-600 transition-colors duration-150"> <Archive size={14} /> Archiver</button>
           </div>
         </div>
       </div>
@@ -388,34 +388,42 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
 
       {showArchiveModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40" onClick={closeArchiveModal} />
-          <div className="relative bg-white rounded-lg shadow-lg max-w-lg w-full p-6 z-10">
-            <h3 className="text-lg font-semibold mb-2">Archiver les documents ?</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              Cette opération supprimera définitivement les documents du stockage Supabase afin de libérer de l'espace disque. Les informations du dossier seront conservées.
-              En revanche les documents ne pourront plus être : prévisualisés, téléchargés, restaurés automatiquement.
-              Nous vous recommandons fortement de télécharger l'archive ZIP du dossier avant de continuer.
-            </p>
-            <div className="flex gap-2 justify-end">
-              <button
-                type="button"
-                onClick={handleDownloadZip}
-                className="inline-flex items-center gap-2 px-3 py-2 rounded bg-white border text-sm"
-                disabled={zipDownloading}
-                aria-busy={zipDownloading}
-              >
-                <Download size={14} className={zipDownloading ? 'animate-spin' : ''} />
-                {zipDownloading ? 'Téléchargement…' : 'Télécharger le dossier ZIP'}
-              </button>
-              <button type="button" onClick={closeArchiveModal} className="inline-flex items-center px-3 py-2 rounded bg-gray-50 border text-sm">Annuler</button>
-              <button
-                type="button"
-                onClick={handleConfirmArchive}
-                disabled={archiving}
-                className="inline-flex items-center px-3 py-2 rounded bg-red-600 text-white text-sm disabled:opacity-60"
-              >
-                {archiving ? 'Archivage…' : 'Archiver les documents'}
-              </button>
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={closeArchiveModal} />
+          <div role="dialog" aria-modal="true" aria-labelledby="archive-title" className="relative bg-white rounded-xl shadow-xl max-w-lg w-full p-6 z-10 transform transition-all duration-200">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0">
+                <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center text-red-600">
+                  <Archive size={20} />
+                </div>
+              </div>
+              <div className="min-w-0">
+                <h3 id="archive-title" className="text-lg font-semibold text-gray-900">Archiver les documents ?</h3>
+                <p className="mt-2 text-sm text-gray-600">Cette opération supprimera définitivement les documents du stockage Supabase afin de libérer de l&apos;espace disque. Les informations du dossier seront conservées.</p>
+                <p className="mt-2 text-sm text-gray-600">Les documents ne pourront plus être prévisualisés, téléchargés ou restaurés automatiquement. Nous vous recommandons fortement de télécharger l&apos;archive ZIP du dossier avant de continuer.</p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center justify-between gap-3">
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleDownloadZip}
+                  disabled={zipDownloading}
+                  aria-busy={zipDownloading}
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded border border-gray-200 bg-white text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-150"
+                >
+                  <Download size={14} className={zipDownloading ? 'animate-spin' : ''} />
+                  {zipDownloading ? 'Téléchargement…' : 'Télécharger le dossier ZIP'}
+                </button>
+
+                <button type="button" onClick={closeArchiveModal} className="inline-flex items-center px-3 py-2 rounded border border-gray-100 bg-white text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-150">Annuler</button>
+              </div>
+
+              <div>
+                <button type="button" onClick={handleConfirmArchive} disabled={archiving} className="inline-flex items-center gap-2 px-4 py-2 rounded bg-red-600 text-white text-sm hover:bg-red-700 transition-colors duration-150 disabled:opacity-60">
+                  {archiving ? 'Archivage…' : 'Archiver les documents'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
