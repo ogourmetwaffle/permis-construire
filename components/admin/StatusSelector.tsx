@@ -64,7 +64,7 @@ function renderBadge(status?: string) {
   const Icon = cfg.icon
   return (
     <span role="status" aria-label={cfg.label} title={cfg.label} className={`${base} ${cfg.badgeClass}`}>
-      <Icon width={16} height={16} className="mr-1 flex-shrink-0" />{cfg.label}
+      <Icon width={16} height={16} className="mr-1 shrink-0" />{cfg.label}
     </span>
   )
 }

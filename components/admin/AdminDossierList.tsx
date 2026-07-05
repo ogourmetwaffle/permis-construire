@@ -12,8 +12,8 @@ type Dossier = {
   statut?: string
 }
 
-export default function AdminDossierList({ dossiers: propDossiers, selectedId, onSelect }: { dossiers?: Dossier[]; selectedId?: string; onSelect?: (id: string) => void }) {
-  const [localDossiers, setLocalDossiers] = useState<Dossier[]>([])
+export default function AdminDossierList({ dossiers: propDossiers, onSelect }: { dossiers?: Dossier[]; onSelect?: (id: string) => void }) {
+  const [fetchedDossiers, setFetchedDossiers] = useState<Dossier[]>([])
   const [loading, setLoading] = useState(false)
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState('')
@@ -27,7 +27,7 @@ export default function AdminDossierList({ dossiers: propDossiers, selectedId, o
       const token = session.data?.session?.access_token
       if (!token) {
         console.error('No session token')
-        setLocalDossiers([])
+        setFetchedDossiers([])
         setLoading(false)
         return
       }
@@ -39,7 +39,7 @@ export default function AdminDossierList({ dossiers: propDossiers, selectedId, o
       if (res.status === 401) {
         // Let the parent page handle redirect; clear list
         console.error('Unauthorized when fetching dossiers')
-        setLocalDossiers([])
+        setFetchedDossiers([])
         setLoading(false)
         return
       }
@@ -47,30 +47,31 @@ export default function AdminDossierList({ dossiers: propDossiers, selectedId, o
       const json = await res.json()
       if (!json.ok) {
         console.error('api admin dossiers error', json.error)
-        setLocalDossiers([])
+        setFetchedDossiers([])
         setLoading(false)
         return
       }
 
-      setLocalDossiers((json.data as Dossier[]) || [])
-    } catch (err) {
+      setFetchedDossiers((json.data as Dossier[]) || [])
+      } catch (err) {
       console.error('fetchDossiers error', err)
-      setLocalDossiers([])
+      setFetchedDossiers([])
     }
     setLoading(false)
   }
 
   useEffect(() => {
-    // If parent passed dossiers, initialize local state from it so we can refresh locally
-    if (propDossiers) {
-      setLocalDossiers(propDossiers)
-      return
+    // If parent did not pass dossiers, fetch them from the API
+    if (!propDossiers) {
+      // run async fetch after effect to avoid synchronous setState in effect
+      const t = setTimeout(() => fetchDossiers(), 0)
+      return () => clearTimeout(t)
     }
-    fetchDossiers()
+    return
   }, [propDossiers])
 
-  // Always render from localDossiers so fetchDossiers updates are visible
-  const sourceDossiers = localDossiers
+  // Choose source: parent-provided dossiers take precedence, otherwise use fetched data
+  const sourceDossiers = propDossiers ?? fetchedDossiers
 
   const filtered = sourceDossiers.filter((d) => {
     if (filter) {
@@ -90,10 +91,6 @@ export default function AdminDossierList({ dossiers: propDossiers, selectedId, o
     if (onSelect) return onSelect(id)
   }
 
-  // reset to first page when filters change
-  React.useEffect(() => {
-    setPage(1)
-  }, [query, filter, pageSize, propDossiers, localDossiers])
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200">
@@ -103,13 +100,13 @@ export default function AdminDossierList({ dossiers: propDossiers, selectedId, o
           <div className="flex gap-2">
             <input
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => { setQuery(e.target.value); setPage(1); }}
               className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all placeholder:text-slate-400"
               placeholder="Nom, email, numéro…"
             />
             <select
               value={filter}
-              onChange={(e) => setFilter(e.target.value)}
+              onChange={(e) => { setFilter(e.target.value); setPage(1); }}
               className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all"
             >
               <option value="">Tous les statuts</option>
@@ -149,7 +146,7 @@ export default function AdminDossierList({ dossiers: propDossiers, selectedId, o
         <div className="px-5 py-2 border-t border-slate-100 flex items-center justify-between bg-slate-50/60 rounded-b-xl">
           <div className="flex items-center gap-2 text-sm text-slate-500">
             <span>Afficher</span>
-            <select value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))} className="border border-slate-200 rounded-lg px-2 py-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/30">
+            <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }} className="border border-slate-200 rounded-lg px-2 py-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/30">
               <option value={5}>5</option>
               <option value={10}>10</option>
               <option value={20}>20</option>
