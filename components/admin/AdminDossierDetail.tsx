@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react'
 import DocumentList, { DocItem } from './DocumentList'
 import ProjectCard from './ProjectCard'
 import Timeline from './Timeline'
-import { CheckCircle, XCircle, Mail, Download, CreditCard, Archive, Tag, Clock, User, ArrowLeft } from 'lucide-react'
+import { CheckCircle, XCircle, Mail, Download, CreditCard, Archive, Tag, Clock, User, ArrowLeft, FileText } from 'lucide-react'
 import StatusSelector from './StatusSelector'
 import { supabase } from '@/lib/supabase'
 import { getStatusConfig, normalizeStatus } from '@/lib/status'
@@ -39,6 +39,9 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
 
   const [docs, setDocs] = useState<DocItem[]>([])
   const [docsLoading, setDocsLoading] = useState(false)
+  const [showArchiveModal, setShowArchiveModal] = useState(false)
+  const [archiving, setArchiving] = useState(false)
+  const [zipDownloading, setZipDownloading] = useState(false)
 
   useEffect(() => {
     const fetchDossier = async () => {
@@ -81,38 +84,103 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
     fetchDossier()
   }, [id])
 
-  // Fetch documents once dossier is loaded
+  // Fetch documents once dossier is loaded (extracted so we can re-use after archive)
+  const fetchDocs = async (numero?: string) => {
+    if (!numero) return
+    setDocsLoading(true)
+    try {
+      const session = await supabase.auth.getSession()
+      const token = session.data?.session?.access_token
+      if (!token) {
+        setDocs([])
+        setDocsLoading(false)
+        return
+      }
+
+      const resp = await fetch(`/api/admin/documents?numero=${encodeURIComponent(String(numero))}`, { headers: { Authorization: `Bearer ${token}` } })
+      const text = await resp.text()
+      if (!text) {
+        setDocs([])
+      } else {
+        let json: any = null
+        try { json = JSON.parse(text) } catch (e) { console.error('invalid docs response', e); setDocs([]) }
+        if (json && resp.ok) setDocs(json.items || [])
+        else setDocs([])
+      }
+    } catch (err) {
+      console.error('fetch docs', err)
+      setDocs([])
+    }
+    setDocsLoading(false)
+  }
+
   useEffect(() => {
     if (!dossier?.numero_dossier) return
-    const fetchDocs = async () => {
-      setDocsLoading(true)
-      try {
-        const session = await supabase.auth.getSession()
-        const token = session.data?.session?.access_token
-        if (!token) {
-          setDocs([])
-          setDocsLoading(false)
-          return
-        }
-
-        const resp = await fetch(`/api/admin/documents?numero=${encodeURIComponent(String(dossier.numero_dossier))}`, { headers: { Authorization: `Bearer ${token}` } })
-        const text = await resp.text()
-        if (!text) {
-          setDocs([])
-        } else {
-          let json: any = null
-          try { json = JSON.parse(text) } catch (e) { console.error('invalid docs response', e); setDocs([]) }
-          if (json && resp.ok) setDocs(json.items || [])
-          else setDocs([])
-        }
-      } catch (err) {
-        console.error('fetch docs', err)
-        setDocs([])
-      }
-      setDocsLoading(false)
-    }
-    fetchDocs()
+    fetchDocs(dossier.numero_dossier)
   }, [dossier?.numero_dossier])
+
+  const openArchiveModal = () => setShowArchiveModal(true)
+  const closeArchiveModal = () => setShowArchiveModal(false)
+
+  const handleDownloadZip = async () => {
+    if (!dossier) return
+    try {
+      setZipDownloading(true)
+      const session = await supabase.auth.getSession()
+      const token = session.data?.session?.access_token
+      if (!token) throw new Error('No token')
+
+      const resp = await fetch(`/api/admin/documents/zip?numero=${encodeURIComponent(dossier.numero_dossier)}`, { headers: { Authorization: `Bearer ${token}` } })
+      if (!resp.ok) {
+        const t = await resp.text()
+        throw new Error(t || 'Download failed')
+      }
+      const blob = await resp.blob()
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(blob)
+      a.download = `${dossier.numero_dossier}.zip`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+    } catch (e) {
+      console.error('zip download error', e)
+      alert('Impossible de télécharger l\'archive. Voir la console.')
+    } finally {
+      setZipDownloading(false)
+    }
+  }
+
+  const handleConfirmArchive = async () => {
+    if (!dossier) return
+    try {
+      setArchiving(true)
+      const session = await supabase.auth.getSession()
+      const token = session.data?.session?.access_token
+      if (!token) throw new Error('No token')
+
+      const resp = await fetch('/api/admin/documents/archive', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ numero: dossier.numero_dossier }),
+      })
+      const json = await resp.json()
+      if (!resp.ok) {
+        console.error('archive error', json)
+        alert('Erreur lors de l\'archivage : ' + (json?.error || ''))
+        setArchiving(false)
+        return
+      }
+
+      // Refresh docs list
+      await fetchDocs(dossier.numero_dossier)
+      setShowArchiveModal(false)
+    } catch (e) {
+      console.error('archive failed', e)
+      alert('Erreur lors de l\'archivage. Voir la console.')
+    } finally {
+      setArchiving(false)
+    }
+  }
 
   if (loading) return <div className="p-4">Chargement...</div>
   if (!dossier) return <div className="p-4 text-gray-600">Dossier introuvable.</div>
@@ -153,7 +221,14 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
     if (!n || n <= 0) return '0 Mo'
     return `${(n / 1024 / 1024).toFixed(2)} Mo`
   }
-  const lastDoc = docs.length ? docs.reduce((best, cur) => (new Date(cur.updated_at) > new Date(best.updated_at) ? cur : best), docs[0]) : null
+  const getDocDate = (d: any) => d.archived_at ?? d.updated_at ?? d.created_at ?? null
+  const lastDoc = docs.length ? docs.reduce((best, cur) => {
+    const bestDate = getDocDate(best)
+    const curDate = getDocDate(cur)
+    if (!bestDate) return cur
+    if (!curDate) return best
+    return new Date(curDate) > new Date(bestDate) ? cur : best
+  }, docs[0]) : null
 
   // Timeline events (simple, built from available data)
   const events: { date?: string | null; title: string; description?: string }[] = []
@@ -182,9 +257,9 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
           <div className="flex items-center gap-2">{renderStatusBadge()}{renderPaymentBadge()}</div>
           <div className="flex items-center gap-2">
             <a href={`mailto:${dossier.email ?? ''}`} className="inline-flex items-center gap-2 h-9 px-3 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 hover:bg-gray-50 shadow-sm"> <Mail size={14} /> Email</a>
-            <button type="button" className="inline-flex items-center gap-2 h-9 px-3 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 hover:bg-gray-50 shadow-sm"><Download size={14} /> Télécharger ZIP</button>
+            <button type="button" onClick={handleDownloadZip} disabled={zipDownloading} className="inline-flex items-center gap-2 h-9 px-3 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 hover:bg-gray-50 shadow-sm"> <Download size={14} /> {zipDownloading ? 'Téléchargement…' : 'Télécharger ZIP'}</button>
             <a href={"#"} className="inline-flex items-center gap-2 h-9 px-3 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 hover:bg-gray-50 shadow-sm"><CreditCard size={14} /> Paiement</a>
-            <button type="button" className="inline-flex items-center gap-2 h-9 px-3 rounded-lg border border-gray-200 bg-white text-sm text-gray-400 hover:bg-red-50 hover:text-red-500"> <Archive size={14} /> Archiver</button>
+            <button type="button" onClick={openArchiveModal} className="inline-flex items-center gap-2 h-9 px-3 rounded-lg border border-gray-200 bg-white text-sm text-gray-400 hover:bg-red-50 hover:text-red-500"> <Archive size={14} /> Archiver</button>
           </div>
         </div>
       </div>
@@ -194,15 +269,12 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
           <ProjectCard dossier={dossier} />
 
           <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-6">
-            <div className="flex items-center justify-between mb-5 pb-4 border-b border-gray-100">
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0 text-indigo-600"><svg className="w-4 h-4" /></div>
+              <div className="flex items-center gap-2.5 mb-5 pb-4 border-b border-gray-100">
+                <div className="w-7 h-7 rounded-lg bg-[var(--eh-primary)] flex items-center justify-center shrink-0 text-white">
+                  <FileText size={14} />
+                </div>
                 <h3 className="text-sm font-semibold text-gray-800">Documents</h3>
               </div>
-              <button type="button" className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-gray-200 bg-white text-xs font-medium text-gray-600 hover:bg-gray-50 shadow-sm">
-                <Download size={12} /> Tout télécharger
-              </button>
-            </div>
             <DocumentList numero={dossier.numero_dossier} items={docs} />
           </div>
 
@@ -304,6 +376,39 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
           </div>
         </div>
       </div>
+
+      {showArchiveModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={closeArchiveModal} />
+          <div className="relative bg-white rounded-lg shadow-lg max-w-lg w-full p-6 z-10">
+            <h3 className="text-lg font-semibold mb-2">Archiver les documents ?</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Cette opération supprimera définitivement les documents du stockage Supabase afin de libérer de l'espace disque. Les informations du dossier seront conservées.
+              En revanche les documents ne pourront plus être : prévisualisés, téléchargés, restaurés automatiquement.
+              Nous vous recommandons fortement de télécharger l'archive ZIP du dossier avant de continuer.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={handleDownloadZip}
+                className="inline-flex items-center px-3 py-2 rounded bg-white border text-sm"
+                disabled={zipDownloading}
+              >
+                {zipDownloading ? 'Téléchargement…' : 'Télécharger le dossier ZIP'}
+              </button>
+              <button type="button" onClick={closeArchiveModal} className="inline-flex items-center px-3 py-2 rounded bg-gray-50 border text-sm">Annuler</button>
+              <button
+                type="button"
+                onClick={handleConfirmArchive}
+                disabled={archiving}
+                className="inline-flex items-center px-3 py-2 rounded bg-red-600 text-white text-sm disabled:opacity-60"
+              >
+                {archiving ? 'Archivage…' : 'Archiver les documents'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

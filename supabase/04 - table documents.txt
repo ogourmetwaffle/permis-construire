@@ -14,3 +14,12 @@ create table public.documents (
 
     created_at timestamp default now()
 );
+
+
+-- Ajout de la date d'archivage des documents
+ALTER TABLE public.documents
+ADD COLUMN archived_at TIMESTAMPTZ NULL;
+
+-- Index pour accélérer les recherches sur les documents actifs/archivés
+CREATE INDEX IF NOT EXISTS idx_documents_archived_at
+ON public.documents (archived_at);

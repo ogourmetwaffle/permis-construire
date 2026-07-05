@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server'
 import supabaseAdmin from '@/lib/supabase-admin'
 import { verifySupabaseToken } from '@/lib/server/verifySupabaseToken'
 
+// Return documents from DB for a dossier number. If a file is not archived
+// (documents.archived_at IS NULL) we attempt to create a signed URL so the UI
+// can preview/download. If archived, url will be null and archived_at set.
 export async function GET(req: Request) {
   const auth = req.headers.get('authorization')
   const { user } = await verifySupabaseToken(auth)
@@ -12,42 +15,43 @@ export async function GET(req: Request) {
     const numero = url.searchParams.get('numero')
     if (!numero) return NextResponse.json({ error: 'Missing numero' }, { status: 400 })
 
-    const prefix = `${numero}/`
-    const { data, error } = await supabaseAdmin.storage.from('documents').list(prefix, { limit: 100 })
-    if (error) {
-      console.error('list docs', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+    // Find dossier id from numero
+    const { data: dossiers, error: dErr } = await supabaseAdmin.from('dossiers').select('id').eq('numero_dossier', numero).limit(1)
+    if (dErr) {
+      console.error('lookup dossier error', dErr)
+      return NextResponse.json({ error: dErr.message }, { status: 500 })
+    }
+    const dossier = Array.isArray(dossiers) && dossiers.length ? dossiers[0] : null
+    if (!dossier) return NextResponse.json({ ok: true, items: [] })
+
+    const { data: docs, error: docsErr } = await supabaseAdmin.from('documents').select('*').eq('dossier_id', dossier.id)
+    if (docsErr) {
+      console.error('documents query error', docsErr)
+      return NextResponse.json({ error: docsErr.message }, { status: 500 })
     }
 
     const expiresIn = Number(url.searchParams.get('expires')) || 60 * 60
 
     const items = await Promise.all(
-      (data || []).map(async (item: any) => {
-        const path = `${numero}/${item.name}`
-        const { data: signed, error: signedErr } = await supabaseAdmin.storage.from('documents').createSignedUrl(path, expiresIn)
-        if (signedErr) console.error('createSignedUrl error', signedErr)
-
-        let size = item.size
-        if (typeof size !== 'number' || !Number.isFinite(size)) {
-          if (signed?.signedUrl) {
-            try {
-              const head = await fetch(signed.signedUrl, { method: 'HEAD' })
-              const cl = head.headers.get('content-length')
-              if (cl) {
-                const parsed = Number(cl)
-                if (Number.isFinite(parsed)) size = parsed
-              }
-            } catch (e) {
-              console.error('failed to fetch HEAD for signed url', e)
-            }
+      (docs || []).map(async (doc: any) => {
+        let signedUrl: string | null = null
+        if (!doc.archived_at && doc.chemin_storage) {
+          try {
+            const { data: signed, error: signedErr } = await supabaseAdmin.storage.from('documents').createSignedUrl(doc.chemin_storage, expiresIn)
+            if (!signedErr && signed?.signedUrl) signedUrl = signed.signedUrl
+          } catch (e) {
+            console.error('createSignedUrl error', e)
           }
         }
 
         return {
-          name: item.name,
-          size,
-          updated_at: item.updated_at,
-          url: signed?.signedUrl || null,
+          id: doc.id,
+          name: doc.nom_fichier,
+          size: doc.taille,
+          created_at: doc.created_at,
+          archived_at: doc.archived_at || null,
+          chemin_storage: doc.chemin_storage || null,
+          url: signedUrl,
         }
       })
     )

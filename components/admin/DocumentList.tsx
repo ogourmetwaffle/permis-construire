@@ -11,9 +11,13 @@ const iconFor = (name: string) => {
 }
 
 export type DocItem = {
+  id?: number | string
   name: string
   size: number
-  updated_at: string
+  updated_at?: string
+  created_at?: string
+  archived_at?: string | null
+  chemin_storage?: string | null
   url?: string | null
 }
 
@@ -153,8 +157,8 @@ export default function DocumentList({ numero, items }: { numero?: string; items
           {/* Info */}
           <div className="min-w-0 flex-1">
             <div className="text-sm font-medium text-gray-800 truncate">{d.name}</div>
-            <div className="flex items-center gap-2 mt-0.5">
-              <span className="text-[11px] text-gray-400">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2 mt-0.5">
+              <div className="text-[11px] text-gray-400">
                 {(() => {
                   const sizeNum = Number(d.size)
                   if (Number.isFinite(sizeNum) && sizeNum > 0) {
@@ -162,34 +166,51 @@ export default function DocumentList({ numero, items }: { numero?: string; items
                   }
                   return '—'
                 })()}
-              </span>
-              <span className="text-gray-200 text-[10px]">•</span>
-              <span className="text-[11px] text-gray-400">{new Date(d.updated_at).toLocaleDateString('fr-FR')}</span>
+              </div>
+              <div className="text-gray-200 text-[10px] hidden sm:block">•</div>
+              <div className="text-[11px] text-gray-400">
+                {(() => {
+                  const date = d.archived_at ?? d.updated_at ?? d.created_at
+                  return date ? new Date(date).toLocaleDateString('fr-FR') : '—'
+                })()}
+              </div>
+              {d.archived_at && (
+                <div className="mt-1 sm:mt-0 sm:ml-2 inline-flex items-center gap-2 text-xs text-gray-500">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded bg-gray-100 text-gray-700">🗄 Archivé</span>
+                  <span className="text-[11px] text-gray-400">Supprimé du stockage</span>
+                </div>
+              )}
             </div>
           </div>
           {/* Actions */}
           <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button
-              type="button"
-              onClick={() => handleOpen(d.url ?? undefined)}
-              className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-xs font-medium text-indigo-600 hover:bg-indigo-100 transition-colors cursor-pointer"
-            >
-              <EyeIcon size={13} />Voir
-            </button>
-            {(() => {
-              const dlKey = d.url ?? `${numero}-${i}-${d.name}`
-              return (
+            {!d.archived_at && d.url ? (
+              <>
                 <button
                   type="button"
-                  onClick={() => handleDownload(d.url ?? undefined, d.name, dlKey)}
-                  disabled={!!downloading[dlKey]}
-                  className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => handleOpen(d.url ?? undefined)}
+                  className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-xs font-medium text-indigo-600 hover:bg-indigo-100 transition-colors cursor-pointer"
                 >
-                  <DownloadIcon size={13} />
-                  {downloading[dlKey] ? '…' : 'DL'}
+                  <EyeIcon size={13} />Voir
                 </button>
-              )
-            })()}
+                {(() => {
+                  const dlKey = d.url ?? `${numero}-${i}-${d.name}`
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => handleDownload(d.url ?? undefined, d.name, dlKey)}
+                      disabled={!!downloading[dlKey]}
+                      className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <DownloadIcon size={13} />
+                      {downloading[dlKey] ? '…' : 'DL'}
+                    </button>
+                  )
+                })()}
+              </>
+            ) : (
+              <div className="inline-flex items-center px-3 py-1 rounded-md bg-gray-50 text-xs text-gray-500">Document archivé</div>
+            )}
           </div>
         </div>
       ))}
