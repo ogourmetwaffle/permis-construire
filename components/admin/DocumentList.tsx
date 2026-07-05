@@ -118,31 +118,56 @@ export default function DocumentList({ numero }: { numero?: string }) {
     }
   }
 
-  if (!numero) return <div className="text-sm text-gray-500">Aucun numéro de dossier fourni.</div>
+  if (!numero) return <div className="text-sm text-gray-400 py-2">Aucun numéro de dossier fourni.</div>
 
   return (
-    <div className="space-y-2">
-      {loading && <div className="text-sm text-gray-500">Chargement des documents...</div>}
-      {!loading && docs.length === 0 && <div className="text-sm text-gray-500">Aucun document trouvé.</div>}
+    <div className="space-y-1.5">
+      {loading && (
+        <div className="flex items-center gap-2 py-4 text-sm text-gray-400">
+          <div className="w-4 h-4 border-2 border-gray-200 border-t-indigo-500 rounded-full animate-spin" />
+          Chargement des documents…
+        </div>
+      )}
+      {!loading && docs.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-8 text-center">
+          <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center mb-3">
+            <FileIcon size={18} className="text-gray-300" />
+          </div>
+          <p className="text-sm text-gray-400">Aucun document trouvé</p>
+        </div>
+      )}
       {docs.map((d, i) => (
-        <div key={i} className="flex items-center justify-between p-2 border rounded">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-8 h-8 bg-indigo-50 text-indigo-600 rounded flex items-center justify-center">{iconFor(d.name)}</div>
-            <div className="min-w-0">
-              <div className="text-sm text-gray-800 truncate max-w-50">{d.name}</div>
-              <div className="text-xs text-gray-500">
+        <div key={i} className="group flex items-center gap-3 px-3 py-3 rounded-xl border border-gray-100 hover:border-indigo-100 hover:bg-indigo-50/30 transition-colors">
+          {/* Icon */}
+          <div className="w-9 h-9 bg-indigo-50 text-indigo-500 rounded-lg flex items-center justify-center shrink-0">
+            {iconFor(d.name)}
+          </div>
+          {/* Info */}
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-medium text-gray-800 truncate">{d.name}</div>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="text-[11px] text-gray-400">
                 {(() => {
                   const sizeNum = Number(d.size)
                   if (Number.isFinite(sizeNum) && sizeNum > 0) {
-                    return `${(sizeNum / 1024 / 1024).toFixed(2)} MB`
+                    return `${(sizeNum / 1024 / 1024).toFixed(2)} Mo`
                   }
-                  return '-' 
-                })()} • {new Date(d.updated_at).toLocaleDateString()}
-              </div>
+                  return '—'
+                })()}
+              </span>
+              <span className="text-gray-200 text-[10px]">•</span>
+              <span className="text-[11px] text-gray-400">{new Date(d.updated_at).toLocaleDateString('fr-FR')}</span>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button type="button" onClick={() => handleOpen(d.url ?? undefined)} className="text-sm text-blue-600 flex items-center gap-2 cursor-pointer"><EyeIcon size={16}/>Prévisualiser</button>
+          {/* Actions */}
+          <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              type="button"
+              onClick={() => handleOpen(d.url ?? undefined)}
+              className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-xs font-medium text-indigo-600 hover:bg-indigo-100 transition-colors cursor-pointer"
+            >
+              <EyeIcon size={13} />Voir
+            </button>
             {(() => {
               const dlKey = d.url ?? `${numero}-${i}-${d.name}`
               return (
@@ -150,10 +175,10 @@ export default function DocumentList({ numero }: { numero?: string }) {
                   type="button"
                   onClick={() => handleDownload(d.url ?? undefined, d.name, dlKey)}
                   disabled={!!downloading[dlKey]}
-                  className="text-sm text-gray-700 flex items-center gap-1 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <DownloadIcon size={16}/>
-                  {downloading[dlKey] ? 'Téléchargement...' : 'Télécharger'}
+                  <DownloadIcon size={13} />
+                  {downloading[dlKey] ? '…' : 'DL'}
                 </button>
               )
             })()}

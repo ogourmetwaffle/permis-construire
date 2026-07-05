@@ -23,9 +23,9 @@ export default function Modal({ open, onClose, children, title }: { open: boolea
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
-      <div role="dialog" aria-modal="true" className="relative w-[90%] max-w-5xl mx-auto">
-        <div className="transform transition-all duration-200 scale-100 bg-white rounded-2xl shadow-2xl ring-1 ring-black/5 overflow-hidden">
-          <div className="flex items-center justify-between px-6 py-4 border-b">
+      <div role="dialog" aria-modal="true" className="relative w-[90vw] max-w-[1500px] mx-auto">
+        <div className="transform transition-all duration-200 scale-100 bg-white rounded-2xl shadow-2xl ring-1 ring-black/5 overflow-hidden flex flex-col max-h-[90vh]">
+          <div className="flex items-center justify-between px-6 py-4 border-b shrink-0">
             <div>
               <div className="text-sm text-gray-500">{title}</div>
             </div>
@@ -34,7 +34,7 @@ export default function Modal({ open, onClose, children, title }: { open: boolea
             </button>
           </div>
 
-          <div className="p-6 max-h-[70vh] overflow-auto">{children}</div>
+          <div className="flex-1 overflow-y-auto p-6">{children}</div>
         </div>
       </div>
     </div>
