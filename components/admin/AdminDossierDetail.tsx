@@ -257,7 +257,16 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
           <div className="flex items-center gap-2">{renderStatusBadge()}{renderPaymentBadge()}</div>
           <div className="flex items-center gap-2">
             <a href={`mailto:${dossier.email ?? ''}`} className="inline-flex items-center gap-2 h-9 px-3 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 hover:bg-gray-50 shadow-sm"> <Mail size={14} /> Email</a>
-            <button type="button" onClick={handleDownloadZip} disabled={zipDownloading} className="inline-flex items-center gap-2 h-9 px-3 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 hover:bg-gray-50 shadow-sm"> <Download size={14} /> {zipDownloading ? 'Téléchargement…' : 'Télécharger ZIP'}</button>
+            <button
+              type="button"
+              onClick={handleDownloadZip}
+              disabled={zipDownloading}
+              aria-busy={zipDownloading}
+              className="inline-flex items-center gap-2 h-9 px-3 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 hover:bg-gray-50 shadow-sm"
+            >
+              <Download size={14} className={zipDownloading ? 'animate-spin' : ''} />
+              {zipDownloading ? 'Téléchargement…' : 'Télécharger ZIP'}
+            </button>
             <a href={"#"} className="inline-flex items-center gap-2 h-9 px-3 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 hover:bg-gray-50 shadow-sm"><CreditCard size={14} /> Paiement</a>
             <button type="button" onClick={openArchiveModal} className="inline-flex items-center gap-2 h-9 px-3 rounded-lg border border-gray-200 bg-white text-sm text-gray-400 hover:bg-red-50 hover:text-red-500"> <Archive size={14} /> Archiver</button>
           </div>
@@ -391,9 +400,11 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
               <button
                 type="button"
                 onClick={handleDownloadZip}
-                className="inline-flex items-center px-3 py-2 rounded bg-white border text-sm"
+                className="inline-flex items-center gap-2 px-3 py-2 rounded bg-white border text-sm"
                 disabled={zipDownloading}
+                aria-busy={zipDownloading}
               >
+                <Download size={14} className={zipDownloading ? 'animate-spin' : ''} />
                 {zipDownloading ? 'Téléchargement…' : 'Télécharger le dossier ZIP'}
               </button>
               <button type="button" onClick={closeArchiveModal} className="inline-flex items-center px-3 py-2 rounded bg-gray-50 border text-sm">Annuler</button>
