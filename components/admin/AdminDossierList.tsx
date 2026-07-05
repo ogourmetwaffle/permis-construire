@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from 'react'
 import AdminDossierRow from './AdminDossierRow'
-import AdminDossierDetail from './AdminDossierDetail'
-import Modal from './Modal'
 import { supabase } from '@/lib/supabase'
 import { STATUS_ORDER, getStatusConfig, normalizeStatus } from '@/lib/status'
 
@@ -88,21 +86,8 @@ export default function AdminDossierList({ dossiers: propDossiers, selectedId, o
   const start = (page - 1) * pageSize
   const paginated = filtered.slice(start, start + pageSize)
 
-  const [localSelectedId, setLocalSelectedId] = useState<string | null>(selectedId ?? null)
-
   const handleOpen = (id: string) => {
     if (onSelect) return onSelect(id)
-    setLocalSelectedId(id)
-  }
-
-  const handleClose = async () => {
-    // Refresh the list when closing the modal so the panel reflects updates
-    try {
-      await fetchDossiers()
-    } catch (e) {
-      console.error('error refreshing dossiers on modal close', e)
-    }
-    setLocalSelectedId(null)
   }
 
   // reset to first page when filters change
@@ -151,7 +136,7 @@ export default function AdminDossierList({ dossiers: propDossiers, selectedId, o
         <div>
           {loading && <div className="p-8 text-sm text-slate-400 text-center">Chargement...</div>}
           {!loading && paginated.map((d) => (
-            <AdminDossierRow key={d.id} dossier={d} onOpen={handleOpen} selectedId={selectedId ?? localSelectedId ?? undefined} />
+            <AdminDossierRow key={d.id} dossier={d} onOpen={onSelect ? handleOpen : undefined} />
           ))}
           {!loading && filtered.length === 0 && (
             <div className="p-10 text-center">
@@ -180,11 +165,7 @@ export default function AdminDossierList({ dossiers: propDossiers, selectedId, o
           </div>
         </div>
       </div>
-      {localSelectedId && (
-        <Modal open={true} onClose={handleClose} title={`Détails dossier`}>
-          <AdminDossierDetail id={localSelectedId} onUpdated={fetchDossiers} />
-        </Modal>
-      )}
+      {/* Modal removed: navigation now uses dedicated route /admin/dossiers/[id] */}
     </div>
   )
 }

@@ -2,17 +2,14 @@
 
 import React, { useEffect, useState } from 'react'
 import AdminDossierList from './AdminDossierList'
-import AdminDossierDetail from './AdminDossierDetail'
 import AdminStats from './AdminStats'
 import StorageCard from './StorageCard'
 import { supabase } from '@/lib/supabase'
-import { normalizeStatus, getStatusConfig, STATUS } from '@/lib/status'
+import { normalizeStatus, STATUS } from '@/lib/status'
 
 export default function AdminPanel() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [dossiers, setDossiers] = useState<any[]>([])
-  const [selectedId, setSelectedId] = useState<string | undefined>(undefined)
-  const [showModal, setShowModal] = useState(false)
 
   const fetchDossiers = async () => {
     try {
@@ -64,30 +61,8 @@ export default function AdminPanel() {
       </div>
 
       <div>
-        <AdminDossierList dossiers={dossiers} selectedId={selectedId} onSelect={(id) => { setSelectedId(id); setShowModal(true); }} />
+        <AdminDossierList dossiers={dossiers} />
       </div>
-
-      {showModal && selectedId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowModal(false)} />
-          <div className="relative w-full max-w-4xl">
-            <div className="bg-white rounded-2xl shadow-2xl overflow-auto max-h-[90vh]">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-                <div className="text-base font-semibold text-slate-800">Détail du dossier</div>
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="text-slate-400 hover:text-slate-700 text-sm px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors"
-                >
-                  Fermer
-                </button>
-              </div>
-              <div className="p-6">
-                <AdminDossierDetail id={selectedId!} onUpdated={fetchDossiers} />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

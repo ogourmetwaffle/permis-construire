@@ -31,38 +31,46 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
   useEffect(() => {
     const fetchDossier = async () => {
       setLoading(true)
+      console.log('[AdminDossierDetail] fetchDossier start for id=', id)
       try {
         const session = await supabase.auth.getSession()
         const token = session.data?.session?.access_token
+        console.log('[AdminDossierDetail] session fetched, token present=', !!token)
         if (!token) {
-          console.error('No session token')
+          console.error('[AdminDossierDetail] No session token')
           setDossier(null)
           setLoading(false)
           return
         }
 
         const res = await fetch('/api/admin/dossiers', { headers: { Authorization: `Bearer ${token}` } })
+        console.log('[AdminDossierDetail] fetch /api/admin/dossiers status=', res.status)
         if (res.status === 401) {
-          console.error('Unauthorized when fetching dossier')
+          console.error('[AdminDossierDetail] Unauthorized when fetching dossier')
           setDossier(null)
           setLoading(false)
           return
         }
 
         const json = await res.json()
+        console.log('[AdminDossierDetail] api response ok=', json?.ok, 'dataLength=', Array.isArray(json?.data) ? json.data.length : 'n/a')
         if (!json.ok) {
-          console.error('api admin dossiers error', json.error)
+          console.error('[AdminDossierDetail] api admin dossiers error', json.error)
           setDossier(null)
           setLoading(false)
           return
         }
 
         const all: Dossier[] = json.data || []
+        console.log('[AdminDossierDetail] received dossiers count=', all.length, 'sample=', all.slice(0,3).map(d=>({id:d.id, numero_dossier:d.numero_dossier})))
         // Support fetching by numeric id or by numero_dossier (PE-...)
+        const searchBy = (typeof id === 'string' && id.startsWith('PE-')) ? 'numero_dossier' : 'id'
+        console.log('[AdminDossierDetail] searching by', searchBy, 'for value=', id)
         const found = all.find((d) => (typeof id === 'string' && id.startsWith('PE-') ? d.numero_dossier === id : String(d.id) === String(id)))
+        console.log('[AdminDossierDetail] found=', found)
         setDossier(found || null)
       } catch (err) {
-        console.error('fetch dossier', err)
+        console.error('[AdminDossierDetail] fetch dossier error', err)
         setDossier(null)
       }
       setLoading(false)
