@@ -4,7 +4,8 @@ import React, { useEffect, useState } from 'react'
 import DocumentList, { DocItem } from './DocumentList'
 import ProjectCard from './ProjectCard'
 import Timeline from './Timeline'
-import { CheckCircle, XCircle, Mail, Download, CreditCard, Archive, Tag, Clock, User, ArrowLeft, FileText, Banknote } from 'lucide-react'
+import { CheckCircle, XCircle, Mail, Download, CreditCard, Archive, Tag, Clock, User, ArrowLeft, FileText, Banknote, Edit2 } from 'lucide-react'
+import EditDossierDialog from './EditDossierDialog'
 import StatusSelector from './StatusSelector'
 import { supabase } from '@/lib/supabase'
 import { getStatusConfig, normalizeStatus } from '@/lib/status'
@@ -42,6 +43,9 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
   const [showArchiveModal, setShowArchiveModal] = useState(false)
   const [archiving, setArchiving] = useState(false)
   const [zipDownloading, setZipDownloading] = useState(false)
+  const [showEditDialog, setShowEditDialog] = useState(false)
+  const [editSection, setEditSection] = useState<'client' | 'project'>('client')
+  const [savedBadge, setSavedBadge] = useState<{ client?: boolean; project?: boolean }>({})
 
   useEffect(() => {
     const fetchDossier = async () => {
@@ -121,6 +125,20 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
 
   const openArchiveModal = () => setShowArchiveModal(true)
   const closeArchiveModal = () => setShowArchiveModal(false)
+
+  const openEdit = (section: 'client' | 'project') => {
+    setEditSection(section)
+    setShowEditDialog(true)
+  }
+  const closeEdit = () => setShowEditDialog(false)
+
+  const handleSaved = (updated: any) => {
+    // merge updated fields into dossier state
+    setDossier((prev) => ({ ...(prev || {}), ...updated }))
+    // show transient badge for the section
+    setSavedBadge((s) => ({ ...s, [editSection]: true }))
+    setTimeout(() => setSavedBadge((s) => ({ ...s, [editSection]: false })), 2000)
+  }
 
   const handleDownloadZip = async () => {
     if (!dossier) return
@@ -312,14 +330,25 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
               {zipDownloading ? 'Téléchargement…' : 'Télécharger ZIP'}
             </button>
             <a href={"#"} className="inline-flex items-center gap-2 h-9 px-3 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-150 shadow-sm"><CreditCard size={14} /> Paiement</a>
-            <button type="button" onClick={openArchiveModal} className="inline-flex items-center gap-2 h-9 px-3 rounded-lg border border-gray-200 bg-white text-sm text-gray-400 hover:bg-red-100 hover:text-red-600 transition-colors duration-150"> <Archive size={14} /> Archiver</button>
+            <button
+              type="button"
+              onClick={hasAvailableDocs ? openArchiveModal : undefined}
+              disabled={!hasAvailableDocs}
+              title={!hasAvailableDocs ? 'Tous les documents sont déjà archivés' : undefined}
+              className={`inline-flex items-center gap-2 h-9 px-3 rounded-lg border text-sm transition-colors duration-150 ${!hasAvailableDocs ? 'bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed' : 'bg-white text-gray-400 border-gray-200 hover:bg-red-100 hover:text-red-600'}`}
+            >
+              <Archive size={14} /> Archiver
+            </button>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 items-start">
         <div className="space-y-6 min-w-0">
-          <ProjectCard dossier={dossier} />
+          <div className="relative">
+            <ProjectCard dossier={dossier} onEdit={() => openEdit('project')} />
+            {savedBadge.project && <div className="absolute top-2 right-2 text-sm text-green-700 bg-green-50 px-2 py-1 rounded">Dernière modification enregistrée ✓</div>}
+          </div>
 
           <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-6">
               <div className="flex items-center gap-2.5 mb-5 pb-4 border-b border-gray-100">
@@ -380,9 +409,32 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
           <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-6">
             <div className="flex items-center gap-2.5 mb-5 pb-4 border-b border-gray-100">
               <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center shrink-0"><User size={14} className="text-blue-600" /></div>
-              <h3 className="text-sm font-semibold text-gray-800">Informations client</h3>
+              <div className="flex items-center gap-3">
+                <h3 className="text-sm font-semibold text-gray-800">Informations client</h3>
+                <button type="button" onClick={() => openEdit('client')} title="Modifier" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-gray-500 hover:bg-gray-100"><Edit2 size={14} /></button>
+                {savedBadge.client && <div className="text-sm text-green-700 bg-green-50 px-2 py-0.5 rounded">Dernière modification enregistrée ✓</div>}
+              </div>
             </div>
             <div className="text-sm text-gray-800 space-y-3">
+                <div>
+                    <div className="text-[10px] text-gray-400 uppercase tracking-wider">Type de client</div>
+                    {(() => {
+                      const raw = dossier.type_client || ''
+                      const t = raw.toLowerCase()
+                      if (!t) return <div className="font-medium">—</div>
+                      if (t.includes('pro') || t.includes('professionnel')) {
+                        return (
+                          <span className="inline-flex items-center h-6 px-2 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-100">Professionnel</span>
+                        )
+                      }
+                      if (t.includes('part') || t.includes('particulier')) {
+                        return (
+                          <span className="inline-flex items-center h-6 px-2 rounded-full text-xs font-semibold bg-green-50 text-green-700 ring-1 ring-inset ring-green-100">Particulier</span>
+                        )
+                      }
+                      return <div className="font-medium">{dossier.type_client}</div>
+                    })()}
+                </div>
               <div>
                 <div className="text-[10px] text-gray-400 uppercase tracking-wider">Nom</div>
                 <div className="font-medium">{dossier.nom} {dossier.prenom}</div>
@@ -466,14 +518,20 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
               </div>
 
               <div>
-                <button type="button" onClick={handleConfirmArchive} disabled={archiving} className="inline-flex items-center gap-2 px-4 py-2 rounded bg-red-600 text-white text-sm hover:bg-red-700 transition-colors duration-150 disabled:opacity-60">
-                  {archiving ? 'Archivage…' : 'Archiver les documents'}
-                </button>
+                <div className="flex items-center gap-3">
+                  {!hasAvailableDocs && (
+                    <div className="text-sm text-gray-600">Aucun fichier non-archivé disponible.</div>
+                  )}
+                  <button type="button" onClick={handleConfirmArchive} disabled={!hasAvailableDocs || archiving} className={`inline-flex items-center gap-2 px-4 py-2 rounded text-white text-sm transition-colors duration-150 ${!hasAvailableDocs ? 'bg-gray-300 text-gray-700 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}>
+                    {archiving ? 'Archivage…' : 'Archiver les documents'}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
       )}
+      <EditDossierDialog open={showEditDialog} onClose={closeEdit} dossier={dossier} section={editSection} onSaved={handleSaved} />
     </div>
   )
 }

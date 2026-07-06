@@ -1,9 +1,9 @@
 "use client"
 
 import React from 'react'
-import { FileText, MapPin, Layers, Hash } from 'lucide-react'
+import { FileText, MapPin, Layers, Hash, Edit } from 'lucide-react'
 
-export default function ProjectCard({ dossier }: { dossier: any }) {
+export default function ProjectCard({ dossier, onEdit }: { dossier: any; onEdit?: () => void }) {
   if (!dossier) return null
 
   const rows: Array<{ label: string; value?: React.ReactNode }> = [
@@ -25,6 +25,13 @@ export default function ProjectCard({ dossier }: { dossier: any }) {
             <div className="text-xs text-gray-500 mt-0.5">Fiche projet principale</div>
           </div>
         </div>
+        {onEdit && (
+          <div>
+            <button type="button" onClick={onEdit} title="Modifier" className="inline-flex items-center justify-center w-8 h-8 rounded-md text-gray-500 hover:bg-gray-100">
+              <Edit size={14} />
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
