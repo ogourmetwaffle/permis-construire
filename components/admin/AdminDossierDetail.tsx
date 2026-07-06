@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react'
 import DocumentList, { DocItem } from './DocumentList'
 import ProjectCard from './ProjectCard'
 import Timeline from './Timeline'
-import { CheckCircle, XCircle, Mail, Download, CreditCard, Archive, Tag, Clock, User, ArrowLeft, FileText } from 'lucide-react'
+import { CheckCircle, XCircle, Mail, Download, CreditCard, Archive, Tag, Clock, User, ArrowLeft, FileText, Banknote } from 'lucide-react'
 import StatusSelector from './StatusSelector'
 import { supabase } from '@/lib/supabase'
 import { getStatusConfig, normalizeStatus } from '@/lib/status'
@@ -214,6 +214,28 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
     )
   }
 
+  const renderPaymentMode = () => {
+    const val = (dossier.mode_paiement || '').toLowerCase()
+    if (!val) return '—'
+    if (val.includes('carte') || val.includes('card') || val.includes('cb')) {
+      return (
+        <span className="inline-flex items-center gap-2" aria-label="Paiement par carte">
+          <CreditCard width={16} height={16} aria-hidden="true" className="text-gray-800" />
+          <span className="sr-only">Paiement par carte</span>
+        </span>
+      )
+    }
+    if (val.includes('virement') || val.includes('transfer') || val.includes('bank')) {
+      return (
+        <span className="inline-flex items-center gap-2" aria-label="Paiement par virement">
+          <Banknote width={16} height={16} aria-hidden="true" className="text-gray-800" />
+          <span className="sr-only">Paiement par virement</span>
+        </span>
+      )
+    }
+    return dossier.mode_paiement
+  }
+
   // Documents stats
   const docCount = docs.length
   const totalBytes = docs.reduce((acc, d) => acc + (Number(d.size) || 0), 0)
@@ -230,11 +252,19 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
     return new Date(curDate) > new Date(bestDate) ? cur : best
   }, docs[0]) : null
 
+  // Archive info: compute latest archived_at across documents
+  const archivedDates = docs.map(d => d.archived_at).filter(Boolean) as string[]
+  const latestArchivedAt = archivedDates.length ? new Date(Math.max(...archivedDates.map(s => new Date(s).getTime()))) : null
+
   // Timeline events (simple, built from available data)
   const events: { date?: string | null; title: string; description?: string }[] = []
   if (dossier.created_at) events.push({ date: dossier.created_at, title: 'Dossier créé', description: `Dossier ${dossier.numero_dossier} déposé en ligne.` })
   if (dossier.paiement_effectue) events.push({ date: dossier.updated_at || null, title: 'Paiement reçu', description: `Paiement de ${dossier.montant ?? 0} €` })
   if (docCount > 0) events.push({ date: lastDoc?.updated_at || null, title: `${docCount} document(s) ajouté(s)`, description: lastDoc?.name })
+  // If there is a latest archived timestamp, add it to the timeline so there's a visible trace
+  if (latestArchivedAt) {
+    events.push({ date: latestArchivedAt.toISOString(), title: 'Documents archivés', description: `Date et heure d'archivage ${latestArchivedAt.toLocaleString('fr-FR')}` })
+  }
 
   return (
     <div className="w-full">
@@ -318,7 +348,7 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
               </div>
               <div>
                 <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Mode</div>
-                <div className="text-sm text-gray-800">{dossier.mode_paiement || '—'}</div>
+                <div className="text-sm text-gray-800">{renderPaymentMode()}</div>
               </div>
             </div>
           </div>
@@ -377,6 +407,7 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
                 <span className="text-xs text-gray-500">Dernier document</span>
                 <span className="text-xs font-medium text-gray-800">{lastDoc ? lastDoc.name : '—'}</span>
               </div>
+              {/* Archive date moved to Timeline for traceability */}
               <div className="flex items-center justify-between py-2.5">
                 <span className="text-xs text-gray-500">Dernière modification</span>
                 <span className="text-xs font-medium text-gray-800">{dossier.updated_at ? new Date(dossier.updated_at).toLocaleDateString('fr-FR') : '—'}</span>

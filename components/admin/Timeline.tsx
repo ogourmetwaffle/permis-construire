@@ -22,7 +22,7 @@ export default function Timeline({ events }: { events?: Event[] }) {
         <div key={idx} className="relative mb-6 last:mb-0">
           <div className="absolute -left-6 top-1 w-3 h-3 rounded-full bg-blue-500 ring-2 ring-white shadow-sm" />
           <div className="text-sm font-semibold text-gray-800 mb-0.5">{e.title}</div>
-          {e.date && <div className="text-xs text-gray-400 mb-1.5">{new Date(e.date).toLocaleDateString('fr-FR')}</div>}
+          {e.date && <div className="text-xs text-gray-400 mb-1.5">{new Date(e.date).toLocaleString('fr-FR')}</div>}
           {e.description && <p className="text-xs text-gray-500 leading-relaxed">{e.description}</p>}
         </div>
       ))}
