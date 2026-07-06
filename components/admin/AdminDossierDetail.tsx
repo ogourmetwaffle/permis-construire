@@ -221,7 +221,7 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
       return (
         <span className="inline-flex items-center gap-2" aria-label="Paiement par carte">
           <CreditCard width={16} height={16} aria-hidden="true" className="text-gray-800" />
-          <span className="sr-only">Paiement par carte</span>
+          <span className="text-sm text-gray-800">Carte</span>
         </span>
       )
     }
@@ -229,11 +229,15 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
       return (
         <span className="inline-flex items-center gap-2" aria-label="Paiement par virement">
           <Banknote width={16} height={16} aria-hidden="true" className="text-gray-800" />
-          <span className="sr-only">Paiement par virement</span>
+          <span className="text-sm text-gray-800">Virement</span>
         </span>
       )
     }
-    return dossier.mode_paiement
+    return (
+      <span className="inline-flex items-center gap-2">
+        <span className="text-sm text-gray-800">{dossier.mode_paiement}</span>
+      </span>
+    )
   }
 
   // Documents stats
