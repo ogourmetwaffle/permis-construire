@@ -124,6 +124,12 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
 
   const handleDownloadZip = async () => {
     if (!dossier) return
+    // if there are no non-archived documents, avoid requesting the ZIP
+    const hasAvailableDocsLocal = docs.some(d => !d.archived_at)
+    if (!hasAvailableDocsLocal) {
+      alert('Aucun fichier disponible à télécharger.')
+      return
+    }
     try {
       setZipDownloading(true)
       const session = await supabase.auth.getSession()
@@ -260,6 +266,9 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
   const archivedDates = docs.map(d => d.archived_at).filter(Boolean) as string[]
   const latestArchivedAt = archivedDates.length ? new Date(Math.max(...archivedDates.map(s => new Date(s).getTime()))) : null
 
+  // Whether there are any non-archived documents available for ZIP
+  const hasAvailableDocs = docs.some(d => !d.archived_at)
+
   // Timeline events (simple, built from available data)
   const events: { date?: string | null; title: string; description?: string }[] = []
   if (dossier.created_at) events.push({ date: dossier.created_at, title: 'Dossier créé', description: `Dossier ${dossier.numero_dossier} déposé en ligne.` })
@@ -294,9 +303,10 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
             <button
               type="button"
               onClick={handleDownloadZip}
-              disabled={zipDownloading}
+              disabled={!hasAvailableDocs || zipDownloading}
               aria-busy={zipDownloading}
-              className="inline-flex items-center gap-2 h-9 px-3 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-150 shadow-sm"
+              title={!hasAvailableDocs ? 'Aucun fichier disponible' : undefined}
+              className={`inline-flex items-center gap-2 h-9 px-3 rounded-lg border text-sm transition-colors duration-150 shadow-sm ${!hasAvailableDocs || zipDownloading ? 'bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-100'}`}
             >
               <Download size={14} className={zipDownloading ? 'animate-spin' : ''} />
               {zipDownloading ? 'Téléchargement…' : 'Télécharger ZIP'}
@@ -443,9 +453,10 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
                 <button
                   type="button"
                   onClick={handleDownloadZip}
-                  disabled={zipDownloading}
+                  disabled={!hasAvailableDocs || zipDownloading}
                   aria-busy={zipDownloading}
-                  className="inline-flex items-center gap-2 px-3 py-2 rounded border border-gray-200 bg-white text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-150"
+                  title={!hasAvailableDocs ? 'Aucun fichier disponible' : undefined}
+                  className={`inline-flex items-center gap-2 px-3 py-2 rounded border text-sm transition-colors duration-150 ${!hasAvailableDocs || zipDownloading ? 'bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-100'}`}
                 >
                   <Download size={14} className={zipDownloading ? 'animate-spin' : ''} />
                   {zipDownloading ? 'Téléchargement…' : 'Télécharger le dossier ZIP'}
