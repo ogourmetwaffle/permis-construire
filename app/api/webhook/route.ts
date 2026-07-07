@@ -33,27 +33,55 @@ export async function POST(req: Request) {
   const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
   if ((event as { type?: string }).type === 'checkout.session.completed') {
-    const ev = event as { data?: { object?: { id?: string; metadata?: Record<string, string> } }; type?: string }
+    const ev = event as { data?: { object?: any }; type?: string }
     const session = ev.data?.object ?? {}
     const metadata = session.metadata ?? {}
     const dossierId = metadata.dossierId ?? null
 
     if (dossierId && SUPABASE_SERVICE_ROLE_KEY) {
       try {
-        await supabaseAdmin.from('dossiers').update({ paiement_effectue: true, stripe_payment_id: session.id }).eq('id', dossierId)
-        console.log('Dossier updated for', dossierId)
+        // Ensure idempotence: fetch current dossier and only update if not already paid
+        const { data: existing, error: fetchErr } = await supabaseAdmin.from('dossiers').select('paiement_effectue, email, numero_dossier').eq('id', dossierId).single()
+        if (fetchErr) {
+          console.error('Error fetching dossier before payment update', fetchErr)
+        } else if (existing?.paiement_effectue) {
+          console.log('Dossier already marked as paid, skipping update for', dossierId)
+        } else {
+          // Determine a sensible payment reference
+          const paymentRef = session.payment_intent ?? session.id
+          const now = new Date().toISOString()
 
-        // fetch dossier to get email and numero_dossier for notification
-        try {
-          const { data: dossierRow, error: fetchErr } = await supabaseAdmin.from('dossiers').select('email,numero_dossier').eq('id', dossierId).single()
-          if (!fetchErr && dossierRow?.email) {
-            await sendPaymentConfirmationEmail(dossierRow.email, dossierRow.numero_dossier)
+          const updatePayload: Record<string, any> = {
+            paiement_effectue: true,
+            date_paiement: now,
+            reference_paiement: paymentRef ?? session.id,
+            statut: 'NOUVEAU',
           }
-        } catch (err) {
-          console.error('Error fetching dossier for email notification', err)
+          // set mode_paiement to CARTE if empty
+          if (!session.metadata?.mode_paiement) {
+            updatePayload.mode_paiement = 'CARTE'
+          }
+          // preserve existing stripe id if possible
+          if (session.id) updatePayload.stripe_payment_id = session.id
+
+          try {
+            await supabaseAdmin.from('dossiers').update(updatePayload).eq('id', dossierId)
+            console.log('Dossier payment updated for', dossierId)
+
+            // send confirmation email when available
+            try {
+              if (existing?.email) {
+                await sendPaymentConfirmationEmail(existing.email, existing.numero_dossier)
+              }
+            } catch (err) {
+              console.error('Error sending payment confirmation email', err)
+            }
+          } catch (err) {
+            console.error('Error updating dossier payment', err)
+          }
         }
       } catch (err) {
-        console.error('Error updating dossier', err)
+        console.error('Error processing checkout.session.completed', err)
       }
     } else {
       console.warn('No dossierId or SUPABASE_SERVICE_ROLE_KEY not set; cannot mark payment')

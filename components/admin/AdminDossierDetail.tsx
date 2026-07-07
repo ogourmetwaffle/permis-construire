@@ -5,6 +5,8 @@ import DocumentList, { DocItem } from './DocumentList'
 import ProjectCard from './ProjectCard'
 import Timeline from './Timeline'
 import { CheckCircle, XCircle, Mail, Download, CreditCard, Archive, Tag, Clock, User, ArrowLeft, FileText, Banknote, Edit2 } from 'lucide-react'
+import PaymentDialog from './PaymentDialog'
+import { toast } from 'react-hot-toast'
 import EditDossierDialog from './EditDossierDialog'
 import StatusSelector from './StatusSelector'
 import { supabase } from '@/lib/supabase'
@@ -30,6 +32,9 @@ type Dossier = {
   paiement_effectue?: boolean
   statut?: string
   commentaire_admin?: string | null
+  date_paiement?: string | null
+  reference_paiement?: string | null
+  commentaire_paiement?: string | null
   created_at?: string
   updated_at?: string
 }
@@ -41,6 +46,7 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
   const [docs, setDocs] = useState<DocItem[]>([])
   const [docsLoading, setDocsLoading] = useState(false)
   const [showArchiveModal, setShowArchiveModal] = useState(false)
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false)
   const [archiving, setArchiving] = useState(false)
   const [zipDownloading, setZipDownloading] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
@@ -138,6 +144,17 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
     // show transient badge for the section
     setSavedBadge((s) => ({ ...s, [editSection]: true }))
     setTimeout(() => setSavedBadge((s) => ({ ...s, [editSection]: false })), 2000)
+  }
+
+  const handlePaymentSaved = (updated: any) => {
+    setDossier((prev) => ({ ...(prev || {}), ...(updated || {}) }))
+    toast.success('Paiement enregistré')
+    setShowPaymentDialog(false)
+    if (onUpdated) onUpdated()
+    // reload to ensure global state/badges are up-to-date
+    setTimeout(() => {
+      try { window.location.reload() } catch (e) { /* ignore */ }
+    }, 700)
   }
 
   const handleDownloadZip = async () => {
@@ -329,7 +346,17 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
               <Download size={14} className={zipDownloading ? 'animate-spin' : ''} />
               {zipDownloading ? 'Téléchargement…' : 'Télécharger ZIP'}
             </button>
-            <a href={"#"} className="inline-flex items-center gap-2 h-9 px-3 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-150 shadow-sm"><CreditCard size={14} /> Paiement</a>
+            {!dossier.paiement_effectue ? (
+              <button
+                type="button"
+                onClick={() => setShowPaymentDialog(true)}
+                className={`inline-flex items-center gap-2 h-9 px-3 rounded-lg border text-sm transition-colors duration-150 shadow-sm ${dossier.paiement_effectue ? 'bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-100'}`}
+              >
+                <CreditCard size={14} /> Paiement
+              </button>
+            ) : (
+              <span className="inline-flex items-center gap-2 h-9 px-3 rounded-lg bg-green-50 text-green-700 border border-green-100 text-sm"><CheckCircle size={14} /> Paiement confirmé</span>
+            )}
             <button
               type="button"
               onClick={hasAvailableDocs ? openArchiveModal : undefined}
@@ -393,6 +420,24 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
                 <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Mode</div>
                 <div className="text-sm text-gray-800">{renderPaymentMode()}</div>
               </div>
+              {dossier.paiement_effectue && (
+                <div className="mt-3 border-t pt-3 text-sm text-gray-700 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500">Date du paiement</span>
+                    <span className="text-sm font-medium text-gray-800">{dossier.date_paiement ? new Date(dossier.date_paiement).toLocaleDateString('fr-FR') : '—'}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500">Référence</span>
+                    <span className="text-sm font-medium text-gray-800 break-all">{dossier.reference_paiement ?? '—'}</span>
+                  </div>
+                  {dossier.commentaire_paiement && (
+                    <div>
+                      <div className="text-xs text-gray-500">Commentaire</div>
+                      <div className="text-sm text-gray-800">{dossier.commentaire_paiement}</div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -531,6 +576,7 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
           </div>
         </div>
       )}
+      <PaymentDialog open={showPaymentDialog} onClose={() => setShowPaymentDialog(false)} dossierId={dossier.id} onSaved={handlePaymentSaved} />
       <EditDossierDialog open={showEditDialog} onClose={closeEdit} dossier={dossier} section={editSection} onSaved={handleSaved} />
     </div>
   )
