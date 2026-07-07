@@ -3,6 +3,10 @@
 import React, { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'react-hot-toast'
+import PremiumCard from '@/components/admin/PremiumCard'
+import BankDetailsDialog from '@/components/admin/BankDetailsDialog'
+import TarifEditDialog from '@/components/admin/TarifEditDialog'
+import { Edit2 } from 'lucide-react'
 
 type Param = { id?: number; cle: string; valeur: string }
 type Tarif = { id?: number; type_client: string; type_projet: string; prix: number; actif?: boolean }
@@ -12,6 +16,8 @@ export default function AdminParametresPage() {
   const [tarifs, setTarifs] = useState<Tarif[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [showBankDialog, setShowBankDialog] = useState(false)
+  const [editingTarifIndex, setEditingTarifIndex] = useState<number | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -22,10 +28,32 @@ export default function AdminParametresPage() {
       const headers: Record<string, string> = {}
       if (token) headers['Authorization'] = `Bearer ${token}`
 
+      // helper: fetch with 2 retries for transient Supabase/network errors
+      const fetchWithRetry = async (url: string, options: RequestInit = {}, attempts = 2) => {
+        let lastErr: any = null
+        for (let i = 0; i <= attempts; i++) {
+          try {
+            const res = await fetch(url, options)
+            // if server returned HTML (Cloudflare 5xx page), surface a clear error
+            const ct = res.headers.get('content-type') || ''
+            if (ct.includes('text/html')) {
+              const text = await res.text()
+              throw new Error('Supabase unreachable: HTML response')
+            }
+            return res
+          } catch (e) {
+            lastErr = e
+            // small delay before retry
+            if (i < attempts) await new Promise((r) => setTimeout(r, 600 * (i + 1)))
+          }
+        }
+        throw lastErr
+      }
+
       try {
         const [pRes, tRes] = await Promise.all([
-          fetch('/api/admin/parametres', { headers }),
-          fetch('/api/admin/tarifs', { headers }),
+          fetchWithRetry('/api/admin/parametres', { headers }),
+          fetchWithRetry('/api/admin/tarifs', { headers }),
         ])
 
         const pJson = await pRes.json()
@@ -38,9 +66,13 @@ export default function AdminParametresPage() {
         setParams(map)
 
         if (tJson?.ok && Array.isArray(tJson.items)) setTarifs(tJson.items)
-      } catch (err) {
-        console.error(err)
-        toast.error('Erreur lors du chargement')
+      } catch (err: any) {
+        console.error('chargement parametres error', err)
+        if (String(err?.message || '').toLowerCase().includes('supabase') || String(err || '').toLowerCase().includes('cloudflare') || String(err || '').includes('HTML')) {
+          toast.error("Impossible de joindre Supabase — réessayez dans quelques instants.")
+        } else {
+          toast.error('Erreur lors du chargement')
+        }
       }
 
       setLoading(false)
@@ -55,30 +87,33 @@ export default function AdminParametresPage() {
   const handleTarifChange = (idx: number, prix: number) => {
     setTarifs((t) => t.map((row, i) => (i === idx ? { ...row, prix } : row)))
   }
-
-  const saveParams = async () => {
+  const saveParams = async (payload?: { cle: string; valeur: string }[]) => {
     setSaving(true)
     const { data: sessionData } = await supabase.auth.getSession()
     const token = sessionData?.session?.access_token
 
     try {
-      const payload = Object.values(params).map((p) => ({ cle: p.cle, valeur: p.valeur }))
+      const body = payload ?? Object.values(params).map((p) => ({ cle: p.cle, valeur: p.valeur }))
       const res = await fetch('/api/admin/parametres', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: token ? `Bearer ${token}` : '' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(body),
       })
       const j = await res.json()
       if (!j?.ok) throw new Error(j?.error || 'Erreur')
       toast.success('Paramètres sauvegardés')
+      setSaving(false)
+      return true
     } catch (err) {
       console.error(err)
       toast.error('Erreur lors de la sauvegarde des paramètres')
+      setSaving(false)
+      return false
     }
-    setSaving(false)
   }
 
   const saveTarifs = async () => {
+    // kept for compatibility but not used in UI: batch save
     setSaving(true)
     const { data: sessionData } = await supabase.auth.getSession()
     const token = sessionData?.session?.access_token
@@ -100,84 +135,164 @@ export default function AdminParametresPage() {
     setSaving(false)
   }
 
-  if (loading) return <div>Chargement...</div>
+  // save a single tarif independently
+  const saveSingleTarif = async (tarif: { id?: number; prix?: number }) => {
+    setSaving(true)
+    const { data: sessionData } = await supabase.auth.getSession()
+    const token = sessionData?.session?.access_token
+    try {
+      const payload = [{ id: tarif.id, prix: Number(tarif.prix) }]
+      const res = await fetch('/api/admin/tarifs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: token ? `Bearer ${token}` : '' },
+        body: JSON.stringify(payload),
+      })
+      const j = await res.json()
+      if (!j?.ok) throw new Error(j?.error || 'Erreur')
+      toast.success('Tarif mis à jour')
+      setSaving(false)
+      return true
+    } catch (err) {
+      console.error(err)
+      toast.error('Erreur lors de la sauvegarde du tarif')
+      setSaving(false)
+      return false
+    }
+  }
 
+
+  if (loading) return <div>Chargement...</div>
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-6">
         {/* Bank card - prominent */}
-        <div className="relative overflow-hidden rounded-3xl shadow-2xl">
-          <div className="absolute inset-0 bg-linear-to-r from-[#0f2b66] to-[#173B8C] opacity-95" />
-          <div className="relative p-8 text-white">
-            <div className="flex items-start justify-between">
-              <div>
-                <h2 className="text-2xl font-bold">Coordonnées bancaires</h2>
-                <p className="mt-1 text-sm text-white/80">Modifier IBAN et titulaire utilisés pour les virements.</p>
-              </div>
-              <div className="text-sm text-white/80">Sécurisé</div>
+        <PremiumCard
+          title="Coordonnées bancaires"
+          subtitle="Modifier IBAN et titulaire utilisés pour les virements."
+          accent={
+            <button
+              onClick={() => setShowBankDialog(true)}
+              disabled={saving}
+              className="inline-flex items-center gap-2 text-sm text-slate-600 hover:bg-slate-100 px-2 py-1 rounded"
+            >
+              {saving ? (
+                <svg className="w-4 h-4 animate-spin text-slate-600" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                </svg>
+              ) : null}
+              {saving ? 'Enregistrement…' : 'Modifier'}
+            </button>
+          }
+          className="rounded-3xl shadow-2xl"
+        >
+          <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-4 rounded-xl bg-slate-50">
+              <div className="text-xs text-slate-500">Titulaire</div>
+              <div className="mt-2 text-lg font-medium text-slate-800">{params['titulaire']?.valeur || <span className="text-slate-400">—</span>}</div>
             </div>
 
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white/6 p-4 rounded-xl">
-                <div className="text-xs text-white/70">IBAN</div>
-                <div className="mt-2 text-lg font-medium tracking-wider">{params['iban']?.valeur || <span className="text-white/60">Non renseigné</span>}</div>
-                <input aria-label="IBAN" type="text" value={params['iban']?.valeur || ''} onChange={(e) => handleParamChange('iban', e.target.value)} className="mt-3 w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white" />
-              </div>
-
-              <div className="bg-white/6 p-4 rounded-xl">
-                <div className="text-xs text-white/70">BIC</div>
-                <div className="mt-2 text-lg font-medium">{params['bic']?.valeur || <span className="text-white/60">—</span>}</div>
-                <input aria-label="BIC" type="text" value={params['bic']?.valeur || ''} onChange={(e) => handleParamChange('bic', e.target.value)} className="mt-3 w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white" />
-              </div>
-
-              <div className="bg-white/6 p-4 rounded-xl">
-                <div className="text-xs text-white/70">Titulaire</div>
-                <div className="mt-2 text-lg font-medium">{params['titulaire']?.valeur || <span className="text-white/60">—</span>}</div>
-                <input aria-label="Titulaire" type="text" value={params['titulaire']?.valeur || ''} onChange={(e) => handleParamChange('titulaire', e.target.value)} className="mt-3 w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white" />
-              </div>
+            <div className="p-4 rounded-xl bg-slate-50">
+              <div className="text-xs text-slate-500">IBAN</div>
+              <div className="mt-2 text-lg font-medium tracking-wider text-slate-800">{params['iban']?.valeur || <span className="text-slate-400">Non renseigné</span>}</div>
             </div>
 
-            <div className="mt-6 flex justify-end">
-              <button disabled={saving} onClick={saveParams} className="inline-flex items-center gap-2 bg-white text-[#0f2b66] font-semibold px-6 py-2 rounded-full shadow-md disabled:opacity-60">
-                {saving ? 'Sauvegarde...' : 'Sauvegarder'}
-              </button>
+            <div className="p-4 rounded-xl bg-slate-50">
+              <div className="text-xs text-slate-500">BIC</div>
+              <div className="mt-2 text-lg font-medium text-slate-800">{params['bic']?.valeur || <span className="text-slate-400">—</span>}</div>
             </div>
           </div>
-        </div>
+        </PremiumCard>
+        <BankDetailsDialog
+          open={Boolean(showBankDialog)}
+          onClose={() => setShowBankDialog(false)}
+          initial={{ iban: params['iban']?.valeur, bic: params['bic']?.valeur, titulaire: params['titulaire']?.valeur }}
+          onSave={async (values) => {
+            // call API first, update local state only on success to avoid flicker
+            const payload = [
+              { cle: 'iban', valeur: values.iban || '' },
+              { cle: 'bic', valeur: values.bic || '' },
+              { cle: 'titulaire', valeur: values.titulaire || '' },
+            ]
+            const ok = await saveParams(payload)
+            if (ok) {
+              handleParamChange('iban', values.iban || '')
+              handleParamChange('bic', values.bic || '')
+              handleParamChange('titulaire', values.titulaire || '')
+            }
+            return ok
+          }}
+        />
 
         {/* Tarifs cards */}
         <div>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-lg font-semibold">Tarifs</h2>
-              <p className="text-sm text-slate-500">Modifiez les prix affichés publiquement.</p>
-            </div>
-            <div>
-              <button disabled={saving} onClick={saveTarifs} className="inline-flex items-center gap-2 bg-linear-to-r from-[#173B8C] to-[#2E5FC1] text-white font-medium px-4 py-2 rounded-full shadow-lg disabled:opacity-60">
-                {saving ? 'Sauvegarde...' : 'Sauvegarder les tarifs'}
-              </button>
-            </div>
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold">Tarifs</h2>
+            <p className="text-sm text-slate-500">Modifiez les prix affichés publiquement.</p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {/* Desktop/table view */}
+          <div className="hidden sm:block overflow-x-auto bg-white rounded-lg shadow-sm">
+            <table className="w-full table-auto">
+              <thead>
+                <tr className="text-sm text-slate-500 border-b">
+                  <th className="px-4 py-3 text-left">Type de projet</th>
+                  <th className="px-4 py-3 text-left">Type de client</th>
+                  <th className="px-4 py-3 text-left">Prix</th>
+                  <th className="px-4 py-3 text-left">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tarifs.map((t, i) => (
+                  <tr key={t.id || `${t.type_client}-${t.type_projet}`} className="text-sm border-b last:border-b-0">
+                    <td className="px-4 py-3">{t.type_projet}</td>
+                    <td className="px-4 py-3">{t.type_client}</td>
+                    <td className="px-4 py-3">€ {t.prix ?? 0}</td>
+                    <td className="px-4 py-3">
+                      <button onClick={() => setEditingTarifIndex(i)} className="inline-flex items-center gap-2 px-2 py-1 rounded text-sm text-slate-600 hover:bg-slate-100">
+                        <Edit2 size={16} /> Modifier
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile list view */}
+          <div className="sm:hidden space-y-3">
             {tarifs.map((t, i) => (
-              <div key={t.id || `${t.type_client}-${t.type_projet}`} className="transform hover:-translate-y-1 transition rounded-2xl shadow-lg p-5 bg-white">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-xs text-slate-400">{t.type_client}</div>
-                    <div className="text-base font-semibold mt-1">{t.type_projet}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm text-slate-400">Prix</div>
-                    <div className="text-2xl font-bold mt-1">€
-                      <input aria-label={`Prix ${t.type_client} ${t.type_projet}`} type="number" value={t.prix ?? 0} onChange={(e) => handleTarifChange(i, Number(e.target.value))} className="ml-2 w-24 text-right text-2xl font-bold border-none outline-none" />
-                    </div>
-                  </div>
+              <div key={t.id || `${t.type_client}-${t.type_projet}`} className="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm">
+                <div>
+                  <div className="text-sm font-medium">{t.type_projet}</div>
+                  <div className="text-xs text-slate-500">{t.type_client}</div>
                 </div>
-                <div className="mt-4 text-sm text-slate-500">Visible pour {t.type_client.toLowerCase()}</div>
+                <div className="text-right">
+                  <div className="text-sm font-semibold">€ {t.prix ?? 0}</div>
+                  <button onClick={() => setEditingTarifIndex(i)} className="mt-1 inline-flex items-center gap-2 px-2 py-1 rounded text-sm text-slate-600 hover:bg-slate-100">
+                    <Edit2 size={14} />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
+
+          <TarifEditDialog
+            open={editingTarifIndex !== null}
+            onClose={() => setEditingTarifIndex(null)}
+            initial={{ prix: editingTarifIndex !== null ? tarifs[editingTarifIndex]?.prix : 0 }}
+            onSave={async (values) => {
+              if (editingTarifIndex === null) return false
+              const idx = editingTarifIndex
+              const t = tarifs[idx]
+              const ok = await saveSingleTarif({ id: t.id, prix: values.prix })
+              if (ok) {
+                // update local state
+                setTarifs((s) => s.map((row, i) => (i === idx ? { ...row, prix: values.prix } : row)))
+              }
+              return ok
+            }}
+          />
         </div>
       </div>
     </div>
