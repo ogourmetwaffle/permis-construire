@@ -246,7 +246,18 @@ export default function AdminParametresPage() {
                 {tarifs.map((t, i) => (
                   <tr key={t.id || `${t.type_client}-${t.type_projet}`} className="text-sm border-b last:border-b-0">
                     <td className="px-4 py-3">{t.type_projet}</td>
-                    <td className="px-4 py-3">{t.type_client}</td>
+                    <td className="px-4 py-3">
+                      {(() => {
+                        const raw = (t.type_client || '').toLowerCase()
+                        if (raw.includes('pro') || raw.includes('professionnel')) {
+                          return <span className="inline-flex items-center h-6 px-2 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-100">Professionnel</span>
+                        }
+                        if (raw.includes('part') || raw.includes('particulier')) {
+                          return <span className="inline-flex items-center h-6 px-2 rounded-full text-xs font-semibold bg-green-50 text-green-700 ring-1 ring-inset ring-green-100">Particulier</span>
+                        }
+                        return <div className="font-medium">{t.type_client}</div>
+                      })()}
+                    </td>
                     <td className="px-4 py-3">€ {t.prix ?? 0}</td>
                     <td className="px-4 py-3">
                       <button onClick={() => setEditingTarifIndex(i)} className="inline-flex items-center gap-2 px-2 py-1 rounded text-sm text-slate-600 hover:bg-slate-100">
@@ -265,7 +276,18 @@ export default function AdminParametresPage() {
               <div key={t.id || `${t.type_client}-${t.type_projet}`} className="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm">
                 <div>
                   <div className="text-sm font-medium">{t.type_projet}</div>
-                  <div className="text-xs text-slate-500">{t.type_client}</div>
+                  <div className="text-xs">
+                    {(() => {
+                      const raw = (t.type_client || '').toLowerCase()
+                      if (raw.includes('pro') || raw.includes('professionnel')) {
+                        return <span className="inline-flex items-center h-6 px-2 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-100">Professionnel</span>
+                      }
+                      if (raw.includes('part') || raw.includes('particulier')) {
+                        return <span className="inline-flex items-center h-6 px-2 rounded-full text-xs font-semibold bg-green-50 text-green-700 ring-1 ring-inset ring-green-100">Particulier</span>
+                      }
+                      return <div className="text-xs text-slate-500">{t.type_client}</div>
+                    })()}
+                  </div>
                 </div>
                 <div className="text-right">
                   <div className="text-sm font-semibold">€ {t.prix ?? 0}</div>

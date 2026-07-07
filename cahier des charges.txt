@@ -1,0 +1,189 @@
+Bonjour,
+
+Voici ce que je peux te développer pour ton projet.
+
+## 🌐 Site internet
+
+Je réaliserai un site web moderne, professionnel et adapté aussi bien aux ordinateurs qu'aux smartphones.
+
+Le site comprendra notamment :
+
+* Une page d'accueil présentant tes prestations.
+* Une présentation de tes services.
+* Des exemples de projets déjà réalisés.
+* Une rubrique FAQ.
+* Une page Contact.
+* Les mentions légales et la politique de confidentialité.
+* Un référencement naturel (SEO) optimisé afin d'améliorer la visibilité du site sur Google.
+
+---
+
+## 📁 Dépôt de dossier en ligne
+
+Les clients pourront déposer leur dossier directement depuis le site.
+
+Le formulaire sera adapté selon le type de client.
+
+### Particulier
+
+Le client sélectionnera "Particulier" et verra uniquement les informations qui le concernent.
+
+Pour les projets jusqu'à *150 m²*, un tarif fixe sera appliqué.
+
+Au-delà de *150 m²*, le client pourra déposer son dossier afin d'obtenir un devis personnalisé.
+
+### Professionnel
+
+Même fonctionnement avec un formulaire et des informations adaptés aux professionnels.
+
+---
+
+## 📄 Téléversement sécurisé des documents
+
+Les clients pourront envoyer leurs documents en toute sécurité.
+
+Formats acceptés :
+
+* PDF
+* JPG / JPEG
+* PNG
+* ZIP
+
+Les documents seront stockés de manière sécurisée.
+
+---
+
+## 💳 Paiement
+
+Deux moyens de paiement seront proposés :
+
+### Carte bancaire
+
+Le client pourra régler directement en ligne via Stripe.
+
+À l'issue du paiement, il recevra automatiquement un email de confirmation contenant :
+
+* Le récapitulatif de sa demande.
+* Son numéro de dossier.
+* Les informations de contact.
+
+Le dossier passera automatiquement en *cours de traitement*.
+
+### Virement bancaire (Wise)
+
+Le client pourra également choisir un paiement par virement bancaire.
+
+Le site affichera automatiquement :
+
+* Le titulaire du compte.
+* L'IBAN.
+* Le BIC (si nécessaire).
+* La référence du dossier à indiquer lors du virement.
+
+Le dossier sera créé immédiatement avec le statut :
+
+*En attente de paiement*
+
+Dès réception du virement sur le compte Wise, il suffira de valider le paiement depuis l'espace d'administration.
+
+Le statut du dossier passera automatiquement de *"En attente de paiement"* à *"En cours de traitement"*, et le client pourra être notifié par email.
+
+---
+
+## 📌 Suivi du dossier
+
+Chaque dossier disposera d'un numéro unique.
+
+Grâce à ce numéro, le client pourra consulter l'avancement de son dossier.
+
+Exemples de statuts :
+
+* En attente de paiement
+* Nouveau dossier
+* En cours de traitement
+* Informations complémentaires demandées
+* Terminé
+* Refusé
+
+---
+
+## 📧 Notifications automatiques
+
+À chaque nouveau dossier ou paiement validé :
+
+* Le client recevra automatiquement un email.
+* Les administrateurs seront également notifiés.
+
+Si une demande nécessite un devis personnalisé, les administrateurs recevront également une notification.
+
+---
+
+## 👨‍💼 Interface d'administration
+
+Un espace sécurisé permettra de gérer l'ensemble des dossiers.
+
+Les fonctionnalités comprendront notamment :
+
+* Consultation de tous les dossiers.
+* Recherche par numéro ou nom.
+* Consultation des informations du client.
+* Téléchargement des documents.
+* Vérification du paiement.
+* Validation des virements bancaires.
+* Mise à jour du statut du dossier.
+* Suivi de l'avancement.
+* Ajout de commentaires internes si nécessaire.
+
+Cette interface pourra évoluer par la suite si de nouveaux besoins apparaissent.
+
+---
+
+## 📞 Communication avec les clients
+
+Les échanges avec les clients se feront principalement :
+
+* par email ;
+* par téléphone.
+
+---
+
+## 💰 Tarif
+
+Développement complet du site avec la plateforme de gestion des dossiers :
+
+*500 €*
+
+Ce tarif comprend :
+
+* le développement du site ;
+* l'espace d'administration ;
+* le système de dépôt de dossiers ;
+* le paiement en ligne (carte bancaire et virement) ;
+* les notifications par email ;
+* la gestion des documents.
+
+---
+
+## 🌍 Nom de domaine
+
+Le nom de domaine représente généralement un coût d'environ *15 € par an*.
+
+---
+
+## ☁️ Hébergement
+
+Le site sera hébergé sur une infrastructure moderne.
+
+Le forfait gratuit permet de démarrer sans frais et comprend notamment :
+
+* 1 Go de stockage sécurisé pour les documents.
+
+Cela est largement suffisant pour le lancement du projet.
+
+Si l'activité augmente (par exemple un grand nombre de dossiers avec des fichiers ZIP ou des photos haute résolution), il sera possible de passer à une formule supérieure comprenant :
+
+* 500 Go de stockage ;
+* des performances renforcées ;
+* un coût d'environ *25 $ par mois*.
+
+Cette évolution ne sera nécessaire que si le volume de dossiers devient important.
