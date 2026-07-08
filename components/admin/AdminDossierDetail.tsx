@@ -54,45 +54,47 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
   const [savedBadge, setSavedBadge] = useState<{ client?: boolean; project?: boolean }>({})
 
   useEffect(() => {
-    const fetchDossier = async () => {
-      setLoading(true)
-      try {
-        const session = await supabase.auth.getSession()
-        const token = session.data?.session?.access_token
-        if (!token) {
-          console.error('No session token')
-          setDossier(null)
-          setLoading(false)
-          return
-        }
-
-        const res = await fetch('/api/admin/dossiers', { headers: { Authorization: `Bearer ${token}` } })
-        if (res.status === 401) {
-          console.error('Unauthorized when fetching dossier')
-          setDossier(null)
-          setLoading(false)
-          return
-        }
-
-        const json = await res.json()
-        if (!json.ok) {
-          console.error('api admin dossiers error', json.error)
-          setDossier(null)
-          setLoading(false)
-          return
-        }
-
-        const all: Dossier[] = json.data || []
-        const found = all.find((d) => (typeof id === 'string' && id.startsWith('PE-') ? d.numero_dossier === id : String(d.id) === String(id)))
-        setDossier(found || null)
-      } catch (err) {
-        console.error('fetch dossier', err)
-        setDossier(null)
-      }
-      setLoading(false)
-    }
     fetchDossier()
   }, [id])
+
+  // fetch dossier (extracted so it can be re-used by child callbacks)
+  async function fetchDossier() {
+    setLoading(true)
+    try {
+      const session = await supabase.auth.getSession()
+      const token = session.data?.session?.access_token
+      if (!token) {
+        console.error('No session token')
+        setDossier(null)
+        setLoading(false)
+        return
+      }
+
+      const res = await fetch('/api/admin/dossiers', { headers: { Authorization: `Bearer ${token}` } })
+      if (res.status === 401) {
+        console.error('Unauthorized when fetching dossier')
+        setDossier(null)
+        setLoading(false)
+        return
+      }
+
+      const json = await res.json()
+      if (!json.ok) {
+        console.error('api admin dossiers error', json.error)
+        setDossier(null)
+        setLoading(false)
+        return
+      }
+
+      const all: Dossier[] = json.data || []
+      const found = all.find((d) => (typeof id === 'string' && id.startsWith('PE-') ? d.numero_dossier === id : String(d.id) === String(id)))
+      setDossier(found || null)
+    } catch (err) {
+      console.error('fetch dossier', err)
+      setDossier(null)
+    }
+    setLoading(false)
+  }
 
   // Fetch documents once dossier is loaded (extracted so we can re-use after archive)
   const fetchDocs = async (numero?: string) => {
@@ -447,7 +449,7 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
               <div className="w-7 h-7 rounded-lg bg-orange-50 flex items-center justify-center shrink-0"><Tag size={14} className="text-orange-500" /></div>
               <h3 className="text-sm font-semibold text-gray-800">Statut dossier</h3>
             </div>
-            <StatusSelector currentStatus={dossier.statut} dossierId={String(dossier.id)} onUpdated={onUpdated} />
+            <StatusSelector currentStatus={dossier.statut} dossierId={String(dossier.id)} onUpdated={async () => { await fetchDossier(); if (onUpdated) onUpdated() }} />
           </div>
 
           {/* Client */}
