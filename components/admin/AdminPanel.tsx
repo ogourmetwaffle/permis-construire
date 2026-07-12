@@ -46,7 +46,11 @@ export default function AdminPanel() {
   const counts = {
     enAttente: dossiers.filter(d => normalizeStatus(d.statut) === STATUS.EN_ATTENTE_PAIEMENT).length,
     nouveaux: dossiers.filter(d => normalizeStatus(d.statut) === STATUS.NOUVEAU).length,
-    enCours: dossiers.filter(d => normalizeStatus(d.statut) === STATUS.EN_COURS).length,
+    // consider 'À compléter' (INFORMATIONS_MANQUANTES) as part of 'En cours' for dashboard totals
+    enCours: dossiers.filter(d => {
+      const s = normalizeStatus(d.statut)
+      return s === STATUS.EN_COURS || s === STATUS.INFORMATIONS_MANQUANTES
+    }).length,
     termines: dossiers.filter(d => normalizeStatus(d.statut) === STATUS.TERMINE).length,
     refuses: dossiers.filter(d => normalizeStatus(d.statut) === STATUS.REFUSE).length,
   }

@@ -76,3 +76,13 @@ button[disabled] {
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
 }
+
+/* subtle floating animation used for hero illustration */
+@keyframes float-slow {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+  100% { transform: translateY(0); }
+}
+.animate-float-slow {
+  animation: float-slow 9s ease-in-out infinite;
+}

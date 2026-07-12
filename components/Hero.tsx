@@ -1,17 +1,20 @@
+import React from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
+import { FileText, Layers, Home } from 'lucide-react'
 
-const trustItems = ['Partout en France', 'Réponse sous 24h', 'Dossier vérifié avant dépôt']
+const trustItems = [ {}, {}, {} ]
 
 const pricing = [
-  { label: 'Plans 3D', price: 'à partir de 150 €' },
-  { label: 'Déclaration préalable', price: 'à partir de 300 €' },
-  { label: 'Extension / Véranda', price: 'à partir de 300 €' },
-  { label: 'Permis de construire', price: 'à partir de 400 €' },
+  { label: 'Plans 3D', price: 'à partir de 150 €', icon: Layers },
+  { label: 'Déclaration préalable', price: 'à partir de 300 €', icon: FileText },
+  { label: 'Extension / Véranda', price: 'à partir de 300 €', icon: Home },
+  { label: 'Permis de construire', price: 'à partir de 400 €', icon: FileText },
 ]
 
 export default function Hero() {
   return (
-    <section id="accueil" className="relative bg-[#1e3a5f] overflow-hidden">
+    <section id="accueil" className="relative bg-[#1e3a5f] overflow-visible max-h-[820px]">
       {/* Blueprint grid background */}
       <div className="absolute inset-0 opacity-[0.04]" aria-hidden="true">
         <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
@@ -24,52 +27,26 @@ export default function Hero() {
         </svg>
       </div>
 
-      {/* Architectural house sketch — right decoration */}
-      <div
-        className="absolute right-0 top-0 w-1/2 h-full opacity-[0.06] hidden xl:block pointer-events-none"
-        aria-hidden="true"
-      >
-        <svg viewBox="0 0 640 720" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-          <g stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="120,320 320,130 520,320" />
-            <rect x="150" y="320" width="340" height="250" />
-            <rect x="390" y="185" width="32" height="60" />
-            <rect x="175" y="360" width="75" height="65" />
-            <line x1="212" y1="360" x2="212" y2="425" />
-            <line x1="175" y1="392" x2="250" y2="392" />
-            <rect x="390" y="360" width="75" height="65" />
-            <line x1="427" y1="360" x2="427" y2="425" />
-            <line x1="390" y1="392" x2="465" y2="392" />
-            <path d="M295,570 L295,455 Q295,445 305,445 L335,445 Q345,445 345,455 L345,570" />
-            <line x1="80" y1="570" x2="560" y2="570" />
-            <line x1="150" y1="606" x2="490" y2="606" strokeDasharray="6 3" />
-            <line x1="150" y1="598" x2="150" y2="614" />
-            <line x1="490" y1="598" x2="490" y2="614" />
-            <line x1="76" y1="320" x2="76" y2="570" strokeDasharray="6 3" />
-            <line x1="68" y1="320" x2="84" y2="320" />
-            <line x1="68" y1="570" x2="84" y2="570" />
-          </g>
-          <text x="285" y="638" fill="white" fontSize="13" fontFamily="monospace">11.35 m</text>
-          <text x="24" y="458" fill="white" fontSize="13" fontFamily="monospace" transform="rotate(-90 24 458)">8.20 m</text>
-        </svg>
-      </div>
+      {/* illustration is placed inside the grid (middle column on lg) and inline on mobile */}
 
-      <div className="relative max-w-7xl mx-auto px-6 pt-28 pb-24 lg:pt-36 lg:pb-32 grid lg:grid-cols-2 gap-12 items-center">
+      <div className="relative max-w-7xl mx-auto px-6 pt-16 pb-16 lg:pt-20 lg:pb-20 grid lg:grid-cols-3 gap-12 items-start">
         {/* Left — Main content */}
         <div>
-          <div className="inline-flex items-center gap-2 text-white/60 text-sm bg-white/10 border border-white/20 px-4 py-1.5 rounded-full mb-8 font-medium">
-            <span className="w-1.5 h-1.5 bg-[#c0392b] rounded-full inline-block" />
-            Spécialiste en permis de construire
+          <div className="inline-flex items-center gap-2 text-white/70 text-sm bg-white/8 border border-white/10 px-4 py-1.5 rounded-full mb-6 font-medium">
+            <span className="w-2 h-2 bg-[#c0392b] rounded-full inline-block" />
+            ● Spécialiste en permis de construire
           </div>
 
-          <h1 className="text-4xl sm:text-5xl xl:text-6xl font-extrabold text-white leading-[1.1] tracking-tight">
+          <h1 className="text-4xl sm:text-5xl xl:text-6xl font-extrabold text-white leading-[1.02] tracking-tight">
             Concevons ensemble<br />
             <span className="text-[#a8c8e8]">votre projet</span><br />
-            de construction
+            <span className="text-white/90">administratif</span>
           </h1>
 
           <p className="mt-6 text-white/70 text-lg leading-relaxed max-w-lg">
-            Permis de construire, déclaration préalable, extension, véranda et accompagnement administratif.
+            Permis de construire, déclaration préalable,
+            <br />extension, véranda
+            <br />et accompagnement administratif.
           </p>
 
           <div className="mt-10 flex flex-col sm:flex-row gap-4">
@@ -87,30 +64,42 @@ export default function Hero() {
             </Link>
           </div>
 
-          <ul className="mt-10 flex flex-wrap gap-x-8 gap-y-3 text-white/50 text-sm">
-            {trustItems.map((item) => (
-              <li key={item} className="flex items-center gap-2">
-                <svg className="w-4 h-4 text-[#a8c8e8] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                </svg>
-                {item}
-              </li>
+          {/* mobile illustration placed after CTAs (Text -> Buttons -> Illustration on mobile) */}
+          <div className="block lg:hidden mt-8 w-full">
+            <div className="relative w-full">
+              <Image src="/backround.png" alt="Illustration" width={1100} height={1100} className="w-full h-auto object-contain" />
+            </div>
+          </div>
+
+          <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-6 justify-start">
+            {trustItems.map((_, idx) => (
+              <div key={idx} aria-hidden="true" className="w-[180px] h-[90px] flex items-center justify-center bg-white/6 border border-white/12 rounded-lg px-3 py-2" />
             ))}
-          </ul>
+          </div>
+        </div>
+
+        {/* Middle — Illustration (desktop) */}
+        <div className="hidden lg:flex items-center justify-center">
+          <div className="relative w-[900px] max-w-full -translate-y-6 -translate-x-12 transform scale-125 animate-float-slow drop-shadow-lg z-10 mb-[-32px]">
+            <Image src="/backround.png" alt="Illustration" width={1600} height={1600} className="w-full h-auto object-contain" priority />
+          </div>
         </div>
 
         {/* Right — Pricing card (desktop) */}
-        <div className="hidden lg:flex justify-end">
-          <div className="bg-white/10 border border-white/20 rounded-2xl p-8 w-85 shadow-2xl">
-            <p className="text-white/50 text-xs font-semibold uppercase tracking-widest mb-6">Nos tarifs</p>
+        <div className="hidden lg:flex justify-end relative z-30">
+          <div className="backdrop-blur-sm bg-white/6 border border-white/12 rounded-2xl p-6 w-80 shadow-2xl">
+            <p className="text-white/60 text-xs font-semibold uppercase tracking-widest mb-4">Nos tarifs</p>
             <ul>
               {pricing.map((item, i) => (
                 <li key={item.label}>
-                  <div className="flex items-center justify-between py-4">
-                    <span className="text-white/70 text-sm">{item.label}</span>
+                  <div className="flex items-center justify-between py-3">
+                    <div className="flex items-center gap-3">
+                      {React.createElement(item.icon, { size: 16, className: 'text-white/80' })}
+                      <span className="text-white/70 text-sm">{item.label}</span>
+                    </div>
                     <span className="text-[#a8c8e8] text-sm font-semibold">{item.price}</span>
                   </div>
-                  {i < pricing.length - 1 && <div className="h-px bg-white/10" />}
+                  {i < pricing.length - 1 && <div className="h-px bg-white/8" />}
                 </li>
               ))}
             </ul>
