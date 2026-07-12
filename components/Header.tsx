@@ -65,7 +65,7 @@ export default function Header() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`text-sm font-medium transition-colors ${isActive ? 'text-[#7b2020] font-semibold' : 'text-gray-700 hover:text-[#1e3a5f]'}`}
+                className={`text-sm font-medium transition-all px-2 py-1 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#1e3a5f] ${isActive ? 'text-[#7b2020] font-semibold bg-white shadow-md' : 'text-gray-700 hover:text-[#1e3a5f] hover:shadow-md hover:bg-white/80'}`}
               >
                 {link.label}
               </Link>

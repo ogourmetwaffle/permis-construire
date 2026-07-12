@@ -225,6 +225,9 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
     }
   }
 
+  // unified action button classes for consistent framing
+  const actionBase = 'inline-flex items-center gap-2 h-9 px-3 rounded-lg text-sm transition-colors duration-150 shadow-sm border leading-none'
+
   if (loading) return <div className="p-4">Chargement...</div>
   if (!dossier) return <div className="p-4 text-gray-600">Dossier introuvable.</div>
 
@@ -336,14 +339,14 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">{renderStatusBadge()}{renderPaymentBadge()}</div>
           <div className="flex items-center gap-2">
-            <a href={`mailto:${dossier.email ?? ''}`} className="inline-flex items-center gap-2 h-9 px-3 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-150 shadow-sm"> <Mail size={14} /> Email</a>
+            <a href={`mailto:${dossier.email ?? ''}`} className={`${actionBase} bg-white text-gray-700 border-gray-200 hover:bg-gray-100`}> <Mail size={14} /> Email</a>
             <button
               type="button"
               onClick={handleDownloadZip}
               disabled={!hasAvailableDocs || zipDownloading}
               aria-busy={zipDownloading}
               title={!hasAvailableDocs ? 'Aucun fichier disponible' : undefined}
-              className={`inline-flex items-center gap-2 h-9 px-3 rounded-lg border text-sm transition-colors duration-150 shadow-sm ${!hasAvailableDocs || zipDownloading ? 'bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-100'}`}
+              className={`${actionBase} ${!hasAvailableDocs || zipDownloading ? 'bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-100'}`}
             >
               <Download size={14} className={zipDownloading ? 'animate-spin' : ''} />
               {zipDownloading ? 'Téléchargement…' : 'Télécharger ZIP'}
@@ -352,19 +355,19 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
               <button
                 type="button"
                 onClick={() => setShowPaymentDialog(true)}
-                className={`inline-flex items-center gap-2 h-9 px-3 rounded-lg border text-sm transition-colors duration-150 shadow-sm ${dossier.paiement_effectue ? 'bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-100'}`}
+                className={`${actionBase} ${dossier.paiement_effectue ? 'bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-100'}`}
               >
                 <CreditCard size={14} /> Paiement
               </button>
             ) : (
-              <span className="inline-flex items-center gap-2 h-9 px-3 rounded-lg bg-green-50 text-green-700 border border-green-100 text-sm"><CheckCircle size={14} /> Paiement confirmé</span>
+              <span className={`${actionBase} bg-green-50 text-green-700 border-green-100`}><CheckCircle size={14} /> Paiement confirmé</span>
             )}
             <button
               type="button"
               onClick={hasAvailableDocs ? openArchiveModal : undefined}
               disabled={!hasAvailableDocs}
               title={!hasAvailableDocs ? 'Tous les documents sont déjà archivés' : undefined}
-              className={`inline-flex items-center gap-2 h-9 px-3 rounded-lg border text-sm transition-colors duration-150 ${!hasAvailableDocs ? 'bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed' : 'bg-white text-gray-400 border-gray-200 hover:bg-red-100 hover:text-red-600'}`}
+              className={`${actionBase} ${!hasAvailableDocs ? 'bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed' : 'bg-white text-gray-400 border-gray-200 hover:bg-red-100 hover:text-red-600'}`}
             >
               <Archive size={14} /> Archiver
             </button>

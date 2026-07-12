@@ -37,3 +37,9 @@ create table public.dossiers (
 
     updated_at timestamp default now()
 );
+
+
+ALTER TABLE public.dossiers
+ADD COLUMN date_paiement timestamp NULL,
+ADD COLUMN reference_paiement text NULL,
+ADD COLUMN commentaire_paiement text NULL;
