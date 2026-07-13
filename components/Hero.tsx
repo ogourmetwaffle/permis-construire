@@ -13,7 +13,7 @@ const pricing = [
 
 export default function Hero() {
   return (
-    <section id="accueil" className="relative bg-[#1e3a5f] overflow-visible max-h-[820px]">
+    <section id="accueil" className="relative bg-[#1e3a5f] overflow-visible max-h-[1000px]">
       {/* Blueprint grid background */}
       <div className="absolute inset-0 opacity-[0.04]" aria-hidden="true">
         <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
@@ -39,7 +39,7 @@ export default function Hero() {
           <h1 className="text-4xl sm:text-5xl xl:text-6xl font-extrabold text-white leading-[1.02] tracking-tight">
             Concevons ensemble<br />
             <span className="text-[#a8c8e8]">votre projet</span><br />
-            <span className="text-white/90">de construction</span>
+            <span className="text-white/90">d'urbanisme</span>
           </h1>
 
           <p className="mt-6 text-white/70 text-lg leading-relaxed max-w-lg">
@@ -65,8 +65,8 @@ export default function Hero() {
 
           {/* mobile illustration placed after CTAs (Text -> Buttons -> Illustration on mobile) */}
           <div className="block lg:hidden mt-4 w-full">
-            <div className="relative w-full">
-              <Image src="/backround.png" alt="Illustration" width={1100} height={1100} className="w-full h-auto object-contain" />
+            <div className="relative w-full h-[560px] overflow-hidden transform translate-y-6 translate-x-4">
+              <Image src="/backround.png" alt="Illustration" width={1600} height={1600} className="w-full h-full object-cover" />
             </div>
           </div>
           
@@ -75,8 +75,8 @@ export default function Hero() {
 
         {/* Middle — Illustration (desktop) */}
         <div className="hidden lg:flex items-center justify-center">
-          <div className="relative w-[900px] max-w-full -translate-y-6 -translate-x-12 transform scale-125 animate-float-slow drop-shadow-lg z-10 mb-[-32px]">
-            <Image src="/backround.png" alt="Illustration" width={1600} height={1600} className="w-full h-auto object-contain" priority />
+          <div className="relative w-[1300px] max-w-full translate-y-12 translate-x-6 transform scale-150 animate-float-slow drop-shadow-lg z-10 mb-[-32px]">
+            <Image src="/backround.png" alt="Illustration" width={2200} height={2200} className="w-full h-auto object-contain" priority />
           </div>
         </div>
 
