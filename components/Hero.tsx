@@ -3,13 +3,12 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { FileText, Layers, Home } from 'lucide-react'
 
-const trustItems = [ {}, {}, {} ]
-
 const pricing = [
-  { label: 'Plans 3D', price: 'à partir de 150 €', icon: Layers },
-  { label: 'Déclaration préalable', price: 'à partir de 300 €', icon: FileText },
-  { label: 'Extension / Véranda', price: 'à partir de 300 €', icon: Home },
-  { label: 'Permis de construire', price: 'à partir de 400 €', icon: FileText },
+  { label: 'Permis de construire', price: '400 €', icon: FileText },
+  { label: 'Déclaration préalable', price: '300 €', icon: FileText },
+  { label: 'Extension / Véranda', price: '300 €', icon: Home },
+  { label: 'Plans 3D', price: '150 €', icon: Layers },
+  { label: 'Accompagnement administratif', price: 'Sur devis', icon: FileText },
 ]
 
 export default function Hero() {
@@ -29,7 +28,7 @@ export default function Hero() {
 
       {/* illustration is placed inside the grid (middle column on lg) and inline on mobile */}
 
-      <div className="relative max-w-7xl mx-auto px-6 pt-16 pb-16 lg:pt-20 lg:pb-20 grid lg:grid-cols-3 gap-12 items-start">
+      <div className="relative max-w-7xl mx-auto px-6 pt-12 pb-12 lg:pt-16 lg:pb-16 grid lg:grid-cols-3 gap-8 items-start">
         {/* Left — Main content */}
         <div>
           <div className="inline-flex items-center gap-2 text-white/70 text-sm bg-white/8 border border-white/10 px-4 py-1.5 rounded-full mb-6 font-medium">
@@ -40,7 +39,7 @@ export default function Hero() {
           <h1 className="text-4xl sm:text-5xl xl:text-6xl font-extrabold text-white leading-[1.02] tracking-tight">
             Concevons ensemble<br />
             <span className="text-[#a8c8e8]">votre projet</span><br />
-            <span className="text-white/90">administratif</span>
+            <span className="text-white/90">de construction</span>
           </h1>
 
           <p className="mt-6 text-white/70 text-lg leading-relaxed max-w-lg">
@@ -65,17 +64,13 @@ export default function Hero() {
           </div>
 
           {/* mobile illustration placed after CTAs (Text -> Buttons -> Illustration on mobile) */}
-          <div className="block lg:hidden mt-8 w-full">
+          <div className="block lg:hidden mt-4 w-full">
             <div className="relative w-full">
               <Image src="/backround.png" alt="Illustration" width={1100} height={1100} className="w-full h-auto object-contain" />
             </div>
           </div>
-
-          <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-6 justify-start">
-            {trustItems.map((_, idx) => (
-              <div key={idx} aria-hidden="true" className="w-[180px] h-[90px] flex items-center justify-center bg-white/6 border border-white/12 rounded-lg px-3 py-2" />
-            ))}
-          </div>
+          
+          
         </div>
 
         {/* Middle — Illustration (desktop) */}
