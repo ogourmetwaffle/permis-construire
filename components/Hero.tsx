@@ -1,7 +1,7 @@
 import React from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { FileText, Layers, Home } from 'lucide-react'
+import { FileText, Layers, Home, Mail, UploadCloud } from 'lucide-react'
 
 const pricing = [
   { label: 'Permis de construire', price: '400 €', icon: FileText },
@@ -48,19 +48,26 @@ export default function Hero() {
             <br />et accompagnement administratif.
           </p>
 
-          <div className="mt-10 flex flex-col sm:flex-row gap-4">
-            <Link
-              href="/deposer-dossier"
-              className="inline-flex items-center justify-center px-8 py-4 bg-[#7b2020] hover:bg-[#6a1a1a] text-white font-semibold rounded-xl shadow-lg transition-all hover:shadow-xl text-base"
-            >
-              Déposer mon dossier
-            </Link>
-            <Link
-              href="#contact"
-              className="inline-flex items-center justify-center px-8 py-4 bg-white/10 hover:bg-white/20 border border-white/25 text-white font-semibold rounded-xl transition-all text-base"
-            >
-              Obtenir un devis
-            </Link>
+          <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg">
+            <div className="flex flex-col">
+              <Link
+                href="/deposer-dossier"
+                className="inline-flex items-center justify-center gap-3 px-8 py-4 min-h-[52px] bg-[#7b2020] hover:bg-[#6a1a1a] text-white font-semibold rounded-xl shadow-lg transition transform hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#7b2020] text-base"
+              >
+                <UploadCloud size={18} />
+                <span>Déposer mon dossier</span>
+              </Link>
+            </div>
+
+            <div className="flex flex-col">
+              <Link
+                href="#contact"
+                className="inline-flex items-center justify-center gap-3 px-8 py-4 min-h-[52px] bg-white/10 hover:bg-white/20 border border-white/25 text-white font-semibold rounded-xl transition transform hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-white text-base"
+              >
+                <Mail size={18} />
+                <span>Obtenir un devis</span>
+              </Link>
+            </div>
           </div>
 
           {/* mobile illustration placed after CTAs (Text -> Buttons -> Illustration on mobile) */}
@@ -101,7 +108,7 @@ export default function Hero() {
             <div className="mt-6">
               <Link
                 href="#contact"
-                className="block text-center w-full py-3 bg-white text-[#1e3a5f] font-semibold rounded-lg text-sm hover:bg-gray-50 transition-colors"
+                className="block text-center w-full py-3 min-h-[44px] bg-white text-[#1e3a5f] font-semibold rounded-lg text-sm hover:bg-gray-50 transition transform hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-white"
               >
                 Demander un devis gratuit
               </Link>

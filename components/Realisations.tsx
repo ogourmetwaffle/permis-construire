@@ -1,17 +1,20 @@
+import Image from 'next/image'
+
 type Project = {
   title: string
   location: string
   type: string
   bgColor: string
+  image: string
 }
 
 const projects: Project[] = [
-  { title: 'Villa contemporaine', location: 'Bordeaux (33)', type: 'Permis de construire', bgColor: 'bg-slate-200' },
-  { title: 'Extension cuisine', location: 'Lyon (69)', type: 'Extension', bgColor: 'bg-stone-200' },
-  { title: 'Véranda bioclimatique', location: 'Toulouse (31)', type: 'Véranda', bgColor: 'bg-zinc-200' },
-  { title: 'Maison plain-pied', location: 'Nantes (44)', type: 'Permis de construire', bgColor: 'bg-slate-300' },
-  { title: 'Abri de jardin', location: 'Montpellier (34)', type: 'Déclaration préalable', bgColor: 'bg-stone-300' },
-  { title: 'Surélévation R+1', location: 'Marseille (13)', type: 'Extension', bgColor: 'bg-zinc-300' },
+  { title: 'Villa contemporaine', location: 'Bordeaux (33)', type: 'Permis de construire', bgColor: 'bg-slate-200', image: '/permis construire.png' },
+  { title: 'Extension cuisine', location: 'Lyon (69)', type: 'Extension', bgColor: 'bg-stone-200', image: '/extension.png' },
+  { title: 'Véranda bioclimatique', location: 'Toulouse (31)', type: 'Véranda', bgColor: 'bg-zinc-200', image: '/veranda.png' },
+  { title: 'Maison moderne', location: 'Nantes (44)', type: 'Permis de construire', bgColor: 'bg-slate-300', image: '/permis construire 2.png' },
+  { title: 'Déclaration préalable', location: 'Montpellier (34)', type: 'Déclaration préalable', bgColor: 'bg-stone-300', image: '/declaration prealable.png' },
+  { title: 'Extension contemporaine', location: 'Marseille (13)', type: 'Extension', bgColor: 'bg-zinc-300', image: '/extension2.png' },
 ]
 
 const typeColors: Record<string, string> = {
@@ -37,22 +40,20 @@ export default function Realisations() {
           {projects.map((project) => (
             <article
               key={project.title + project.location}
-              className="group rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-lg transition-shadow cursor-default"
+              className="group rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-lg transition-shadow duration-300 cursor-pointer"
             >
-              {/* Image placeholder with zoom effect */}
-              <div className={`relative h-52 ${project.bgColor} overflow-hidden`}>
-                <div className="absolute inset-0 flex items-center justify-center transform group-hover:scale-105 transition-transform duration-500 ease-out">
-                  <svg
-                    className="w-16 h-16 text-white/30"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-                    <polyline strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} points="9 22 9 12 15 12 15 22" />
-                  </svg>
-                </div>
+              {/* Image */}
+              <div className={`relative h-[260px] overflow-hidden rounded-t-2xl ${project.bgColor}`}>
+                <Image
+                  fill
+                  src={project.image}
+                  alt={`${project.title} - ${project.type}`}
+                  className="object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+
+                {/* subtle bottom gradient for readability */}
+                <div className="absolute left-0 right-0 bottom-0 h-24 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
+
                 {/* Type badge */}
                 <span className={`absolute top-3 left-3 text-xs font-semibold px-2.5 py-1 rounded-full ${typeColors[project.type] ?? 'bg-gray-600 text-white'}`}>
                   {project.type}
