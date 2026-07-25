@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
+import supabaseAdmin from '@/lib/supabase-admin'
 import { sendPaymentConfirmationEmail } from '@/lib/email'
 
 export async function POST(req: Request) {
@@ -26,11 +26,7 @@ export async function POST(req: Request) {
     return new Response('Invalid signature', { status: 400 })
   }
 
-  // Initialize Supabase admin client (requires service role key)
-  const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-  const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-
-  const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+  // Use centralized Supabase admin client (supabaseAdmin)
 
   if ((event as { type?: string }).type === 'checkout.session.completed') {
     const ev = event as { data?: { object?: any }; type?: string }
@@ -38,7 +34,7 @@ export async function POST(req: Request) {
     const metadata = session.metadata ?? {}
     const dossierId = metadata.dossierId ?? null
 
-    if (dossierId && SUPABASE_SERVICE_ROLE_KEY) {
+    if (dossierId && process.env.SUPABASE_SERVICE_ROLE_KEY) {
       try {
         // Ensure idempotence: fetch current dossier and only update if not already paid
         const { data: existing, error: fetchErr } = await supabaseAdmin.from('dossiers').select('paiement_effectue, email, numero_dossier').eq('id', dossierId).single()

@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
+import supabaseAdmin from '@/lib/supabase-admin'
 
 export async function POST(req: Request) {
   try {
@@ -33,10 +33,7 @@ export async function POST(req: Request) {
       montant: number
     }
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
+    const supabase = supabaseAdmin
 
     const numeroDossier = 'PE-' + Date.now()
 

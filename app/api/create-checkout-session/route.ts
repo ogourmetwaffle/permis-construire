@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
+import supabaseAdmin from '@/lib/supabase-admin'
 
 export async function POST(req: Request) {
   try {
@@ -46,10 +46,7 @@ export async function POST(req: Request) {
 
     // New wizard flow: create the dossier server-side before redirecting to Stripe
     if (!legacyNumero && typeClient && email) {
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!
-      )
+      const supabase = supabaseAdmin
 
       numeroDossier = 'PE-' + Date.now()
 
