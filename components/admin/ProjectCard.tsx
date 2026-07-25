@@ -1,7 +1,7 @@
 "use client"
 
 import React from 'react'
-import { FileText, MapPin, Layers, Hash, Edit } from 'lucide-react'
+import { FileText, Edit } from 'lucide-react'
 
 export default function ProjectCard({ dossier, onEdit }: { dossier: any; onEdit?: () => void }) {
   if (!dossier) return null

@@ -3,7 +3,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, FolderOpen, Settings, LogOut } from 'lucide-react'
+import { LayoutDashboard, Settings, LogOut } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 type Props = {
