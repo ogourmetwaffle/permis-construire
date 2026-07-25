@@ -9,7 +9,7 @@ function getEnvVar(name: string): string {
 
 function sender() {
   const senderEmail = getEnvVar('SENDER_EMAIL')
-  return { name: 'Permis Express', email: senderEmail }
+  return { name: 'Esquiss Habitat', email: senderEmail }
 }
 
 async function sendEmailRaw(payload: Record<string, unknown>): Promise<EmailResult> {
@@ -52,7 +52,7 @@ export async function sendClientConfirmationEmail(
         <p>Nous confirmons la bonne réception de votre dossier.</p>
         <p><strong>Numéro de dossier :</strong><br/>${numeroDossier}</p>
         <p>Notre équipe analysera votre dossier dans les meilleurs délais.</p>
-        <p>Cordialement,<br/>Permis Express</p>
+        <p>Cordialement,<br/>Esquiss Habitat</p>
       </body>
     </html>
   `
@@ -62,7 +62,7 @@ export async function sendClientConfirmationEmail(
     to: [{ email }],
     subject: 'Confirmation de réception de votre dossier',
     htmlContent: html,
-    textContent: `Bonjour ${prenom} ${nom},\n\nNous confirmons la bonne réception de votre dossier.\n\nNuméro de dossier : ${numeroDossier}\n\nNotre équipe analysera votre dossier dans les meilleurs délais.\n\nCordialement,\nPermis Express`
+    textContent: `Bonjour ${prenom} ${nom},\n\nNous confirmons la bonne réception de votre dossier.\n\nNuméro de dossier : ${numeroDossier}\n\nNotre équipe analysera votre dossier dans les meilleurs délais.\n\nCordialement,\nEsquiss Habitat`
   }
 
   const result = await sendEmailRaw(payload)
@@ -92,7 +92,7 @@ export async function sendAdminNotificationEmail(
           <tr><td><strong>Email :</strong></td><td>${email}</td></tr>
           <tr><td><strong>Téléphone :</strong></td><td>${telephone ?? ''}</td></tr>
         </table>
-        <p>Cordialement,<br/>Permis Express</p>
+        <p>Cordialement,<br/>Esquiss Habitat</p>
       </body>
     </html>
   `
@@ -117,7 +117,7 @@ export async function sendPaymentConfirmationEmail(email: string, numeroDossier:
         <h2>Paiement confirmé</h2>
         <p>Votre paiement de 49 € a été validé.</p>
         <p><strong>Numéro de dossier :</strong><br/>${numeroDossier}</p>
-        <p>Cordialement,<br/>Permis Express</p>
+        <p>Cordialement,<br/>Esquiss Habitat</p>
       </body>
     </html>
   `

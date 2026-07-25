@@ -41,7 +41,7 @@ export async function POST(req: Request) {
         if (fetchErr) {
           console.error('Error fetching dossier before payment update', fetchErr)
         } else if (existing?.paiement_effectue) {
-          console.log('Dossier already marked as paid, skipping update for', dossierId)
+          // already marked as paid - skip
         } else {
           // Determine a sensible payment reference
           const paymentRef = session.payment_intent ?? session.id
@@ -62,7 +62,6 @@ export async function POST(req: Request) {
 
           try {
             await supabaseAdmin.from('dossiers').update(updatePayload).eq('id', dossierId)
-            console.log('Dossier payment updated for', dossierId)
 
             // send confirmation email when available
             try {
