@@ -36,10 +36,10 @@ export default function Hero() {
             ● Spécialiste en permis de construire
           </div>
 
-          <h1 className="text-4xl sm:text-5xl xl:text-6xl font-extrabold text-white leading-[1.02] tracking-tight">
+            <h1 className="text-4xl sm:text-5xl xl:text-6xl font-extrabold text-white leading-[1.02] tracking-tight">
             Concevons ensemble<br />
             <span className="text-[#a8c8e8]">votre projet</span><br />
-            <span className="text-white/90">d'urbanisme</span>
+            <span className="text-white/90">d&apos;urbanisme</span>
           </h1>
 
           <p className="mt-6 text-white/70 text-lg leading-relaxed max-w-lg">

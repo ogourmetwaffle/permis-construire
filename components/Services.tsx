@@ -74,7 +74,7 @@ export default function Services() {
           <p className="text-[#7b2020] text-sm font-semibold uppercase tracking-widest mb-3">Ce que nous proposons</p>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-[#1a1a2e] mb-4">Nos prestations</h2>
           <p className="text-gray-500 max-w-xl mx-auto">
-            De la déclaration préalable au permis de construire complet, nous prenons en charge l'intégralité de votre dossier administratif.
+            De la déclaration préalable au permis de construire complet, nous prenons en charge l&apos;intégralité de votre dossier administratif.
           </p>
         </div>
 
