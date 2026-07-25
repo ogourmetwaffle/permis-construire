@@ -16,7 +16,7 @@ type Dossier = {
   created_at?: string
 }
 
-export default function AdminDossierRow({ dossier, onOpen, selectedId }: { dossier: Dossier; onOpen?: (id: string) => void; selectedId?: string }) {
+export default function AdminDossierRow({ dossier, onOpen }: { dossier: Dossier; onOpen?: (id: string) => void }) {
   const { id, numero_dossier, nom, prenom, pays_permis, paiement_effectue, statut, created_at } = dossier
   const gridStyle = { gridTemplateColumns: '220px 1fr 120px 110px 140px 140px 96px' }
 

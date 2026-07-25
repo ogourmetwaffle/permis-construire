@@ -1,9 +1,8 @@
 "use client"
 
 import React from 'react'
-import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { ArrowLeft } from 'lucide-react'
+
 import AdminDossierDetail from '@/components/admin/AdminDossierDetail'
 
 export default function AdminDossierPage() {

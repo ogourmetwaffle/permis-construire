@@ -1,6 +1,6 @@
 'use client'
 
-import { ModePaiement, WizardData, TypeProjet } from './types'
+import { ModePaiement, WizardData } from './types'
 import SummaryCard from './SummaryCard'
 
 interface StepPaiementProps {
