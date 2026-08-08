@@ -1,5 +1,5 @@
 import supabaseAdmin from '@/lib/supabase-admin'
-import { sendPaymentConfirmationEmail } from '@/lib/email'
+import { sendPaymentConfirmationEmail, sendClientConfirmationEmail, sendAdminNotificationEmail } from '@/lib/email'
 
 export async function POST(req: Request) {
   const Stripe = (await import('stripe')).default
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
     if (dossierId && process.env.SUPABASE_SERVICE_ROLE_KEY) {
       try {
         // Ensure idempotence: fetch current dossier and only update if not already paid
-        const { data: existing, error: fetchErr } = await supabaseAdmin.from('dossiers').select('paiement_effectue, email, numero_dossier').eq('id', dossierId).single()
+        const { data: existing, error: fetchErr } = await supabaseAdmin.from('dossiers').select('paiement_effectue, email, numero_dossier, nom, prenom, telephone').eq('id', dossierId).single()
         if (fetchErr) {
           console.error('Error fetching dossier before payment update', fetchErr)
         } else if (existing?.paiement_effectue) {
@@ -63,13 +63,48 @@ export async function POST(req: Request) {
           try {
             await supabaseAdmin.from('dossiers').update(updatePayload).eq('id', dossierId)
 
-            // send confirmation email when available
+            // send confirmation emails when available
             try {
               if (existing?.email) {
-                await sendPaymentConfirmationEmail(existing.email, existing.numero_dossier)
+                // Try to determine amount and currency from session
+                const rawAmount = session.amount_total ?? session.amount_subtotal ?? session.total ?? null
+                const montant = rawAmount ? Number(rawAmount) / 100 : undefined
+                const currency = session.currency ?? 'EUR'
+                const reference = session.payment_intent ?? session.id
+
+                try {
+                  await sendPaymentConfirmationEmail(existing.email, existing.numero_dossier, montant, currency, reference)
+                } catch (err) {
+                  console.error('Error sending payment confirmation email', err)
+                }
+
+                // also send unified client confirmation (includes dossier + payment recap)
+                try {
+                  await sendClientConfirmationEmail(
+                    existing.email,
+                    existing.nom ?? '',
+                    existing.prenom ?? '',
+                    existing.numero_dossier,
+                    { mode: 'CARTE', montant, currency, transactionId: reference }
+                  )
+                } catch (err) {
+                  console.error('Error sending client confirmation email (CARTE)', err)
+                }
+
+                // notify admin
+                try {
+                  await sendAdminNotificationEmail(existing.numero_dossier, existing.nom ?? '', existing.prenom ?? '', existing.email, undefined, {
+                    mode: 'CARTE',
+                    montant,
+                    currency,
+                    reference
+                  })
+                } catch (err) {
+                  console.error('Error sending admin notification (CARTE)', err)
+                }
               }
             } catch (err) {
-              console.error('Error sending payment confirmation email', err)
+              console.error('Error preparing/sending confirmation emails', err)
             }
           } catch (err) {
             console.error('Error updating dossier payment', err)

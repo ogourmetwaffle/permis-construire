@@ -1,4 +1,5 @@
 import supabaseAdmin from '@/lib/supabase-admin'
+import { sendClientConfirmationEmail, sendAdminNotificationEmail } from '@/lib/email'
 
 export async function POST(req: Request) {
   try {
@@ -79,16 +80,45 @@ export async function POST(req: Request) {
       }
     }
 
-    return new Response(
-      JSON.stringify({
-        numeroDossier: dossier.numero_dossier,
-        dossierId: dossier.id,
-        iban: bankDetails.iban ?? null,
-        bic: bankDetails.bic ?? null,
-        titulaire: bankDetails.titulaire ?? null,
-      }),
-      { status: 200 }
-    )
+    // Prepare response payload
+    const responsePayload = {
+      numeroDossier: dossier.numero_dossier,
+      dossierId: dossier.id,
+      iban: bankDetails.iban ?? null,
+      bic: bankDetails.bic ?? null,
+      titulaire: bankDetails.titulaire ?? null,
+    }
+
+    // send emails (fire-and-forget, log errors)
+    try {
+      const paymentInfo = {
+        mode: 'VIREMENT' as const,
+        montant: montant ?? undefined,
+        currency: 'EUR',
+        iban: bankDetails.iban ?? undefined,
+        bic: bankDetails.bic ?? undefined,
+        titulaire: bankDetails.titulaire ?? undefined,
+        reference: dossier.numero_dossier,
+      }
+
+      // client email
+      try {
+        await sendClientConfirmationEmail(email, nom, prenom, dossier.numero_dossier, paymentInfo)
+      } catch (err) {
+        console.error('Error sending client confirmation (virement)', err)
+      }
+
+      // admin notification
+      try {
+        await sendAdminNotificationEmail(dossier.numero_dossier, nom, prenom, email, telephone, paymentInfo)
+      } catch (err) {
+        console.error('Error sending admin notification (virement)', err)
+      }
+    } catch (err) {
+      console.error('Error preparing/sending emails for virement', err)
+    }
+
+    return new Response(JSON.stringify(responsePayload), { status: 200 })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err)
     console.error(message)
