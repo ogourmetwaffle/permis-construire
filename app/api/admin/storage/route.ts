@@ -8,8 +8,11 @@ export async function GET(req: Request) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
-    // Fetch all documents but only needed columns (taille, dossier_id)
-    const { data: docs, error: docsErr } = await supabaseAdmin.from('documents').select('taille,dossier_id')
+    // Count only active documents (not archived) for live storage usage.
+    const { data: docs, error: docsErr } = await supabaseAdmin
+      .from('documents')
+      .select('taille,dossier_id')
+      .is('archived_at', null)
     if (docsErr) {
       console.error('supabaseAdmin documents error', docsErr)
       return NextResponse.json({ error: docsErr.message }, { status: 500 })

@@ -33,8 +33,17 @@ export default function StorageCard() {
         console.error('fetch storage error', e)
       }
     }
+
+    const handleRefresh = () => {
+      fetchData()
+    }
+
     fetchData()
-    return () => { mounted = false }
+    window.addEventListener('admin-storage-refresh', handleRefresh)
+    return () => {
+      mounted = false
+      window.removeEventListener('admin-storage-refresh', handleRefresh)
+    }
   }, [])
 
   const used = totalSize ?? 0

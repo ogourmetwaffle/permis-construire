@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react'
 import DocumentList, { DocItem } from './DocumentList'
 import ProjectCard from './ProjectCard'
 import Timeline from './Timeline'
-import { CheckCircle, XCircle, Mail, Download, CreditCard, Archive, Tag, Clock, User, ArrowLeft, FileText, Banknote, Edit2 } from 'lucide-react'
+import { CheckCircle, XCircle, Mail, Download, CreditCard, Archive, Tag, Clock, User, ArrowLeft, FileText, Banknote, Edit2, Trash2 } from 'lucide-react'
 import PaymentDialog from './PaymentDialog'
 import { toast } from 'react-hot-toast'
 import EditDossierDialog from './EditDossierDialog'
@@ -46,8 +46,10 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
   const [docs, setDocs] = useState<DocItem[]>([])
   const [docsLoading, setDocsLoading] = useState(false)
   const [showArchiveModal, setShowArchiveModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showPaymentDialog, setShowPaymentDialog] = useState(false)
   const [archiving, setArchiving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [zipDownloading, setZipDownloading] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [editSection, setEditSection] = useState<'client' | 'project'>('client')
@@ -133,6 +135,8 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
 
   const openArchiveModal = () => setShowArchiveModal(true)
   const closeArchiveModal = () => setShowArchiveModal(false)
+  const openDeleteModal = () => setShowDeleteModal(true)
+  const closeDeleteModal = () => setShowDeleteModal(false)
 
   const openEdit = (section: 'client' | 'project') => {
     setEditSection(section)
@@ -216,12 +220,48 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
 
       // Refresh docs list
       await fetchDocs(dossier.numero_dossier)
+      window.dispatchEvent(new Event('admin-storage-refresh'))
       setShowArchiveModal(false)
     } catch (e) {
       console.error('archive failed', e)
       alert('Erreur lors de l\'archivage. Voir la console.')
     } finally {
       setArchiving(false)
+    }
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!dossier) return
+    try {
+      setDeleting(true)
+      const session = await supabase.auth.getSession()
+      const token = session.data?.session?.access_token
+      if (!token) throw new Error('No token')
+
+      const resp = await fetch(`/api/admin/dossiers/${encodeURIComponent(String(id))}/delete`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const json = await resp.json()
+
+      if (!resp.ok) {
+        console.error('delete dossier error', json)
+        alert('Erreur lors de la suppression du dossier : ' + (json?.error || ''))
+        setDeleting(false)
+        return
+      }
+
+      window.dispatchEvent(new Event('admin-storage-refresh'))
+      closeDeleteModal()
+      toast.success('Dossier supprimé')
+      setTimeout(() => {
+        window.location.href = '/admin'
+      }, 350)
+    } catch (e) {
+      console.error('delete dossier failed', e)
+      alert('Erreur lors de la suppression du dossier. Voir la console.')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -370,6 +410,15 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
               className={`${actionBase} ${!hasAvailableDocs ? 'bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed' : 'bg-white text-gray-400 border-gray-200 hover:bg-red-100 hover:text-red-600'}`}
             >
               <Archive size={14} /> Archiver
+            </button>
+            <button
+              type="button"
+              onClick={openDeleteModal}
+              disabled={deleting}
+              aria-busy={deleting}
+              className={`${actionBase} ${deleting ? 'bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed' : 'bg-white text-red-600 border-red-200 hover:bg-red-50'}`}
+            >
+              <Trash2 size={14} /> Supprimer
             </button>
           </div>
         </div>
@@ -577,6 +626,60 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={closeDeleteModal} />
+          <div role="dialog" aria-modal="true" aria-labelledby="delete-title" className="relative bg-white rounded-xl shadow-xl max-w-lg w-full p-6 z-10 transform transition-all duration-200">
+            <div className="flex items-start gap-4">
+              <div className="shrink-0">
+                <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center text-red-600">
+                  <Trash2 size={20} />
+                </div>
+              </div>
+              <div className="min-w-0">
+                <h3 id="delete-title" className="text-lg font-semibold text-gray-900">Supprimer ce dossier ?</h3>
+                <p className="mt-2 text-sm text-gray-600">Cette action est irréversible. Le dossier sera supprimé de la base de données ainsi que tous ses documents du stockage Supabase.</p>
+                <p className="mt-2 text-sm text-gray-600">Avant de continuer, vous pouvez télécharger le dossier ZIP si vous souhaitez conserver une copie.</p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center justify-between gap-3">
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleDownloadZip}
+                  disabled={!hasAvailableDocs || zipDownloading || deleting}
+                  aria-busy={zipDownloading}
+                  title={!hasAvailableDocs ? 'Aucun fichier disponible' : undefined}
+                  className={`inline-flex items-center gap-2 px-3 py-2 rounded border text-sm transition-colors duration-150 ${!hasAvailableDocs || zipDownloading || deleting ? 'bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-100'}`}
+                >
+                  <Download size={14} className={zipDownloading ? 'animate-spin' : ''} />
+                  {zipDownloading ? 'Téléchargement…' : 'Télécharger le dossier ZIP'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={closeDeleteModal}
+                  disabled={deleting}
+                  className="inline-flex items-center px-3 py-2 rounded border border-gray-100 bg-white text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-150 disabled:opacity-60"
+                >
+                  Annuler
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                disabled={deleting}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded text-white text-sm transition-colors duration-150 ${deleting ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}
+              >
+                <Trash2 size={14} />
+                {deleting ? 'Suppression…' : 'Supprimer le dossier'}
+              </button>
             </div>
           </div>
         </div>
