@@ -3,63 +3,30 @@
 import Link from 'next/link'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
-
-function PrintButton() {
-  return (
-    <button
-      type="button"
-      onClick={() => window.print()}
-      className="px-4 py-2 bg-white border border-gray-200 rounded-md shadow-sm text-sm text-gray-800 hover:bg-gray-50"
-    >
-      Imprimer la confirmation
-    </button>
-  )
-}
 
 function MerciContent() {
   const searchParams = useSearchParams()
   const numero = searchParams.get('numero')
   const sessionId = searchParams.get('session_id')
-  const [syncMessage, setSyncMessage] = useState<string>('')
 
   useEffect(() => {
-    let cancelled = false
-
     async function syncPayment() {
       if (!sessionId || !numero) return
 
       try {
-        const resp = await fetch('/api/stripe/confirm-session', {
+        await fetch('/api/stripe/confirm-session', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sessionId, numero }),
         })
-        const json = await resp.json()
-
-        if (cancelled) return
-
-        if (!resp.ok) {
-          setSyncMessage('Paiement validé, synchronisation en cours côté serveur.')
-          return
-        }
-
-        if (json?.paid) {
-          setSyncMessage('Paiement confirmé.')
-        }
       } catch {
-        if (!cancelled) {
-          setSyncMessage('Paiement validé, synchronisation en cours côté serveur.')
-        }
+        // Silent fallback: webhook and admin can still reconcile payment status.
       }
     }
 
     syncPayment()
-
-    return () => {
-      cancelled = true
-    }
   }, [sessionId, numero])
 
   return (
@@ -79,17 +46,15 @@ function MerciContent() {
             <p className="mt-3 text-sm text-gray-600">Nous vous remercions pour votre confiance. Voici la confirmation de dépôt et les prochaines étapes.</p>
 
             {numero ? (
-              <div className="mt-6 inline-block text-left w-full sm:w-auto">
-                <div className="bg-gray-50 border border-gray-100 rounded-lg px-5 py-4 shadow-sm">
-                  <div className="text-xs text-gray-500">Numéro de dossier</div>
-                  <div className="mt-1 font-mono text-lg sm:text-xl font-semibold text-[#1e3a5f]">{numero}</div>
+              <div className="mt-6 w-full max-w-md mx-auto">
+                <div className="bg-[#f4f7ff] border border-[#d6e2ff] rounded-xl px-6 py-5 shadow-sm">
+                  <div className="text-xs font-semibold uppercase tracking-wider text-[#4f6ea8]">Numéro de dossier</div>
+                  <div className="mt-2 font-mono text-xl sm:text-2xl font-bold text-[#1e3a5f] tracking-wide">{numero}</div>
                 </div>
               </div>
             ) : (
               <div className="mt-6 text-sm text-gray-500">Aucun numéro de dossier fourni.</div>
             )}
-
-            {syncMessage && <div className="mt-3 text-xs text-gray-500">{syncMessage}</div>}
 
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link
@@ -98,8 +63,6 @@ function MerciContent() {
               >
                 Suivre l&apos;avancement
               </Link>
-
-              <PrintButton />
 
               <Link
                 href="/deposer-dossier"
