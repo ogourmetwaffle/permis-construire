@@ -482,7 +482,7 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-gray-500">Référence</span>
-                    <span className="text-sm font-medium text-gray-800 break-all">{dossier.reference_paiement ?? '—'}</span>
+                    <span className="text-xs font-medium text-gray-700 break-all">{dossier.reference_paiement ?? '—'}</span>
                   </div>
                   {dossier.commentaire_paiement && (
                     <div>

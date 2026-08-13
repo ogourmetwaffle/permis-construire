@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import supabaseAdmin from '@/lib/supabase-admin'
+import { sendClientConfirmationEmail, sendAdminNotificationEmail } from '@/lib/email'
 
 type ConfirmBody = {
   sessionId?: string
@@ -52,7 +53,7 @@ export async function POST(req: Request) {
     if (metadataDossierId) {
       const fetchById = await supabaseAdmin
         .from('dossiers')
-        .select('id, numero_dossier, paiement_effectue, reference_paiement')
+        .select('id, numero_dossier, paiement_effectue, reference_paiement, email, nom, prenom, telephone, montant, email_client_paiement_envoye_at, email_admin_paiement_envoye_at')
         .eq('id', metadataDossierId)
         .maybeSingle()
       existing = fetchById.data
@@ -62,7 +63,7 @@ export async function POST(req: Request) {
     if (!existing && metadataNumero) {
       const fetchByNumero = await supabaseAdmin
         .from('dossiers')
-        .select('id, numero_dossier, paiement_effectue, reference_paiement')
+        .select('id, numero_dossier, paiement_effectue, reference_paiement, email, nom, prenom, telephone, montant, email_client_paiement_envoye_at, email_admin_paiement_envoye_at')
         .eq('numero_dossier', metadataNumero)
         .maybeSingle()
       existing = fetchByNumero.data
@@ -72,7 +73,7 @@ export async function POST(req: Request) {
     if (!existing && numero) {
       const fetchByNumero = await supabaseAdmin
         .from('dossiers')
-        .select('id, numero_dossier, paiement_effectue, reference_paiement')
+        .select('id, numero_dossier, paiement_effectue, reference_paiement, email, nom, prenom, telephone, montant, email_client_paiement_envoye_at, email_admin_paiement_envoye_at')
         .eq('numero_dossier', numero)
         .maybeSingle()
       existing = fetchByNumero.data
@@ -95,43 +96,98 @@ export async function POST(req: Request) {
 
     const paymentRef = paymentIntentId ?? session.id
 
-    if (existing.paiement_effectue) {
-      return NextResponse.json({
-        ok: true,
-        paid: true,
-        updated: false,
-        numero: existing.numero_dossier,
-        reference: existing.reference_paiement ?? paymentRef,
-      })
+    let updated = false
+    if (!existing.paiement_effectue) {
+      const now = new Date().toISOString()
+      const basePayload: Record<string, unknown> = {
+        paiement_effectue: true,
+        date_paiement: now,
+        reference_paiement: paymentRef,
+        statut: 'NOUVEAU',
+        mode_paiement: 'CARTE',
+      }
+
+      const payloadWithSession: Record<string, unknown> = { ...basePayload }
+      if (session.id) payloadWithSession.stripe_payment_id = session.id
+
+      let updateRes = await supabaseAdmin.from('dossiers').update(payloadWithSession).eq('id', existing.id)
+
+      if (updateRes.error && String(updateRes.error.message || '').includes('stripe_payment_id')) {
+        updateRes = await supabaseAdmin.from('dossiers').update(basePayload).eq('id', existing.id)
+      }
+
+      if (updateRes.error) {
+        console.error('confirm-session update error', updateRes.error)
+        return NextResponse.json({ error: 'Unable to update dossier payment' }, { status: 500 })
+      }
+
+      updated = true
     }
 
-    const now = new Date().toISOString()
-    const basePayload: Record<string, unknown> = {
-      paiement_effectue: true,
-      date_paiement: now,
-      reference_paiement: paymentRef,
-      statut: 'NOUVEAU',
-      mode_paiement: 'CARTE',
+    const clientEmailAlreadySent = Boolean(existing?.email_client_paiement_envoye_at)
+    const adminEmailAlreadySent = Boolean(existing?.email_admin_paiement_envoye_at)
+    const hasClientEmail = Boolean(existing?.email)
+    const rawAmount = session.amount_total ?? session.amount_subtotal ?? null
+    const montant = rawAmount ? Number(rawAmount) / 100 : (existing?.montant == null ? undefined : Number(existing.montant))
+    const currency = session.currency ?? 'EUR'
+    const reference = paymentRef
+
+    let clientEmailSentNow = false
+    let adminEmailSentNow = false
+
+    try {
+      if (hasClientEmail && !clientEmailAlreadySent) {
+        const clientResult = await sendClientConfirmationEmail(
+          existing.email,
+          existing.nom ?? '',
+          existing.prenom ?? '',
+          existing.numero_dossier,
+          { mode: 'CARTE', montant, currency, transactionId: reference }
+        )
+        if (clientResult.ok) {
+          clientEmailSentNow = true
+        } else {
+          console.error('confirm-session client email error', clientResult.error)
+        }
+      }
+
+      if (!adminEmailAlreadySent) {
+        const adminResult = await sendAdminNotificationEmail(
+          existing.numero_dossier,
+          existing.nom ?? '',
+          existing.prenom ?? '',
+          existing.email ?? '',
+          existing.telephone ?? undefined,
+          { mode: 'CARTE', montant, currency, reference }
+        )
+        if (adminResult.ok) {
+          adminEmailSentNow = true
+        } else {
+          console.error('confirm-session admin email error', adminResult.error)
+        }
+      }
+    } catch (err) {
+      console.error('confirm-session email sending error', err)
     }
 
-    const payloadWithSession: Record<string, unknown> = { ...basePayload }
-    if (session.id) payloadWithSession.stripe_payment_id = session.id
+    if (clientEmailSentNow || adminEmailSentNow) {
+      const nowIso = new Date().toISOString()
+      const notificationPayload: Record<string, unknown> = {}
+      if (clientEmailSentNow && !clientEmailAlreadySent) notificationPayload.email_client_paiement_envoye_at = nowIso
+      if (adminEmailSentNow && !adminEmailAlreadySent) notificationPayload.email_admin_paiement_envoye_at = nowIso
 
-    let updateRes = await supabaseAdmin.from('dossiers').update(payloadWithSession).eq('id', existing.id)
-
-    if (updateRes.error && String(updateRes.error.message || '').includes('stripe_payment_id')) {
-      updateRes = await supabaseAdmin.from('dossiers').update(basePayload).eq('id', existing.id)
-    }
-
-    if (updateRes.error) {
-      console.error('confirm-session update error', updateRes.error)
-      return NextResponse.json({ error: 'Unable to update dossier payment' }, { status: 500 })
+      if (Object.keys(notificationPayload).length > 0) {
+        const markRes = await supabaseAdmin.from('dossiers').update(notificationPayload).eq('id', existing.id)
+        if (markRes.error) {
+          console.error('confirm-session notification timestamp save error', markRes.error)
+        }
+      }
     }
 
     return NextResponse.json({
       ok: true,
       paid: true,
-      updated: true,
+      updated,
       numero: existing.numero_dossier,
       reference: paymentRef,
     })

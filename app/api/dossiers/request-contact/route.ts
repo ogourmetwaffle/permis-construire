@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import supabaseAdmin from '@/lib/supabase-admin'
+import { sendPaymentAssistanceEmail } from '@/lib/email'
 
 type Body = {
   dossierId?: number
@@ -18,7 +19,7 @@ export async function POST(req: Request) {
 
     let query = supabaseAdmin
       .from('dossiers')
-      .select('id, numero_dossier, commentaire_admin, paiement_effectue, statut')
+      .select('id, numero_dossier, commentaire_admin, paiement_effectue, statut, nom, prenom, email, montant')
 
     if (dossierId) query = query.eq('id', dossierId)
     else query = query.eq('numero_dossier', numero)
@@ -54,6 +55,46 @@ export async function POST(req: Request) {
     if (updateError) {
       console.error('request-contact update error', updateError)
       return NextResponse.json({ error: 'Unable to save contact request' }, { status: 500 })
+    }
+
+    try {
+      const { data: params } = await supabaseAdmin
+        .from('parametres')
+        .select('cle, valeur')
+        .in('cle', ['iban', 'bic', 'titulaire'])
+
+      const bankDetails: Record<string, string> = {}
+      for (const row of (params ?? []) as { cle: string; valeur: string }[]) {
+        bankDetails[row.cle] = row.valeur
+      }
+
+      const dossierData = dossier as {
+        email?: string | null
+        nom?: string | null
+        prenom?: string | null
+        numero_dossier: string
+        montant?: number | null
+      }
+
+      if (dossierData.email) {
+        await sendPaymentAssistanceEmail(
+          dossierData.email,
+          dossierData.nom ?? '',
+          dossierData.prenom ?? '',
+          dossierData.numero_dossier,
+          {
+            mode: 'VIREMENT',
+            montant: dossierData.montant == null ? undefined : Number(dossierData.montant),
+            currency: 'EUR',
+            iban: bankDetails.iban ?? undefined,
+            bic: bankDetails.bic ?? undefined,
+            titulaire: bankDetails.titulaire ?? undefined,
+            reference: dossierData.numero_dossier,
+          }
+        )
+      }
+    } catch (err) {
+      console.error('request-contact email error', err)
     }
 
     return NextResponse.json({ ok: true, numero: (dossier as { numero_dossier: string }).numero_dossier })

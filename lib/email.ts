@@ -208,6 +208,68 @@ export async function sendPaymentConfirmationEmail(
   return result
 }
 
-const emailClient = { sendClientConfirmationEmail, sendAdminNotificationEmail, sendPaymentConfirmationEmail }
+export async function sendPaymentAssistanceEmail(
+  email: string,
+  nom: string,
+  prenom: string,
+  numeroDossier: string,
+  paymentInfo?: PaymentInfo
+): Promise<EmailResult> {
+  const amountLine = paymentInfo?.montant ? `<p><strong>Montant :</strong> ${paymentInfo.montant} ${paymentInfo.currency ?? 'EUR'}</p>` : ''
+
+  const html = `
+    <html>
+      <body style="font-family: Arial, sans-serif; color: #111;">
+        <h2>Votre dossier est bien créé</h2>
+        <p>Bonjour ${prenom} ${nom},</p>
+        <p>Votre dossier a bien été créé, mais votre paiement par carte n'a pas pu être finalisé.</p>
+        <p>Un membre de notre équipe va vous contacter pour vous accompagner.</p>
+        <p>Vous pouvez aussi finaliser votre dossier par virement bancaire :</p>
+        <p><strong>Numéro de dossier :</strong><br/>${numeroDossier}</p>
+        ${amountLine}
+        <p><strong>IBAN :</strong> ${paymentInfo?.iban ?? '—'}</p>
+        <p><strong>BIC :</strong> ${paymentInfo?.bic ?? '—'}</p>
+        <p><strong>Titulaire :</strong> ${paymentInfo?.titulaire ?? '—'}</p>
+        <p><strong>Référence à indiquer :</strong> ${paymentInfo?.reference ?? numeroDossier}</p>
+        <p>Cordialement,<br/>${sender().name}</p>
+      </body>
+    </html>
+  `
+
+  const textContent = [
+    `Bonjour ${prenom} ${nom},`,
+    "Votre dossier a bien été créé, mais votre paiement par carte n'a pas pu être finalisé.",
+    'Un membre de notre équipe va vous contacter pour vous accompagner.',
+    'Vous pouvez aussi finaliser votre dossier par virement bancaire :',
+    `Numéro de dossier: ${numeroDossier}`,
+    paymentInfo?.montant ? `Montant: ${paymentInfo.montant} ${paymentInfo.currency ?? 'EUR'}` : '',
+    `IBAN: ${paymentInfo?.iban ?? '—'}`,
+    `BIC: ${paymentInfo?.bic ?? '—'}`,
+    `Titulaire: ${paymentInfo?.titulaire ?? '—'}`,
+    `Référence: ${paymentInfo?.reference ?? numeroDossier}`,
+    `Cordialement, ${sender().name}`,
+  ]
+    .filter(Boolean)
+    .join('\n\n')
+
+  const payload = {
+    sender: sender(),
+    to: [{ email }],
+    subject: `Finalisation de votre dossier — ${numeroDossier}`,
+    htmlContent: html,
+    textContent,
+  }
+
+  const result = await sendEmailRaw(payload)
+  if (!result.ok) console.error('sendPaymentAssistanceEmail error', result.error)
+  return result
+}
+
+const emailClient = {
+  sendClientConfirmationEmail,
+  sendAdminNotificationEmail,
+  sendPaymentConfirmationEmail,
+  sendPaymentAssistanceEmail,
+}
 
 export default emailClient
