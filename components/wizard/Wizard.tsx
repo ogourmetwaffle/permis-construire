@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import ProgressBar from './ProgressBar'
 import StepClient from './StepClient'
@@ -8,7 +9,7 @@ import StepInformations from './StepInformations'
 import StepDetails from './StepDetails'
 import StepDocuments from './StepDocuments'
 import StepPaiement from './StepPaiement'
-import { WizardData, WIZARD_INITIAL_DATA, TOTAL_STEPS, STEP_LABELS, ModePaiement, TypeProjet } from './types'
+import { WizardData, WIZARD_INITIAL_DATA, TOTAL_STEPS, STEP_LABELS, ModePaiement } from './types'
 import { supabase } from '@/lib/supabase'
 
 interface VirementConfirmation {
@@ -28,8 +29,14 @@ export default function Wizard() {
   const [virementInfo, setVirementInfo] = useState<VirementConfirmation | null>(null)
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
+  const [retryingCard, setRetryingCard] = useState(false)
+  const [requestingContact, setRequestingContact] = useState(false)
+  const [cancelledMessage, setCancelledMessage] = useState<string | null>(null)
 
   const handleChange = (updates: Partial<WizardData>) => {
+    if (Object.prototype.hasOwnProperty.call(updates, 'typeClient') || Object.prototype.hasOwnProperty.call(updates, 'typeProjet')) {
+      setTarif(null)
+    }
     setData(prev => ({ ...prev, ...updates }))
   }
 
@@ -38,7 +45,7 @@ export default function Wizard() {
 
   // Fetch tarif whenever typeClient or typeProjet changes
   useEffect(() => {
-    if (!data.typeClient || !data.typeProjet) { setTarif(null); return }
+    if (!data.typeClient || !data.typeProjet) return
     supabase
       .from('tarifs')
       .select('prix')
@@ -50,6 +57,79 @@ export default function Wizard() {
         setTarif(row ? (row as { prix: number }).prix : null)
       })
   }, [data.typeClient, data.typeProjet])
+
+  const cancelledInfo = (() => {
+    if (typeof window === 'undefined') return null
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('cancelled') !== '1') return null
+
+    const numero = params.get('numero') || undefined
+    const dossierIdRaw = params.get('dossierId') || ''
+    const dossierId = dossierIdRaw ? Number(dossierIdRaw) : undefined
+
+    return { numero, dossierId: Number.isFinite(dossierId) ? dossierId : undefined }
+  })()
+
+  const retryCardPayment = async () => {
+    if (!cancelledInfo?.numero || !cancelledInfo?.dossierId) {
+      setCancelledMessage('Impossible de retrouver votre dossier. Merci de réessayer depuis le formulaire.')
+      return
+    }
+
+    setRetryingCard(true)
+    setCancelledMessage(null)
+    try {
+      const res = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          numero: cancelledInfo.numero,
+          dossierId: cancelledInfo.dossierId,
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok || json.error || !json.url) {
+        setCancelledMessage(json?.error || 'Erreur lors de la relance du paiement. Merci de réessayer dans un instant.')
+        return
+      }
+
+      window.location.href = json.url
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erreur inattendue lors de la relance du paiement.'
+      setCancelledMessage(message)
+    } finally {
+      setRetryingCard(false)
+    }
+  }
+
+  const requestTeamContact = async () => {
+    if (!cancelledInfo?.numero && !cancelledInfo?.dossierId) {
+      setCancelledMessage('Impossible de retrouver votre dossier. Merci de recommencer le dépôt.')
+      return
+    }
+
+    setRequestingContact(true)
+    setCancelledMessage(null)
+    try {
+      const res = await fetch('/api/dossiers/request-contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ numero: cancelledInfo?.numero, dossierId: cancelledInfo?.dossierId }),
+      })
+      const json = await res.json()
+      if (!res.ok || json.error) {
+        setCancelledMessage(json?.error || 'Impossible d’enregistrer votre demande pour le moment.')
+        return
+      }
+
+      setCancelledMessage('Votre dossier est bien enregistré. Un membre de notre équipe va vous contacter pour finaliser votre dossier.')
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erreur inattendue.'
+      setCancelledMessage(message)
+    } finally {
+      setRequestingContact(false)
+    }
+  }
 
   const uploadFiles = (numeroDossier: string, dossierId?: number) => {
     return new Promise<void>((resolve, reject) => {
@@ -75,7 +155,7 @@ export default function Wizard() {
       xhr.onload = () => {
         if (xhr.status >= 200 && xhr.status < 300) {
           try {
-            const json = JSON.parse(xhr.responseText)
+            JSON.parse(xhr.responseText)
             // success
             setUploadProgress(100)
             setTimeout(() => setUploading(false), 500)
@@ -188,6 +268,65 @@ export default function Wizard() {
     }
   }
 
+  if (cancelledInfo) {
+    return (
+      <div className="min-h-screen bg-[#f5f6f8] pt-24 pb-16 px-4">
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+            <div className="flex flex-col items-center text-center mb-8">
+              <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mb-4">
+                <svg className="w-8 h-8 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8v4m0 4h.01M4.93 19h14.14c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.2 16c-.77 1.33.19 3 1.73 3z" />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-[#1e3a5f] mb-2">Paiement non finalisé</h2>
+              <p className="text-gray-600 text-base">
+                Votre dossier a bien été créé, mais le paiement par carte n&apos;a pas été validé.
+              </p>
+            </div>
+
+            <div className="p-4 bg-[#f5f6f8] rounded-xl mb-6 text-sm text-gray-700">
+              <div className="font-semibold text-[#1e3a5f] mb-1">Référence dossier</div>
+              <div className="font-mono">{cancelledInfo.numero || 'Non disponible'}</div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={retryCardPayment}
+                disabled={retryingCard || requestingContact}
+                className="inline-flex items-center justify-center px-6 py-3.5 rounded-xl bg-[#1e3a5f] hover:bg-[#17314f] text-white font-semibold shadow-md transition-all disabled:opacity-60"
+              >
+                {retryingCard ? 'Redirection...' : 'Réessayer le paiement'}
+              </button>
+
+              <button
+                type="button"
+                onClick={requestTeamContact}
+                disabled={requestingContact || retryingCard}
+                className="inline-flex items-center justify-center px-6 py-3.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-[#1e3a5f] font-semibold transition-all disabled:opacity-60"
+              >
+                {requestingContact ? 'Enregistrement...' : 'Être contacté par l\'équipe'}
+              </button>
+            </div>
+
+            {cancelledMessage && (
+              <div className="mt-4 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
+                {cancelledMessage}
+              </div>
+            )}
+
+            <div className="mt-6 text-center">
+              <Link href="/" className="text-sm text-gray-500 hover:text-gray-700 underline underline-offset-4">
+                Retour à l&apos;accueil
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   // Virement confirmation screen
   if (virementInfo) {
     return (
@@ -240,12 +379,12 @@ export default function Wizard() {
               </p>
             </div>
 
-            <a
+            <Link
               href="/"
               className="inline-flex items-center justify-center w-full px-6 py-3.5 rounded-xl bg-[#7b2020] hover:bg-[#6a1a1a] text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200"
             >
               Retour à l&apos;accueil
-            </a>
+            </Link>
           </div>
         </div>
       </div>
@@ -326,7 +465,7 @@ export default function Wizard() {
         {/* Upload progress overlay */}
         {uploading && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-            <div className="bg-white rounded-2xl p-6 w-[360px] max-w-[92%] text-center shadow-xl border border-gray-100">
+            <div className="bg-white rounded-2xl p-6 w-90 max-w-[92%] text-center shadow-xl border border-gray-100">
               <p className="text-sm text-gray-500 mb-3">Téléversement...</p>
               <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden mb-3">
                 <div className="h-2 bg-[#1e3a5f] transition-all" style={{ width: `${uploadProgress}%` }} />

@@ -43,6 +43,28 @@ export async function POST(req: Request) {
 
     let numeroDossier = legacyNumero ?? ''
     let dossierId = legacyDossierId ?? 0
+    let effectiveEmail = email ?? ''
+    let effectiveTypeProjet = typeProjet ?? ''
+    let effectiveMontant = montant
+
+    // Retry flow: when dossier already exists, hydrate missing payment context from DB.
+    if (legacyNumero && legacyDossierId && (!effectiveEmail || !effectiveMontant || !effectiveTypeProjet)) {
+      const { data: existingDossier, error: existingError } = await supabaseAdmin
+        .from('dossiers')
+        .select('id, numero_dossier, email, type_projet, montant')
+        .eq('id', legacyDossierId)
+        .maybeSingle()
+
+      if (!existingError && existingDossier) {
+        numeroDossier = (existingDossier as { numero_dossier?: string }).numero_dossier || numeroDossier
+        effectiveEmail = (existingDossier as { email?: string }).email || effectiveEmail
+        effectiveTypeProjet = (existingDossier as { type_projet?: string }).type_projet || effectiveTypeProjet
+        if (effectiveMontant == null) {
+          const dbMontant = (existingDossier as { montant?: number | null }).montant
+          effectiveMontant = dbMontant == null ? undefined : Number(dbMontant)
+        }
+      }
+    }
 
     // New wizard flow: create the dossier server-side before redirecting to Stripe
     if (!legacyNumero && typeClient && email) {
@@ -86,12 +108,12 @@ export async function POST(req: Request) {
     const origin = req.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_VERCEL_URL || 'http://localhost:3000'
 
     // Amount in cents — use dynamic montant or fallback
-    const unitAmount = montant ? Math.round(montant * 100) : 4900
+    const unitAmount = effectiveMontant ? Math.round(effectiveMontant * 100) : 4900
 
     const prestationLabel =
-      typeProjet === 'DP'
+      effectiveTypeProjet === 'DP'
         ? 'Déclaration Préalable — Esquiss Habitat'
-        : typeProjet === 'PCMI'
+        : effectiveTypeProjet === 'PCMI'
           ? 'Permis de Construire (PCMI) — Esquiss Habitat'
           : 'Dossier permis de construire — Esquiss Habitat'
 
@@ -108,13 +130,13 @@ export async function POST(req: Request) {
           quantity: 1,
         },
       ],
-      customer_email: email || undefined,
+      customer_email: effectiveEmail || undefined,
       metadata: {
         numero: numeroDossier,
         dossierId: String(dossierId),
       },
       success_url: `${origin}/merci?session_id={CHECKOUT_SESSION_ID}&numero=${encodeURIComponent(numeroDossier)}`,
-      cancel_url: `${origin}/deposer-dossier?cancelled=1`,
+      cancel_url: `${origin}/deposer-dossier?cancelled=1&numero=${encodeURIComponent(numeroDossier)}&dossierId=${encodeURIComponent(String(dossierId))}`,
     })
 
     return new Response(JSON.stringify({ url: session.url, numeroDossier }), { status: 200 })
