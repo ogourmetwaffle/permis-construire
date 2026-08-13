@@ -58,7 +58,7 @@ export default function Wizard() {
       })
   }, [data.typeClient, data.typeProjet])
 
-  const cancelledInfo = (() => {
+  const [cancelledInfo] = useState<{ numero?: string; dossierId?: number } | null>(() => {
     if (typeof window === 'undefined') return null
     const params = new URLSearchParams(window.location.search)
     if (params.get('cancelled') !== '1') return null
@@ -68,7 +68,13 @@ export default function Wizard() {
     const dossierId = dossierIdRaw ? Number(dossierIdRaw) : undefined
 
     return { numero, dossierId: Number.isFinite(dossierId) ? dossierId : undefined }
-  })()
+  })
+
+  useEffect(() => {
+    if (!cancelledInfo || typeof window === 'undefined') return
+    // Consume the cancelled query once, so future visits start with a clean URL.
+    window.history.replaceState(window.history.state, '', window.location.pathname)
+  }, [cancelledInfo])
 
   const retryCardPayment = async () => {
     if (!cancelledInfo?.numero || !cancelledInfo?.dossierId) {

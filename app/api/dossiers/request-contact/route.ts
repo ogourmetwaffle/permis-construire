@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import supabaseAdmin from '@/lib/supabase-admin'
-import { sendPaymentAssistanceEmail } from '@/lib/email'
+import { sendPaymentAssistanceEmail, sendAdminNotificationEmail } from '@/lib/email'
 
 type Body = {
   dossierId?: number
@@ -19,7 +19,7 @@ export async function POST(req: Request) {
 
     let query = supabaseAdmin
       .from('dossiers')
-      .select('id, numero_dossier, commentaire_admin, paiement_effectue, statut, nom, prenom, email, montant')
+      .select('id, numero_dossier, commentaire_admin, paiement_effectue, statut, nom, prenom, email, telephone, montant')
 
     if (dossierId) query = query.eq('id', dossierId)
     else query = query.eq('numero_dossier', numero)
@@ -72,6 +72,7 @@ export async function POST(req: Request) {
         email?: string | null
         nom?: string | null
         prenom?: string | null
+        telephone?: string | null
         numero_dossier: string
         montant?: number | null
       }
@@ -92,6 +93,24 @@ export async function POST(req: Request) {
             reference: dossierData.numero_dossier,
           }
         )
+      }
+
+      try {
+        await sendAdminNotificationEmail(
+          dossierData.numero_dossier,
+          dossierData.nom ?? '',
+          dossierData.prenom ?? '',
+          dossierData.email ?? '',
+          dossierData.telephone ?? undefined,
+          {
+            mode: 'CARTE',
+            montant: dossierData.montant == null ? undefined : Number(dossierData.montant),
+            currency: 'EUR',
+            reference: dossierData.numero_dossier,
+          }
+        )
+      } catch (err) {
+        console.error('request-contact admin email error', err)
       }
     } catch (err) {
       console.error('request-contact email error', err)
