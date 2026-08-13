@@ -27,6 +27,7 @@ export async function POST(req: Request) {
   }
 
   // Use centralized Supabase admin client (supabaseAdmin)
+  let shouldRetry = false
 
   if ((event as { type?: string }).type === 'checkout.session.completed') {
     const ev = event as { data?: { object?: any }; type?: string }
@@ -40,28 +41,43 @@ export async function POST(req: Request) {
         const { data: existing, error: fetchErr } = await supabaseAdmin.from('dossiers').select('paiement_effectue, email, numero_dossier, nom, prenom, telephone').eq('id', dossierId).single()
         if (fetchErr) {
           console.error('Error fetching dossier before payment update', fetchErr)
+          shouldRetry = true
         } else if (existing?.paiement_effectue) {
           // already marked as paid - skip
         } else {
-          // Determine a sensible payment reference
+          // Keep Stripe payment intent as the primary transaction reference.
           const paymentRef = session.payment_intent ?? session.id
           const now = new Date().toISOString()
 
-          const updatePayload: Record<string, any> = {
+          const basePayload: Record<string, any> = {
             paiement_effectue: true,
             date_paiement: now,
             reference_paiement: paymentRef ?? session.id,
             statut: 'NOUVEAU',
+            mode_paiement: 'CARTE',
           }
-          // set mode_paiement to CARTE if empty
-          if (!session.metadata?.mode_paiement) {
-            updatePayload.mode_paiement = 'CARTE'
-          }
-          // preserve existing stripe id if possible
-          if (session.id) updatePayload.stripe_payment_id = session.id
 
           try {
-            await supabaseAdmin.from('dossiers').update(updatePayload).eq('id', dossierId)
+            let updateErr: { message?: string } | null = null
+
+            const payloadWithSessionId: Record<string, any> = { ...basePayload }
+            if (session.id) payloadWithSessionId.stripe_payment_id = session.id
+
+            const firstUpdate = await supabaseAdmin.from('dossiers').update(payloadWithSessionId).eq('id', dossierId)
+            updateErr = firstUpdate.error as { message?: string } | null
+
+            // Backward compatibility: retry without stripe_payment_id if DB schema is not aligned yet.
+            if (updateErr && payloadWithSessionId.stripe_payment_id && String(updateErr.message || '').includes('stripe_payment_id')) {
+              console.warn('stripe_payment_id column is missing in dossiers table, retrying update without it')
+              const retryUpdate = await supabaseAdmin.from('dossiers').update(basePayload).eq('id', dossierId)
+              updateErr = retryUpdate.error as { message?: string } | null
+            }
+
+            if (updateErr) {
+              console.error('Error updating dossier payment', updateErr)
+              shouldRetry = true
+              return new Response('Webhook update failed', { status: 500 })
+            }
 
             // send confirmation emails when available
             try {
@@ -108,14 +124,24 @@ export async function POST(req: Request) {
             }
           } catch (err) {
             console.error('Error updating dossier payment', err)
+            shouldRetry = true
+            return new Response('Webhook update failed', { status: 500 })
           }
         }
       } catch (err) {
         console.error('Error processing checkout.session.completed', err)
+        shouldRetry = true
+        return new Response('Webhook processing failed', { status: 500 })
       }
     } else {
       console.warn('No dossierId or SUPABASE_SERVICE_ROLE_KEY not set; cannot mark payment')
+      shouldRetry = true
+      return new Response('Webhook configuration issue', { status: 500 })
     }
+  }
+
+  if (shouldRetry) {
+    return new Response('Webhook temporary failure', { status: 500 })
   }
 
   return new Response('ok')

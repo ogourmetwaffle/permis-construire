@@ -3,15 +3,13 @@
 import Link from 'next/link'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
-import { useRouter } from 'next/navigation'
-
-type Props = {
-  searchParams?: { numero?: string }
-}
+import { Suspense, useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 
 function PrintButton() {
   return (
     <button
+      type="button"
       onClick={() => window.print()}
       className="px-4 py-2 bg-white border border-gray-200 rounded-md shadow-sm text-sm text-gray-800 hover:bg-gray-50"
     >
@@ -20,9 +18,49 @@ function PrintButton() {
   )
 }
 
-export default function Merci({ searchParams }: Props) {
-  const numero = searchParams?.numero
-  const router = useRouter()
+function MerciContent() {
+  const searchParams = useSearchParams()
+  const numero = searchParams.get('numero')
+  const sessionId = searchParams.get('session_id')
+  const [syncMessage, setSyncMessage] = useState<string>('')
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function syncPayment() {
+      if (!sessionId || !numero) return
+
+      try {
+        const resp = await fetch('/api/stripe/confirm-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId, numero }),
+        })
+        const json = await resp.json()
+
+        if (cancelled) return
+
+        if (!resp.ok) {
+          setSyncMessage('Paiement validé, synchronisation en cours côté serveur.')
+          return
+        }
+
+        if (json?.paid) {
+          setSyncMessage('Paiement confirmé.')
+        }
+      } catch {
+        if (!cancelled) {
+          setSyncMessage('Paiement validé, synchronisation en cours côté serveur.')
+        }
+      }
+    }
+
+    syncPayment()
+
+    return () => {
+      cancelled = true
+    }
+  }, [sessionId, numero])
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-white via-sky-50 to-gray-50">
@@ -51,6 +89,8 @@ export default function Merci({ searchParams }: Props) {
               <div className="mt-6 text-sm text-gray-500">Aucun numéro de dossier fourni.</div>
             )}
 
+            {syncMessage && <div className="mt-3 text-xs text-gray-500">{syncMessage}</div>}
+
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link
                 href={numero ? `/admin/dossiers/${numero}` : '/admin'}
@@ -61,12 +101,12 @@ export default function Merci({ searchParams }: Props) {
 
               <PrintButton />
 
-              <button
-                onClick={() => router.push('/deposer-dossier')}
+              <Link
+                href="/deposer-dossier"
                 className="px-5 py-3 border border-transparent bg-white text-[#1e3a5f] rounded-lg shadow-sm hover:bg-gray-50"
               >
                 Déposer un nouveau dossier
-              </button>
+              </Link>
             </div>
 
             <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm text-gray-600">
@@ -92,5 +132,13 @@ export default function Merci({ searchParams }: Props) {
 
       <Footer />
     </div>
+  )
+}
+
+export default function Merci() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-white" />}>
+      <MerciContent />
+    </Suspense>
   )
 }
