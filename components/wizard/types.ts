@@ -1,5 +1,5 @@
 export type TypeClient = 'PARTICULIER' | 'PROFESSIONNEL'
-export type TypeProjet = 'DP' | 'PCMI'
+export type TypeProjet = 'DP' | 'PCMI' | 'PRESTATION'
 export type ModePaiement = 'CARTE' | 'VIREMENT'
 
 export interface WizardData {

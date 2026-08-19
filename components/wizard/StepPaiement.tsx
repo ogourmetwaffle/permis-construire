@@ -14,7 +14,8 @@ interface StepPaiementProps {
 
 export default function StepPaiement({ data, tarif, onSubmit, onPrev, loading, error }: StepPaiementProps) {
   const surfaceNum = parseFloat(data.surface)
-  const needsDevis = !isNaN(surfaceNum) && surfaceNum > 150
+  const isPrestation = data.typeProjet === 'PRESTATION'
+  const needsDevis = isPrestation || (!isNaN(surfaceNum) && surfaceNum > 150)
 
   const handleSelect = (mode: ModePaiement) => {
     if (!loading) onSubmit(mode)
@@ -31,9 +32,15 @@ export default function StepPaiement({ data, tarif, onSubmit, onPrev, loading, e
           <div className="text-3xl shrink-0">📬</div>
           <div>
             <h3 className="font-bold text-amber-900 mb-1">Devis personnalisé</h3>
-            <p className="text-sm text-amber-800 leading-relaxed">
-              Votre projet dépasse 150 m² et nécessite un devis personnalisé. Notre équipe vous recontactera rapidement pour établir un devis adapté.
-            </p>
+            {isPrestation ? (
+              <p className="text-sm text-amber-800 leading-relaxed">
+                Les prestations sélectionnées sont proposées sur devis. Notre équipe vous recontactera rapidement pour établir une proposition adaptée.
+              </p>
+            ) : (
+              <p className="text-sm text-amber-800 leading-relaxed">
+                Votre projet dépasse 150 m² et nécessite un devis personnalisé. Notre équipe vous recontactera rapidement pour établir un devis adapté.
+              </p>
+            )}
           </div>
         </div>
         <div className="flex justify-between">

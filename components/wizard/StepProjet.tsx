@@ -39,6 +39,17 @@ const PROJET_META: Record<TypeProjet, { label: string; sublabel: string; icon: s
       'Aménagement de combles',
     ],
   },
+  PRESTATION: {
+    label: 'Autres prestations',
+    sublabel: 'Sur devis',
+    icon: '🎨',
+    features: [
+      'Avant-projets',
+      'Rendus 3D',
+      'Études et esquisses',
+      'Autres prestations sur-mesure',
+    ],
+  },
 }
 
 export default function StepProjet({ data, onChange, onNext, onPrev }: StepProjetProps) {
@@ -87,7 +98,7 @@ export default function StepProjet({ data, onChange, onNext, onPrev }: StepProje
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
-          {(['DP', 'PCMI'] as TypeProjet[]).map((type) => {
+          {(Object.keys(PROJET_META) as TypeProjet[]).map((type) => {
             const meta = PROJET_META[type]
             const price = getPrice(type)
             const isSelected = data.typeProjet === type
@@ -129,14 +140,18 @@ export default function StepProjet({ data, onChange, onNext, onPrev }: StepProje
                   ))}
                 </ul>
 
-                {price !== null ? (
+                {type === 'PRESTATION' ? (
+                  <div className={`inline-flex items-center px-3 py-1.5 rounded-full ${isSelected ? 'bg-[#1e3a5f] text-white' : 'bg-gray-100 text-gray-700'} text-sm font-semibold`}>
+                    Sur devis
+                  </div>
+                ) : price !== null ? (
                   <div className={`inline-flex items-baseline gap-1 px-3 py-1.5 rounded-full text-sm font-bold ${isSelected ? 'bg-[#1e3a5f] text-white' : 'bg-gray-100 text-gray-700'}`}>
-                    <span className="text-lg">{price} €</span>
+                    <span className="text-lg">À partir de {price} €</span>
                     <span className="text-xs font-normal opacity-75">TTC</span>
                   </div>
                 ) : (
                   <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-gray-100 text-gray-400 text-xs">
-                    Tarif indisponible
+                    Sur devis
                   </div>
                 )}
               </button>
