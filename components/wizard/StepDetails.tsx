@@ -112,7 +112,7 @@ export default function StepDetails({ data, onChange, onNext, onPrev }: StepDeta
           {/* Surface */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Surface du projet (m²)
+              Superficie à créer (m²)
             </label>
             <div className="relative">
               <input

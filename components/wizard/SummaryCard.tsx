@@ -29,6 +29,13 @@ export default function SummaryCard({ data, tarif }: SummaryCardProps) {
             value={PROJET_LABELS[data.typeProjet as TypeProjet]}
           />
         )}
+        {data.nomSociete && (
+          <SummaryRow
+            icon="🏢"
+            label="Société"
+            value={data.nomSociete}
+          />
+        )}
         {data.nom && (
           <SummaryRow
             icon="✉️"
@@ -46,7 +53,7 @@ export default function SummaryCard({ data, tarif }: SummaryCardProps) {
         {data.surface && (
           <SummaryRow
             icon="📐"
-            label="Surface"
+            label="Superficie à créer"
             value={`${data.surface} m²`}
           />
         )}

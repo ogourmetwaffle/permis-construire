@@ -22,6 +22,9 @@ type Dossier = {
   email?: string
   telephone?: string
   date_naissance?: string | null
+  lieu_naissance_ville?: string | null
+  lieu_naissance_pays?: string | null
+  nom_societe?: string | null
   adresse_client?: string | null
   adresse_projet?: string | null
   numero_parcelle?: string | null
@@ -538,6 +541,18 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
                 <div className="text-[10px] text-gray-400 uppercase tracking-wider">Nom</div>
                 <div className="font-medium">{dossier.nom} {dossier.prenom}</div>
               </div>
+              {dossier.nom_societe && (
+                <div>
+                  <div className="text-[10px] text-gray-400 uppercase tracking-wider">Société</div>
+                  <div className="font-medium">{dossier.nom_societe}</div>
+                </div>
+              )}
+              {(dossier.lieu_naissance_ville || dossier.lieu_naissance_pays) && (
+                <div>
+                  <div className="text-[10px] text-gray-400 uppercase tracking-wider">Lieu de naissance</div>
+                  <div className="text-sm text-gray-700">{[dossier.lieu_naissance_ville, dossier.lieu_naissance_pays].filter(Boolean).join(', ')}</div>
+                </div>
+              )}
               {dossier.email && (
                 <div>
                   <div className="text-[10px] text-gray-400 uppercase tracking-wider">Email</div>

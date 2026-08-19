@@ -5,11 +5,14 @@ export type ModePaiement = 'CARTE' | 'VIREMENT'
 export interface WizardData {
   typeClient: TypeClient | ''
   typeProjet: TypeProjet | ''
+  nomSociete: string
   nom: string
   prenom: string
   email: string
   telephone: string
   dateNaissance: string
+  lieuNaissanceVille: string
+  lieuNaissancePays: string
   adresseProjet: string
   adresseClient: string
   numeroParcelle: string
@@ -22,11 +25,14 @@ export interface WizardData {
 export const WIZARD_INITIAL_DATA: WizardData = {
   typeClient: '',
   typeProjet: '',
+  nomSociete: '',
   nom: '',
   prenom: '',
   email: '',
   telephone: '',
   dateNaissance: '',
+  lieuNaissanceVille: '',
+  lieuNaissancePays: '',
   adresseProjet: '',
   adresseClient: '',
   numeroParcelle: '',

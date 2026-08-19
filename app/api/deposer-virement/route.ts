@@ -7,11 +7,14 @@ export async function POST(req: Request) {
     const {
       typeClient,
       typeProjet,
+      nomSociete,
       nom,
       prenom,
       email,
       telephone,
       dateNaissance,
+      lieuNaissanceVille,
+      lieuNaissancePays,
       adresseProjet,
       adresseClient,
       numeroParcelle,
@@ -21,11 +24,14 @@ export async function POST(req: Request) {
     } = body as {
       typeClient: string
       typeProjet: string
+      nomSociete?: string
       nom: string
       prenom: string
       email: string
       telephone: string
       dateNaissance: string
+      lieuNaissanceVille?: string
+      lieuNaissancePays?: string
       adresseProjet: string
       adresseClient: string
       numeroParcelle: string
@@ -44,11 +50,14 @@ export async function POST(req: Request) {
         numero_dossier: numeroDossier,
         type_client: typeClient,
         type_projet: typeProjet,
+        nom_societe: nomSociete || null,
         nom,
         prenom,
         email,
         telephone: telephone || null,
         date_naissance: dateNaissance || null,
+        lieu_naissance_ville: lieuNaissanceVille || null,
+        lieu_naissance_pays: lieuNaissancePays || null,
         adresse_projet: adresseProjet,
         adresse_client: adresseClient || null,
         numero_parcelle: numeroParcelle || null,

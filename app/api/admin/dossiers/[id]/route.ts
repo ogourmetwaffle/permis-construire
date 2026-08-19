@@ -4,6 +4,7 @@ import { verifySupabaseToken } from '@/lib/server/verifySupabaseToken'
 
 const allowedColumns = [
   'nom', 'prenom', 'email', 'telephone', 'adresse_client',
+  'nom_societe', 'date_naissance', 'lieu_naissance_ville', 'lieu_naissance_pays',
   'type_projet', 'adresse_projet', 'surface', 'numero_parcelle', 'description'
 ]
 

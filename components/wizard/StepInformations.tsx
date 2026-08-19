@@ -25,6 +25,7 @@ const errorInputClass = `
 
 export default function StepInformations({ data, onChange, onNext, onPrev }: StepInformationsProps) {
   const [errors, setErrors] = useState<FieldErrors>({})
+  const isPro = data.typeClient === 'PROFESSIONNEL'
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange({ [e.target.name]: e.target.value })
@@ -35,6 +36,7 @@ export default function StepInformations({ data, onChange, onNext, onPrev }: Ste
 
   const validate = (): boolean => {
     const newErrors: FieldErrors = {}
+    if (isPro && !data.nomSociete.trim()) newErrors.nomSociete = 'Le nom de la société est requis'
     if (!data.nom.trim()) newErrors.nom = 'Le nom est requis'
     if (!data.prenom.trim()) newErrors.prenom = 'Le prénom est requis'
     if (!data.email.trim()) {
@@ -51,67 +53,85 @@ export default function StepInformations({ data, onChange, onNext, onPrev }: Ste
     if (validate()) onNext()
   }
 
-  const fields: { name: keyof WizardData; label: string; type: string; placeholder: string; required: boolean }[] = [
-    { name: 'nom', label: 'Nom', type: 'text', placeholder: 'Dupont', required: true },
-    { name: 'prenom', label: 'Prénom', type: 'text', placeholder: 'Jean', required: true },
-    { name: 'email', label: 'Adresse email', type: 'email', placeholder: 'jean.dupont@exemple.fr', required: true },
-    { name: 'telephone', label: 'Téléphone', type: 'tel', placeholder: '06 12 34 56 78', required: true },
-    { name: 'dateNaissance', label: 'Date de naissance', type: 'date', placeholder: '', required: false },
+  type Field = { name: keyof WizardData; label: string; type: string; placeholder: string; required: boolean }
+
+  const soloFields: Field[] = isPro
+    ? [
+        { name: 'nomSociete', label: 'Nom de la société', type: 'text', placeholder: 'Esquiss Habitat SARL', required: true },
+      ]
+    : []
+
+  const pairedFields: Field[] = [
+    { name: 'nom', label: isPro ? 'Nom du contact' : 'Nom', type: 'text', placeholder: 'Dupont', required: true },
+    { name: 'prenom', label: isPro ? 'Prénom du contact' : 'Prénom', type: 'text', placeholder: 'Jean', required: true },
   ]
+
+  const contactFields: Field[] = [
+    { name: 'email', label: 'Adresse email', type: 'email', placeholder: isPro ? 'contact@entreprise.fr' : 'jean.dupont@exemple.fr', required: true },
+    { name: 'telephone', label: 'Téléphone', type: 'tel', placeholder: '06 12 34 56 78', required: true },
+  ]
+
+  const naissanceFields: Field[] = isPro
+    ? []
+    : [
+        { name: 'dateNaissance', label: 'Date de naissance', type: 'date', placeholder: '', required: false },
+      ]
+
+  const lieuNaissanceFields: Field[] = isPro
+    ? []
+    : [
+        { name: 'lieuNaissanceVille', label: 'Ville de naissance', type: 'text', placeholder: 'Lyon', required: false },
+        { name: 'lieuNaissancePays', label: 'Pays de naissance', type: 'text', placeholder: 'France', required: false },
+      ]
+
+  const renderField = (field: Field) => (
+    <div key={field.name}>
+      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+        {field.label}
+        {field.required && <span className="text-[#7b2020] ml-1">*</span>}
+      </label>
+      <input
+        name={field.name}
+        type={field.type}
+        value={data[field.name] as string}
+        onChange={handleChange}
+        placeholder={field.placeholder}
+        className={errors[field.name] ? errorInputClass : inputClass}
+      />
+      {errors[field.name] && (
+        <p className="mt-1 text-xs text-red-500">{errors[field.name]}</p>
+      )}
+    </div>
+  )
 
   return (
     <div className="animate-fade-in">
       <div className="mb-8">
         <h2 className="text-2xl sm:text-3xl font-bold text-[#1e3a5f] mb-2">
-          Vos informations
+          {isPro ? 'Informations de votre société' : 'Vos informations'}
         </h2>
         <p className="text-gray-500 text-base">
-          Ces informations permettront d&apos;identifier votre dossier et de vous contacter.
+          {isPro
+            ? 'Ces informations permettront d\'identifier votre entreprise et de vous contacter.'
+            : 'Ces informations permettront d\'identifier votre dossier et de vous contacter.'}
         </p>
       </div>
 
       <div className="space-y-5 mb-10">
+        {soloFields.map(renderField)}
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {fields.slice(0, 2).map(field => (
-            <div key={field.name}>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                {field.label}
-                {field.required && <span className="text-[#7b2020] ml-1">*</span>}
-              </label>
-              <input
-                name={field.name}
-                type={field.type}
-                value={data[field.name] as string}
-                onChange={handleChange}
-                placeholder={field.placeholder}
-                className={errors[field.name] ? errorInputClass : inputClass}
-              />
-              {errors[field.name] && (
-                <p className="mt-1 text-xs text-red-500">{errors[field.name]}</p>
-              )}
-            </div>
-          ))}
+          {pairedFields.map(renderField)}
         </div>
 
-        {fields.slice(2).map(field => (
-          <div key={field.name}>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              {field.label}
-              {field.required && <span className="text-[#7b2020] ml-1">*</span>}
-            </label>
-            <input
-              name={field.name}
-              type={field.type}
-              value={data[field.name] as string}
-              onChange={handleChange}
-              placeholder={field.placeholder}
-              className={errors[field.name] ? errorInputClass : inputClass}
-            />
-            {errors[field.name] && (
-              <p className="mt-1 text-xs text-red-500">{errors[field.name]}</p>
-            )}
+        {contactFields.map(renderField)}
+        {naissanceFields.map(renderField)}
+
+        {lieuNaissanceFields.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {lieuNaissanceFields.map(renderField)}
           </div>
-        ))}
+        )}
       </div>
 
       <div className="flex items-center gap-2 p-3 bg-[#f5f6f8] rounded-xl text-xs text-gray-500 mb-8">

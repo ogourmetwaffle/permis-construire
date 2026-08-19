@@ -25,7 +25,7 @@ export default function EditDossierDialog({ open, onClose, dossier, section, onS
     setSaving(false)
     // initialize form with permitted fields depending on section
     if (section === 'client') {
-      setForm({ nom: dossier.nom || '', prenom: dossier.prenom || '', email: dossier.email || '', telephone: dossier.telephone || '', adresse_client: dossier.adresse_client || '' })
+      setForm({ nom: dossier.nom || '', prenom: dossier.prenom || '', email: dossier.email || '', telephone: dossier.telephone || '', adresse_client: dossier.adresse_client || '', nom_societe: dossier.nom_societe || '', lieu_naissance_ville: dossier.lieu_naissance_ville || '', lieu_naissance_pays: dossier.lieu_naissance_pays || '' })
     } else {
       setForm({ type_projet: dossier.type_projet || '', adresse_projet: dossier.adresse_projet || '', surface: dossier.surface ?? '', numero_parcelle: dossier.numero_parcelle || '', description: dossier.description || '' })
     }
@@ -78,6 +78,10 @@ export default function EditDossierDialog({ open, onClose, dossier, section, onS
         <div className="space-y-3">
           {section === 'client' ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="sm:col-span-2">
+                <label className="text-xs text-gray-500">Nom de la société (professionnel)</label>
+                <input value={form.nom_societe} onChange={e => handleChange('nom_societe', e.target.value)} className="mt-1 block w-full rounded border-gray-200 shadow-sm px-2 py-1.5" />
+              </div>
               <div>
                 <label className="text-xs text-gray-500">Nom</label>
                 <input value={form.nom} onChange={e => handleChange('nom', e.target.value)} className="mt-1 block w-full rounded border-gray-200 shadow-sm px-2 py-1.5" />
@@ -98,6 +102,14 @@ export default function EditDossierDialog({ open, onClose, dossier, section, onS
                 <label className="text-xs text-gray-500">Adresse client</label>
                 <input value={form.adresse_client} onChange={e => handleChange('adresse_client', e.target.value)} className="mt-1 block w-full rounded border-gray-200 shadow-sm px-2 py-1.5" />
               </div>
+              <div>
+                <label className="text-xs text-gray-500">Ville de naissance</label>
+                <input value={form.lieu_naissance_ville} onChange={e => handleChange('lieu_naissance_ville', e.target.value)} className="mt-1 block w-full rounded border-gray-200 shadow-sm px-2 py-1.5" />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500">Pays de naissance</label>
+                <input value={form.lieu_naissance_pays} onChange={e => handleChange('lieu_naissance_pays', e.target.value)} className="mt-1 block w-full rounded border-gray-200 shadow-sm px-2 py-1.5" />
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-3">
@@ -111,7 +123,7 @@ export default function EditDossierDialog({ open, onClose, dossier, section, onS
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-gray-500">Surface (m²)</label>
+                  <label className="text-xs text-gray-500">Superficie à créer (m²)</label>
                   <input type="number" value={form.surface} onChange={e => handleChange('surface', e.target.value)} className="mt-1 block w-full rounded border-gray-200 shadow-sm px-2 py-1.5" />
                 </div>
                 <div>

@@ -8,7 +8,7 @@ export default function ProjectCard({ dossier, onEdit }: { dossier: any; onEdit?
 
   const rows: Array<{ label: string; value?: React.ReactNode }> = [
     { label: 'Type de projet', value: dossier.type_projet || '—' },
-    { label: 'Surface', value: dossier.surface ? `${dossier.surface} m²` : '—' },
+    { label: 'Superficie à créer', value: dossier.surface ? `${dossier.surface} m²` : '—' },
     { label: 'N° parcelle', value: dossier.numero_parcelle || '—' },
     { label: 'Adresse', value: dossier.adresse_projet || '—' },
   ]
