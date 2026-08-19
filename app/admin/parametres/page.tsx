@@ -17,6 +17,7 @@ export default function AdminParametresPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showBankDialog, setShowBankDialog] = useState(false)
+  const [savingCbToggle, setSavingCbToggle] = useState(false)
   const [editingTarifIndex, setEditingTarifIndex] = useState<number | null>(null)
 
   useEffect(() => {
@@ -223,6 +224,39 @@ export default function AdminParametresPage() {
             return ok
           }}
         />
+        <div className="p-6 bg-white rounded-lg shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h3 className="text-sm font-semibold">Paiement carte</h3>
+              <div className="text-xs text-slate-500">Activer ou désactiver le paiement par carte (CB)</div>
+            </div>
+            <div className="flex items-center gap-4">
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
+                  checked={params['paiement_cb_enabled']?.valeur === 'false' ? false : params['paiement_cb_enabled']?.valeur === 'true'}
+                  onChange={async (e) => {
+                    const enabled = e.target.checked
+                    setSavingCbToggle(true)
+                    const ok = await saveParams([{ cle: 'paiement_cb_enabled', valeur: enabled ? 'true' : 'false' }])
+                    if (ok) handleParamChange('paiement_cb_enabled', enabled ? 'true' : 'false')
+                    setSavingCbToggle(false)
+                  }}
+                />
+                <div className="w-14 h-8 bg-slate-200 rounded-full peer-checked:bg-emerald-500 transition-colors duration-200" />
+                <div className="absolute left-1 top-1 w-6 h-6 bg-white rounded-full shadow transform transition-all duration-200 peer-checked:translate-x-6" />
+              </label>
+
+              <div className="flex flex-col">
+                <div className="text-sm font-medium">Paiement CB</div>
+                <div className="text-xs text-slate-500">{params['paiement_cb_enabled']?.valeur === 'true' ? 'Activé' : 'Désactivé'}</div>
+              </div>
+
+              {savingCbToggle ? <div className="text-sm text-slate-500">Enregistrement…</div> : null}
+            </div>
+          </div>
+        </div>
 
         {/* Tarifs cards */}
         <div>
