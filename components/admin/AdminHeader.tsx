@@ -9,10 +9,15 @@ const titleMap: Record<string, { label: string; desc: string }> = {
   '/admin/parametres': { label: 'Paramètres', desc: 'Configuration de la plateforme' },
 }
 
-export default function AdminHeader({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
+export default function AdminHeader({ onToggleSidebar, dossierLabel }: { onToggleSidebar?: () => void; dossierLabel?: string }) {
   const pathname = usePathname()
 
-  const page = titleMap[pathname] ?? { label: 'Administration', desc: '' }
+  let label = titleMap[pathname]?.label ?? 'Administration'
+  let desc = titleMap[pathname]?.desc ?? ''
+  if (dossierLabel) {
+    label = `Dossier ${dossierLabel}`
+    desc = ''
+  }
 
   const today = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
 
@@ -26,8 +31,8 @@ export default function AdminHeader({ onToggleSidebar }: { onToggleSidebar?: () 
           <Menu size={20} />
         </button>
         <div>
-          <h1 className="text-lg font-bold text-slate-900 leading-tight">{page.label}</h1>
-          {page.desc && <p className="text-xs text-slate-400 mt-0.5">{page.desc}</p>}
+          <h1 className="text-lg font-bold text-slate-900 leading-tight">{label}</h1>
+          {desc && <p className="text-xs text-slate-400 mt-0.5">{desc}</p>}
         </div>
       </div>
 
