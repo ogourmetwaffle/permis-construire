@@ -1,49 +1,46 @@
 "use client"
 
 import React from 'react'
-import { usePathname } from 'next/navigation'
-import { Menu } from 'lucide-react'
+import { Menu, Mail, ChevronDown } from 'lucide-react'
 
-const titleMap: Record<string, { label: string; desc: string }> = {
-  '/admin': { label: 'Tableau de bord', desc: 'Vue d\'ensemble des dossiers' },
-  '/admin/parametres': { label: 'Paramètres', desc: 'Configuration de la plateforme' },
-}
-
-export default function AdminHeader({ onToggleSidebar, dossierLabel }: { onToggleSidebar?: () => void; dossierLabel?: string }) {
-  const pathname = usePathname()
-
-  let label = titleMap[pathname]?.label ?? 'Administration'
-  let desc = titleMap[pathname]?.desc ?? ''
-  if (dossierLabel) {
-    label = `Dossier ${dossierLabel}`
-    desc = ''
-  }
-
-  const today = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+export default function AdminHeader({ onToggleSidebar, dossierLabel, adminEmail }: { onToggleSidebar?: () => void; dossierLabel?: string; adminEmail?: string }) {
+  const email = adminEmail || 'admin@esquisshabitat.fr'
 
   return (
-    <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-10">
-      <div className="flex items-center gap-4">
-        <button
-          onClick={onToggleSidebar}
-          className="md:hidden p-2 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors"
-        >
-          <Menu size={20} />
-        </button>
-        <div>
-          <h1 className="text-lg font-bold text-slate-900 leading-tight">{label}</h1>
-          {desc && <p className="text-xs text-slate-400 mt-0.5">{desc}</p>}
-        </div>
-      </div>
+    <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
+      <div className="bg-gradient-to-r from-white via-[#f5f9ff] to-[#eef3f9] px-4 sm:px-6 py-3">
+        <div className="flex items-center justify-between gap-4">
+          {/* Left: Logo + Baseline */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={onToggleSidebar}
+              className="md:hidden p-2 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors"
+            >
+              <Menu size={20} />
+            </button>
+            <div className="hidden sm:flex items-center gap-2.5">
+              <img src="/logo.png" alt="Esquiss Habitat" className="h-7 w-auto rounded-md" />
+              <div className="hidden md:block">
+                <div className="text-[10px] text-slate-400 uppercase tracking-wider font-medium">Vos projets, notre expertise</div>
+              </div>
+            </div>
+          </div>
 
-      <div className="flex items-center gap-4">
-        <div className="hidden sm:flex flex-col items-end text-right">
-          <div className="text-xs text-slate-400">{today}</div>
-          <div className="text-sm text-slate-600 mt-1">Bonjour,</div>
-          <div className="text-base font-semibold text-slate-900">Administrateur</div>
-        </div>
-        <div className="flex items-center">
-          <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold shadow">A</div>
+          {/* Right: Email + Profile */}
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="hidden lg:flex items-center gap-1.5 text-xs text-slate-500">
+              <Mail size={13} className="text-slate-400" />
+              <span className="truncate max-w-[180px]">{email}</span>
+            </div>
+            <div className="hidden sm:flex items-center gap-2 pl-3 sm:pl-4 border-l border-slate-200">
+              <div className="w-8 h-8 rounded-full bg-[#0F2F5A] text-white text-xs font-bold flex items-center justify-center shadow-sm ring-1 ring-blue-900/20">A</div>
+              <div className="text-right">
+                <div className="text-xs font-semibold text-slate-900 leading-tight">Administrateur</div>
+                <div className="text-[10px] text-slate-400 leading-tight">Compte admin</div>
+              </div>
+              <ChevronDown size={14} className="text-slate-400" />
+            </div>
+          </div>
         </div>
       </div>
     </header>
