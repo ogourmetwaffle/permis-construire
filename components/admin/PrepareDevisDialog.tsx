@@ -41,10 +41,19 @@ export default function PrepareDevisDialog({ open, onClose, dossierId, initial, 
     let mounted = true
     ;(async () => {
       try {
-        const resp = await fetch('/api/parametres')
+        // prefer admin params endpoint (requires auth) to get bank_accounts
+        const session = await supabase.auth.getSession()
+        const token = session.data?.session?.access_token
+        const headers: Record<string, string> = {}
+        if (token) headers['Authorization'] = `Bearer ${token}`
+        const resp = await fetch('/api/admin/parametres', { headers })
         if (!resp.ok) return
         const j = await resp.json()
-        const items = j?.items || {}
+        const itemsArr = Array.isArray(j?.items) ? j.items : []
+        const items: Record<string, any> = {}
+        for (const it of itemsArr) {
+          if (it && it.cle) items[it.cle] = it
+        }
         if (!mounted) return
         // existing single values fallback
         setIban(prev => prev || items['iban'] || '')
