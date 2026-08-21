@@ -17,6 +17,8 @@ export default function AdminParametresPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showBankDialog, setShowBankDialog] = useState(false)
+  const [bankDialogInitial, setBankDialogInitial] = useState<{ label?: string; iban?: string; bic?: string; titulaire?: string } | undefined>(undefined)
+  const [editingBankIndex, setEditingBankIndex] = useState<number | null>(null)
   const [savingCbToggle, setSavingCbToggle] = useState(false)
   const [editingTarifIndex, setEditingTarifIndex] = useState<number | null>(null)
 
@@ -166,62 +168,67 @@ export default function AdminParametresPage() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-6">
-        {/* Bank card - prominent */}
-        <PremiumCard
-          title="Coordonnées bancaires"
-          subtitle="Modifier IBAN et titulaire utilisés pour les virements."
-          accent={
-            <button
-              onClick={() => setShowBankDialog(true)}
-              disabled={saving}
-              className="inline-flex items-center gap-2 text-sm text-slate-600 hover:bg-slate-100 px-2 py-1 rounded"
-            >
-              {saving ? (
-                <svg className="w-4 h-4 animate-spin text-slate-600" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                </svg>
-              ) : null}
-              {saving ? 'Enregistrement…' : 'Modifier'}
-            </button>
-          }
-          className="rounded-3xl shadow-2xl"
-        >
-          <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 rounded-xl bg-slate-50">
-              <div className="text-xs text-slate-500">Titulaire</div>
-              <div className="mt-2 text-lg font-medium text-slate-800">{params['titulaire']?.valeur || <span className="text-slate-400">—</span>}</div>
+        {/* Manage labeled bank accounts (bank_accounts param as JSON array) */}
+        <div className="p-4 bg-white rounded-lg shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h3 className="text-sm font-semibold">Comptes bancaires enregistrés</h3>
+              <div className="text-xs text-slate-500">Ajoutez plusieurs RIB avec un libellé. Utilisés dans la préparation des devis.</div>
             </div>
-
-            <div className="p-4 rounded-xl bg-slate-50">
-              <div className="text-xs text-slate-500">IBAN</div>
-              <div className="mt-2 text-lg font-medium tracking-wider text-slate-800">{params['iban']?.valeur || <span className="text-slate-400">Non renseigné</span>}</div>
-            </div>
-
-            <div className="p-4 rounded-xl bg-slate-50">
-              <div className="text-xs text-slate-500">BIC</div>
-              <div className="mt-2 text-lg font-medium text-slate-800">{params['bic']?.valeur || <span className="text-slate-400">—</span>}</div>
+            <div>
+              <button onClick={() => { setShowBankDialog(true); setEditingBankIndex(null); setBankDialogInitial(undefined) }} className="inline-flex items-center gap-2 text-sm text-slate-600 hover:bg-slate-100 px-2 py-1 rounded">Ajouter</button>
             </div>
           </div>
-        </PremiumCard>
+          <div>
+            {params['bank_accounts']?.valeur ? (
+              <ul className="space-y-2">
+                {(() => {
+                  try {
+                    const arr = JSON.parse(params['bank_accounts'].valeur)
+                    if (Array.isArray(arr)) return arr.map((b: any, i: number) => (
+                      <li key={i} className="p-2 border rounded flex items-center justify-between">
+                        <div>
+                          <div className="font-medium">{b.label}</div>
+                          <div className="text-xs text-slate-500">{b.iban || '—'} • {b.titulaire || '—'}</div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => { setShowBankDialog(true); setEditingBankIndex(i); setBankDialogInitial({ label: b.label, iban: b.iban, bic: b.bic, titulaire: b.titulaire }) }} className="text-sm text-slate-600 px-2 py-1 rounded hover:bg-slate-100">Modifier</button>
+                          <button onClick={async () => {
+                            const copy = JSON.parse(params['bank_accounts'].valeur)
+                            copy.splice(i,1)
+                            const ok = await saveParams([{ cle: 'bank_accounts', valeur: JSON.stringify(copy) }])
+                            if (ok) handleParamChange('bank_accounts', JSON.stringify(copy))
+                          }} className="text-sm text-red-600 px-2 py-1 rounded hover:bg-red-50">Supprimer</button>
+                        </div>
+                      </li>
+                    ))
+                  } catch (e) { return <div className="text-sm text-gray-500">Erreur lecture comptes</div> }
+                })()}
+              </ul>
+            ) : (
+              <div className="text-sm text-slate-500">Aucun compte enregistré.</div>
+            )}
+          </div>
+        </div>
         <BankDetailsDialog
           open={Boolean(showBankDialog)}
-          onClose={() => setShowBankDialog(false)}
-          initial={{ iban: params['iban']?.valeur, bic: params['bic']?.valeur, titulaire: params['titulaire']?.valeur }}
+          onClose={() => { setShowBankDialog(false); setBankDialogInitial(undefined); setEditingBankIndex(null) }}
+          initial={bankDialogInitial}
           onSave={async (values) => {
-            // call API first, update local state only on success to avoid flicker
-            const payload = [
-              { cle: 'iban', valeur: values.iban || '' },
-              { cle: 'bic', valeur: values.bic || '' },
-              { cle: 'titulaire', valeur: values.titulaire || '' },
-            ]
-            const ok = await saveParams(payload)
-            if (ok) {
-              handleParamChange('iban', values.iban || '')
-              handleParamChange('bic', values.bic || '')
-              handleParamChange('titulaire', values.titulaire || '')
+            try {
+              const existing = params['bank_accounts']?.valeur ? JSON.parse(params['bank_accounts'].valeur) : []
+              if (editingBankIndex == null) {
+                existing.push(values)
+              } else {
+                existing[editingBankIndex] = values
+              }
+              const ok = await saveParams([{ cle: 'bank_accounts', valeur: JSON.stringify(existing) }])
+              if (ok) handleParamChange('bank_accounts', JSON.stringify(existing))
+              return ok
+            } catch (e) {
+              console.error(e)
+              return false
             }
-            return ok
           }}
         />
         <div className="p-6 bg-white rounded-lg shadow-sm">

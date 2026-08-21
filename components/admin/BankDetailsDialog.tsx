@@ -6,17 +6,17 @@ import { X, Check } from 'lucide-react'
 type Props = {
   open: boolean
   onClose: () => void
-  initial: { iban?: string; bic?: string; titulaire?: string; updated_at?: string }
-  onSave: (values: { iban?: string; bic?: string; titulaire?: string }) => Promise<boolean>
+  initial?: { label?: string; iban?: string; bic?: string; titulaire?: string; updated_at?: string }
+  onSave: (values: { label?: string; iban?: string; bic?: string; titulaire?: string }) => Promise<boolean>
 }
 
 export default function BankDetailsDialog({ open, onClose, initial, onSave }: Props) {
-  const [form, setForm] = useState({ iban: '', bic: '', titulaire: '' })
+  const [form, setForm] = useState({ label: '', iban: '', bic: '', titulaire: '' })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    setForm({ iban: initial?.iban || '', bic: initial?.bic || '', titulaire: initial?.titulaire || '' })
+    setForm({ label: initial?.label || '', iban: initial?.iban || '', bic: initial?.bic || '', titulaire: initial?.titulaire || '' })
     setError(null)
     setSaving(false)
   }, [initial, open])
@@ -48,6 +48,10 @@ export default function BankDetailsDialog({ open, onClose, initial, onSave }: Pr
         </div>
 
         <div className="space-y-3">
+          <div>
+            <label className="text-xs text-gray-500">Libellé</label>
+            <input value={form.label} onChange={(e) => handleChange('label', e.target.value)} placeholder="Ex: IBAN Ted" className="mt-1 block w-full rounded border-gray-200 shadow-sm px-2 py-1.5" />
+          </div>
           <div>
             <label className="text-xs text-gray-500">Titulaire</label>
             <input value={form.titulaire} onChange={(e) => handleChange('titulaire', e.target.value)} className="mt-1 block w-full rounded border-gray-200 shadow-sm px-2 py-1.5" />

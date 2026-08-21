@@ -18,6 +18,8 @@ export default function PrepareDevisDialog({ open, onClose, dossierId, initial, 
   const [iban, setIban] = useState(initial?.iban ?? '')
   const [bic, setBic] = useState(initial?.bic ?? '')
   const [titulaire, setTitulaire] = useState(initial?.titulaire ?? '')
+  const [bankAccounts, setBankAccounts] = useState<Array<{ label: string; iban?: string; bic?: string; titulaire?: string }>>([])
+  const [selectedBankIndex, setSelectedBankIndex] = useState<number | null>(null)
   const [reference, setReference] = useState(initial?.reference ?? '')
   const [commentaire, setCommentaire] = useState(initial?.commentaire ?? '')
   const [saving, setSaving] = useState(false)
@@ -44,9 +46,30 @@ export default function PrepareDevisDialog({ open, onClose, dossierId, initial, 
         const j = await resp.json()
         const items = j?.items || {}
         if (!mounted) return
+        // existing single values fallback
         setIban(prev => prev || items['iban'] || '')
         setBic(prev => prev || items['bic'] || '')
         setTitulaire(prev => prev || items['titulaire'] || '')
+        // parse bank_accounts JSON if present
+        const raw = items['bank_accounts']?.valeur
+        if (raw) {
+          try {
+            const arr = JSON.parse(raw)
+            if (Array.isArray(arr)) {
+              setBankAccounts(arr)
+              // if no per-dossier iban, preselect first
+              if ((!iban || !bic || !titulaire) && arr.length > 0) {
+                setSelectedBankIndex(0)
+                const a = arr[0]
+                setIban(a.iban || '')
+                setBic(a.bic || '')
+                setTitulaire(a.titulaire || '')
+              }
+            }
+          } catch (e) {
+            // ignore parse errors
+          }
+        }
       } catch (e) {
         // ignore
       }
@@ -92,6 +115,24 @@ export default function PrepareDevisDialog({ open, onClose, dossierId, initial, 
         </div>
 
         <div className="grid grid-cols-1 gap-3">
+          <div>
+            <label className="text-xs text-gray-500">RIB prédéfinis</label>
+            <div className="mt-1 flex gap-2 items-center">
+              <select value={selectedBankIndex ?? ''} onChange={(e) => {
+                const idx = e.target.value === '' ? null : Number(e.target.value)
+                setSelectedBankIndex(idx)
+                if (idx == null) return
+                const a = bankAccounts[idx]
+                setIban(a?.iban || '')
+                setBic(a?.bic || '')
+                setTitulaire(a?.titulaire || '')
+              }} className="rounded border-gray-200 px-2 py-1">
+                <option value="">— Choisir un RIB —</option>
+                {bankAccounts.map((b, i) => <option key={i} value={i}>{b.label}</option>)}
+              </select>
+              <button type="button" onClick={() => { setSelectedBankIndex(null); setIban(''); setBic(''); setTitulaire('') }} className="text-sm text-slate-600 px-2 py-1 rounded hover:bg-slate-100">Effacer</button>
+            </div>
+          </div>
           <div>
             <label className="text-xs text-gray-500">Montant (€) <span className="text-red-600">*</span></label>
             <input type="number" value={montant ?? ''} onChange={(e) => setMontant(e.target.value ? Number(e.target.value) : null)} className="mt-1 block w-full rounded border-gray-200 shadow-sm px-2 py-1.5" required />
