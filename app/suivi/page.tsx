@@ -14,6 +14,7 @@ type Dossier = {
   bic?: string | null
   titulaire?: string | null
   reference_virement?: string | null
+  commentaire_admin?: string | null
   paiement_effectue?: boolean
   declarations?: Array<{ id: number; reference: string; montant?: number | null; date_declaration?: string | null; created_at?: string }>
 }
@@ -37,6 +38,12 @@ function getStepStatus(dossier: Dossier, stepId: string): 'completed' | 'active'
   const s = normalizeStatus(dossier.statut)
 
   if (stepId === 'received') return 'completed'
+
+  if (s === STATUS.INFORMATIONS_MANQUANTES) {
+    if (stepId === 'processing') return 'active'
+    if (stepId === 'done') return 'pending'
+    return 'completed'
+  }
 
   if (stepId === 'study') {
     if (s === STATUS.DEVIS || s === STATUS.EN_ATTENTE_PAIEMENT || s === STATUS.NOUVEAU || s === STATUS.EN_COURS) return 'active'
@@ -241,6 +248,12 @@ export default function SuiviPage() {
                         <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider shrink-0">Référence</span>
                         <span className="text-sm font-medium text-gray-800 font-mono break-all text-right">{dossier.reference_virement || dossier.numero_dossier}</span>
                       </div>
+                      {dossier.commentaire_admin && (
+                        <div className="mt-2 p-3 bg-white rounded-lg border border-gray-200">
+                          <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Commentaire</div>
+                          <p className="text-sm text-gray-800 whitespace-pre-line">{dossier.commentaire_admin}</p>
+                        </div>
+                      )}
                     </div>
 
                     {!showDeclare ? (

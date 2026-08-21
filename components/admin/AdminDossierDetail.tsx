@@ -4,11 +4,25 @@ import React, { useEffect, useState } from 'react'
 import DocumentList, { DocItem } from './DocumentList'
 import ProjectCard from './ProjectCard'
 import Timeline from './Timeline'
-import { CheckCircle, XCircle, Mail, Download, CreditCard, Archive, Tag, Clock, User, ArrowLeft, FileText, Banknote, Edit2, Trash2 } from 'lucide-react'
+import {
+  ArrowLeft,
+  Mail,
+  Download,
+  CreditCard,
+  Archive,
+  Trash2,
+  FileText,
+  User,
+  MapPin,
+  Phone,
+  CheckCircle,
+  XCircle,
+  Edit2,
+  Tag,
+} from 'lucide-react'
 import PaymentDialog from './PaymentDialog'
 import { toast } from 'react-hot-toast'
 import EditDossierDialog from './EditDossierDialog'
-import StatusSelector from './StatusSelector'
 import { supabase } from '@/lib/supabase'
 import { getStatusConfig, normalizeStatus, STATUS } from '@/lib/status'
 import PrepareDevisDialog from './PrepareDevisDialog'
@@ -49,12 +63,13 @@ type Dossier = {
   updated_at?: string
 }
 
+type Tab = 'overview' | 'documents' | 'payment' | 'history'
+
 export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUpdated?: () => void }) {
   const [dossier, setDossier] = useState<Dossier | null>(null)
   const [loading, setLoading] = useState(false)
 
   const [docs, setDocs] = useState<DocItem[]>([])
-  const [docsLoading, setDocsLoading] = useState(false)
   const [showArchiveModal, setShowArchiveModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showPaymentDialog, setShowPaymentDialog] = useState(false)
@@ -65,12 +80,12 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
   const [showPrepareDevis, setShowPrepareDevis] = useState(false)
   const [editSection, setEditSection] = useState<'client' | 'project'>('client')
   const [savedBadge, setSavedBadge] = useState<{ client?: boolean; project?: boolean }>({})
+  const [activeTab, setActiveTab] = useState<Tab>('overview')
 
   useEffect(() => {
     fetchDossier()
   }, [id])
 
-  // fetch dossier (extracted so it can be re-used by child callbacks)
   async function fetchDossier() {
     setLoading(true)
     try {
@@ -109,16 +124,13 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
     setLoading(false)
   }
 
-  // Fetch documents once dossier is loaded (extracted so we can re-use after archive)
   const fetchDocs = async (numero?: string) => {
     if (!numero) return
-    setDocsLoading(true)
     try {
       const session = await supabase.auth.getSession()
       const token = session.data?.session?.access_token
       if (!token) {
         setDocs([])
-        setDocsLoading(false)
         return
       }
 
@@ -127,16 +139,15 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
       if (!text) {
         setDocs([])
       } else {
-        let json: any = null
+        let json: unknown = null
         try { json = JSON.parse(text) } catch (e) { console.error('invalid docs response', e); setDocs([]) }
-        if (json && resp.ok) setDocs(json.items || [])
+        if (json && resp.ok) setDocs((json as { items?: DocItem[] }).items || [])
         else setDocs([])
       }
     } catch (err) {
-      console.error('fetch docs', err)
+      console.error(err)
       setDocs([])
     }
-    setDocsLoading(false)
   }
 
   useEffect(() => {
@@ -156,16 +167,13 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
   const closeEdit = () => setShowEditDialog(false)
 
   const handleDevisSaved = (updated: any) => {
-    // merge updated fields into dossier state
     setDossier((prev) => ({ ...(prev || {}), ...(updated || {}) }))
     toast.success('Devis enregistré')
     if (onUpdated) onUpdated()
   }
 
   const handleSaved = (updated: any) => {
-    // merge updated fields into dossier state
     setDossier((prev) => ({ ...(prev || {}), ...updated }))
-    // show transient badge for the section
     setSavedBadge((s) => ({ ...s, [editSection]: true }))
     setTimeout(() => setSavedBadge((s) => ({ ...s, [editSection]: false })), 2000)
   }
@@ -175,7 +183,6 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
     toast.success('Paiement enregistré')
     setShowPaymentDialog(false)
     if (onUpdated) onUpdated()
-    // reload to ensure global state/badges are up-to-date
     setTimeout(() => {
       try { window.location.reload() } catch (e) { /* ignore */ }
     }, 700)
@@ -183,7 +190,6 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
 
   const handleDownloadZip = async () => {
     if (!dossier) return
-    // if there are no non-archived documents, avoid requesting the ZIP
     const hasAvailableDocsLocal = docs.some(d => !d.archived_at)
     if (!hasAvailableDocsLocal) {
       alert('Aucun fichier disponible à télécharger.')
@@ -236,7 +242,6 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
         return
       }
 
-      // Refresh docs list
       await fetchDocs(dossier.numero_dossier)
       window.dispatchEvent(new Event('admin-storage-refresh'))
       setShowArchiveModal(false)
@@ -283,182 +288,372 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
     }
   }
 
-  // unified action button classes for consistent framing
-  const actionBase = 'inline-flex items-center gap-2 h-9 px-3 rounded-lg text-sm transition-colors duration-150 shadow-sm border leading-none'
-
   if (loading) return <div className="p-4">Chargement...</div>
   if (!dossier) return <div className="p-4 text-gray-600">Dossier introuvable.</div>
 
-  const renderStatusBadge = () => {
-    const base = 'inline-flex items-center h-6 px-3 rounded-full text-[12px] font-semibold shadow-sm ring-1 ring-inset whitespace-nowrap'
-    const s = normalizeStatus(dossier.statut)
-    const cfg = s ? getStatusConfig(s) : null
-    if (!cfg) return <span className={`${base} bg-gray-50 text-gray-700`}>{dossier.statut || '-'}</span>
-    const Icon = cfg.icon
-    return (
-      <span className={`${base} ${cfg.badgeClass}`}>
-        <Icon width={16} height={16} className="mr-1.5 shrink-0" />{cfg.label}
-      </span>
-    )
-  }
+  const status = normalizeStatus(dossier.statut)
+  const statusCfg = status ? getStatusConfig(status) : null
 
-  const renderPaymentBadge = () => {
-    const base = 'inline-flex items-center h-6 px-3 rounded-full text-[12px] font-semibold shadow-sm ring-1 ring-inset whitespace-nowrap'
-    if (dossier.paiement_effectue) {
-      return (
-        <span className={`${base} bg-green-50 text-green-700 ring-green-100`}>
-          <CheckCircle width={16} height={16} className="mr-1.5" />Payé
-        </span>
-      )
-    }
-    return (
-      <span className={`${base} bg-red-50 text-red-700 ring-red-100`}>
-        <XCircle width={16} height={16} className="mr-1.5" />Non payé
-      </span>
-    )
-  }
-
-  const renderPaymentMode = () => {
-    const val = (dossier.mode_paiement || '').toLowerCase()
-    if (!val) return '—'
-    if (val.includes('carte') || val.includes('card') || val.includes('cb')) {
-      return (
-        <span className="inline-flex items-center gap-2" aria-label="Paiement par carte">
-          <CreditCard width={16} height={16} aria-hidden="true" className="text-gray-800" />
-          <span className="text-sm text-gray-800">Carte</span>
-        </span>
-      )
-    }
-    if (val.includes('virement') || val.includes('transfer') || val.includes('bank')) {
-      return (
-        <span className="inline-flex items-center gap-2" aria-label="Paiement par virement">
-          <Banknote width={16} height={16} aria-hidden="true" className="text-gray-800" />
-          <span className="text-sm text-gray-800">Virement</span>
-        </span>
-      )
-    }
-    return (
-      <span className="inline-flex items-center gap-2">
-        <span className="text-sm text-gray-800">{dossier.mode_paiement}</span>
-      </span>
-    )
-  }
-
-  // Documents stats
   const docCount = docs.length
   const totalBytes = docs.reduce((acc, d) => acc + (Number(d.size) || 0), 0)
   const formatBytes = (n: number) => {
     if (!n || n <= 0) return '0 Mo'
     return `${(n / 1024 / 1024).toFixed(2)} Mo`
   }
-  const getDocDate = (d: any) => d.archived_at ?? d.updated_at ?? d.created_at ?? null
-  const lastDoc = docs.length ? docs.reduce((best, cur) => {
-    const bestDate = getDocDate(best)
-    const curDate = getDocDate(cur)
-    if (!bestDate) return cur
-    if (!curDate) return best
-    return new Date(curDate) > new Date(bestDate) ? cur : best
-  }, docs[0]) : null
+  const hasAvailableDocs = docs.some(d => !d.archived_at)
 
-  // Archive info: compute latest archived_at across documents
   const archivedDates = docs.map(d => d.archived_at).filter(Boolean) as string[]
   const latestArchivedAt = archivedDates.length ? new Date(Math.max(...archivedDates.map(s => new Date(s).getTime()))) : null
 
-  // Whether there are any non-archived documents available for ZIP
-  const hasAvailableDocs = docs.some(d => !d.archived_at)
-
-  // Timeline events (simple, built from available data)
   const events: { date?: string | null; title: string; description?: string }[] = []
   if (dossier.created_at) events.push({ date: dossier.created_at, title: 'Dossier créé', description: `Dossier ${dossier.numero_dossier} déposé en ligne.` })
   if (dossier.paiement_effectue) events.push({ date: dossier.updated_at || null, title: 'Paiement reçu', description: `Paiement de ${dossier.montant ?? 0} €` })
-  if (docCount > 0) events.push({ date: lastDoc?.updated_at || null, title: `${docCount} document(s) ajouté(s)`, description: lastDoc?.name })
-  // If there is a latest archived timestamp, add it to the timeline so there's a visible trace
+  if (docCount > 0) events.push({ date: docs[0]?.updated_at || null, title: `${docCount} document(s) ajouté(s)`, description: docs[0]?.name })
   if (latestArchivedAt) {
     events.push({ date: latestArchivedAt.toISOString(), title: 'Documents archivés', description: `Date et heure d'archivage ${latestArchivedAt.toLocaleString('fr-FR')}` })
   }
 
+  const tabs: { id: Tab; label: string }[] = [
+    { id: 'overview', label: 'Vue d\'ensemble' },
+    { id: 'documents', label: 'Documents' },
+    { id: 'payment', label: 'Paiement' },
+    { id: 'history', label: 'Historique' },
+  ]
+
+  const getNextAction = () => {
+    if (status === STATUS.DEVIS) {
+      return {
+        label: 'Préparer le devis',
+        action: () => setShowPrepareDevis(true),
+        variant: 'primary' as const,
+      }
+    }
+    if (status === STATUS.EN_ATTENTE_PAIEMENT) {
+      return {
+        label: 'En attente du paiement client',
+        action: () => {},
+        variant: 'info' as const,
+        detail: `Montant : ${dossier.montant ?? 0} €`,
+      }
+    }
+    if (status === STATUS.NOUVEAU) {
+      return {
+        label: 'Dossier prêt à être traité',
+        action: () => {},
+        variant: 'success' as const,
+      }
+    }
+    if (status === STATUS.EN_COURS) {
+      return {
+        label: 'Dossier en cours de traitement',
+        action: () => {},
+        variant: 'info' as const,
+      }
+    }
+    if (status === STATUS.TERMINE) {
+      return {
+        label: 'Dossier terminé',
+        action: () => {},
+        variant: 'success' as const,
+      }
+    }
+    if (status === STATUS.INFORMATIONS_MANQUANTES) {
+      return {
+        label: 'Informations manquantes',
+        action: () => openEdit('project'),
+        variant: 'warning' as const,
+      }
+    }
+    return null
+  }
+
+  const nextAction = getNextAction()
+
   return (
     <div className="w-full">
-
-      {/* Header: back arrow + dossier label */}
+      {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b border-gray-100">
-        <div>
-          <a href="/admin" className="inline-flex items-center gap-3 group rounded-lg bg-white border border-gray-100 shadow-sm p-3 hover:shadow-md transition-shadow">
-            <div className="w-9 h-9 rounded-md bg-[var(--eh-primary)] flex items-center justify-center text-white">
-              <ArrowLeft size={16} />
-            </div>
-            <div className="flex flex-col justify-center">
-              <div className="text-sm font-medium text-gray-600">Dossiers</div>
-              <div className="mt-1 inline-flex items-center px-3 py-1 rounded-md bg-gray-50 border border-gray-100 text-base font-semibold text-gray-900">{dossier.numero_dossier}</div>
-            </div>
+        <div className="flex items-center gap-3">
+          <a href="/admin" className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-white border border-gray-200 hover:bg-gray-50 transition-colors" title="Retour aux dossiers">
+            <ArrowLeft size={16} className="text-gray-600" />
           </a>
+          <div>
+            <div className="text-sm font-medium text-gray-500">Dossier</div>
+            <div className="text-base font-semibold text-gray-900">{dossier.numero_dossier}</div>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-2">
-            {renderStatusBadge()}
-            {renderPaymentBadge()}
-          </div>
+          {statusCfg && (
+            <span className={`inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-xs font-semibold shadow-sm ring-1 ring-inset whitespace-nowrap ${statusCfg.badgeClass}`}>
+              {React.createElement(statusCfg.icon, { width: 14, height: 14, className: 'shrink-0' })}
+              {statusCfg.label}
+            </span>
+          )}
 
-          <div className="h-6 w-px bg-gray-200 hidden sm:block" />
-
-          <div className="flex items-center gap-2">
-            <a href={`mailto:${dossier.email ?? ''}`} className={`${actionBase} bg-white text-gray-700 border-gray-200 hover:bg-gray-100`}>
-              <Mail size={14} /> Email
-            </a>
-            <button
-              type="button"
-              onClick={handleDownloadZip}
-              disabled={!hasAvailableDocs || zipDownloading}
-              aria-busy={zipDownloading}
-              title={!hasAvailableDocs ? 'Aucun fichier disponible' : undefined}
-              className={`${actionBase} ${!hasAvailableDocs || zipDownloading ? 'bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-100'}`}
-            >
-              <Download size={14} className={zipDownloading ? 'animate-spin' : ''} />
-              {zipDownloading ? 'Téléchargement…' : 'Télécharger ZIP'}
-            </button>
-
-            {!dossier.paiement_effectue ? (
-              <button
-                type="button"
-                onClick={() => setShowPaymentDialog(true)}
-                className={`${actionBase} bg-white text-gray-700 border-gray-200 hover:bg-gray-100`}
-              >
-                <CreditCard size={14} /> Paiement
-              </button>
-            ) : (
-              <span className={`${actionBase} bg-green-50 text-green-700 border-green-100`}>
-                <CheckCircle size={14} /> Paiement confirmé
-              </span>
-            )}
-
-            {normalizeStatus(dossier.statut) === STATUS.DEVIS && (
-              <button
-                type="button"
-                onClick={() => setShowPrepareDevis(true)}
-                className={`${actionBase} bg-[#7b2020] text-white border-[#7b2020] hover:bg-[#6a1a1a] shadow-sm`}
-              >
-                <FileText size={14} /> Préparer le devis
-              </button>
-            )}
-
-            <ActionMenu
-              items={[
-                {
-                  label: 'Archiver',
-                  onClick: hasAvailableDocs ? openArchiveModal : () => {},
-                  disabled: !hasAvailableDocs,
-                },
-                {
-                  label: 'Supprimer',
-                  onClick: openDeleteModal,
-                  danger: true,
-                },
-              ]}
-            />
-          </div>
+          <ActionMenu
+            items={[
+              { label: 'Modifier le dossier', onClick: () => openEdit('project') },
+              { label: 'Envoyer un email', onClick: () => window.location.href = `mailto:${dossier.email ?? ''}` },
+              { label: 'Télécharger les documents', onClick: handleDownloadZip, disabled: !hasAvailableDocs },
+              { label: 'Télécharger ZIP', onClick: handleDownloadZip, disabled: !hasAvailableDocs },
+              { label: 'Archiver', onClick: hasAvailableDocs ? openArchiveModal : () => {}, disabled: !hasAvailableDocs },
+              { label: 'Supprimer', onClick: openDeleteModal, danger: true },
+            ]}
+          />
         </div>
       </div>
+
+      {/* Client Info Card */}
+      <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-5 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+              <User size={20} />
+            </div>
+            <div className="min-w-0">
+              <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Informations client</div>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span className="text-sm font-semibold text-gray-900">{dossier.nom} {dossier.prenom}</span>
+                {dossier.type_client && (
+                  <span className={`inline-flex items-center h-5 px-2 rounded-full text-[11px] font-semibold ${dossier.type_client.toLowerCase().includes('pro') ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-100' : 'bg-green-50 text-green-700 ring-1 ring-inset ring-green-100'}`}>
+                    {dossier.type_client.toLowerCase().includes('pro') ? 'Professionnel' : 'Particulier'}
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm text-gray-600">
+                {dossier.email && (
+                  <a href={`mailto:${dossier.email}`} className="inline-flex items-center gap-1.5 hover:text-[#1e3a5f] transition-colors">
+                    <Mail size={13} className="text-gray-400" />
+                    {dossier.email}
+                  </a>
+                )}
+                {dossier.telephone && (
+                  <span className="inline-flex items-center gap-1.5">
+                    <Phone size={13} className="text-gray-400" />
+                    {dossier.telephone}
+                  </span>
+                )}
+                {dossier.adresse_client && (
+                  <span className="inline-flex items-center gap-1.5">
+                    <MapPin size={13} className="text-gray-400" />
+                    {dossier.adresse_client}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+          <button type="button" onClick={() => openEdit('client')} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors shrink-0">
+            <Edit2 size={13} />
+            Modifier
+          </button>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
+        <div className="border-b border-gray-100 px-4 sm:px-6">
+          <nav className="flex gap-1 overflow-x-auto" aria-label="Tabs">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`whitespace-nowrap px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === tab.id
+                    ? 'border-[#1e3a5f] text-[#1e3a5f]'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-200'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        <div className="p-4 sm:p-6">
+          {/* Vue d'ensemble */}
+          {activeTab === 'overview' && (
+            <div className="space-y-6">
+              <ProjectCard dossier={dossier} onEdit={() => openEdit('project')} />
+              {savedBadge.project && (
+                <div className="text-sm text-green-700 bg-green-50 px-3 py-2 rounded-lg inline-flex items-center gap-2">
+                  <CheckCircle size={14} /> Dernière modification enregistrée
+                </div>
+              )}
+
+              <div className="bg-[#f5f6f8] rounded-xl border border-gray-100 p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-7 h-7 rounded-lg bg-orange-50 flex items-center justify-center shrink-0">
+                    <Tag size={14} className="text-orange-500" />
+                  </div>
+                  <h3 className="text-sm font-semibold text-gray-800">État du dossier</h3>
+                </div>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    {statusCfg && (
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold shadow-sm ring-1 ring-inset ${statusCfg.badgeClass}`}>
+                        {React.createElement(statusCfg.icon, { width: 16, height: 16, className: 'shrink-0' })}
+                        {statusCfg.label}
+                      </span>
+                    )}
+                    <div className="text-xs text-gray-500 mt-2">
+                      Mis à jour le {dossier.updated_at ? new Date(dossier.updated_at).toLocaleDateString('fr-FR') : '—'}
+                    </div>
+                  </div>
+                  <div>
+                    {nextAction && (
+                      <div className="text-right">
+                        <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">Prochaine action</div>
+                        <div className="text-sm font-medium text-gray-800">{nextAction.label}</div>
+                        {nextAction.detail && <div className="text-xs text-gray-500 mt-0.5">{nextAction.detail}</div>}
+                        {nextAction.variant === 'primary' && (
+                          <button
+                            type="button"
+                            onClick={nextAction.action}
+                            className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-[#7b2020] hover:bg-[#6a1a1a] text-white text-sm font-semibold rounded-lg shadow-sm transition-all"
+                          >
+                            <FileText size={14} />
+                            {nextAction.label}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Documents */}
+          {activeTab === 'documents' && (
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="text-sm text-gray-600">
+                  <span className="font-semibold text-gray-900">{docCount}</span> document{docCount !== 1 ? 's' : ''} · <span className="font-semibold text-gray-900">{formatBytes(totalBytes)}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleDownloadZip}
+                    disabled={!hasAvailableDocs || zipDownloading}
+                    className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${!hasAvailableDocs || zipDownloading ? 'bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'}`}
+                  >
+                    <Download size={14} className={zipDownloading ? 'animate-spin' : ''} />
+                    {zipDownloading ? 'Téléchargement…' : 'Télécharger ZIP'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={openArchiveModal}
+                    disabled={!hasAvailableDocs}
+                    className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${!hasAvailableDocs ? 'bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed' : 'bg-white text-gray-700 border-gray-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200'}`}
+                  >
+                    <Archive size={14} />
+                    Archiver
+                  </button>
+                </div>
+              </div>
+
+              <DocumentList numero={dossier.numero_dossier} items={docs} />
+            </div>
+          )}
+
+          {/* Paiement */}
+          {activeTab === 'payment' && (
+            <div className="space-y-6">
+              <div className="bg-[#f5f6f8] rounded-xl border border-gray-100 p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-7 h-7 rounded-lg bg-green-50 flex items-center justify-center shrink-0">
+                    <CreditCard size={14} className="text-green-600" />
+                  </div>
+                  <h3 className="text-sm font-semibold text-gray-800">Informations de paiement</h3>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Montant</div>
+                    <div className="text-lg font-bold text-gray-900">{dossier.montant ?? 0} €</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Statut</div>
+                    {dossier.paiement_effectue ? (
+                      <span className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[11px] font-semibold bg-green-50 text-green-700 ring-1 ring-inset ring-green-100">
+                        <CheckCircle size={12} /> Payé
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-100">
+                        <XCircle size={12} /> Non payé
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Mode</div>
+                    <div className="text-sm text-gray-800">{dossier.mode_paiement || '—'}</div>
+                  </div>
+                  {dossier.paiement_effectue && (
+                    <>
+                      <div>
+                        <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Date du paiement</div>
+                        <div className="text-sm text-gray-800">{dossier.date_paiement ? new Date(dossier.date_paiement).toLocaleDateString('fr-FR') : '—'}</div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Référence</div>
+                        <div className="text-sm text-gray-800 break-all">{dossier.reference_paiement ?? '—'}</div>
+                      </div>
+                      {dossier.commentaire_paiement && (
+                        <div className="sm:col-span-2">
+                          <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Commentaire</div>
+                          <div className="text-sm text-gray-800">{dossier.commentaire_paiement}</div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {!dossier.paiement_effectue && status === STATUS.DEVIS && (
+                <div className="bg-[#f5f6f8] rounded-xl border border-gray-100 p-5">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-7 h-7 rounded-lg bg-orange-50 flex items-center justify-center shrink-0">
+                      <FileText size={14} className="text-orange-500" />
+                    </div>
+                    <h3 className="text-sm font-semibold text-gray-800">Préparer le devis</h3>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Envoyez le devis au client avec les coordonnées bancaires. Le client pourra alors effectuer son virement.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowPrepareDevis(true)}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-[#7b2020] hover:bg-[#6a1a1a] text-white text-sm font-semibold rounded-lg shadow-sm transition-all"
+                  >
+                    <FileText size={14} />
+                    Préparer le devis
+                  </button>
+                </div>
+              )}
+
+              {!dossier.paiement_effectue && (
+                <button
+                  type="button"
+                  onClick={() => setShowPaymentDialog(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-[#173B8C] hover:bg-[#132f73] text-white text-sm font-semibold rounded-lg shadow-sm transition-all"
+                >
+                  <CheckCircle size={14} />
+                  Confirmer la réception du paiement
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Historique */}
+          {activeTab === 'history' && (
+            <div>
+              <h3 className="text-sm font-semibold text-[#1e3a5f] uppercase tracking-wider mb-6">Historique du dossier</h3>
+              <Timeline events={events} />
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Prepare Devis Dialog */}
       <PrepareDevisDialog
         open={showPrepareDevis}
@@ -468,180 +663,11 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
         onSaved={(u) => { handleDevisSaved(u); setShowPrepareDevis(false); fetchDossier() }}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 items-start">
-        <div className="space-y-6 min-w-0">
-          <div className="relative">
-            <ProjectCard dossier={dossier} onEdit={() => openEdit('project')} />
-            {savedBadge.project && <div className="absolute top-2 right-2 text-sm text-green-700 bg-green-50 px-2 py-1 rounded">Dernière modification enregistrée ✓</div>}
-          </div>
-
-          <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-6">
-              <div className="flex items-center gap-2.5 mb-5 pb-4 border-b border-gray-100">
-                <div className="w-7 h-7 rounded-lg bg-[var(--eh-primary)] flex items-center justify-center shrink-0 text-white">
-                  <FileText size={14} />
-                </div>
-                <h3 className="text-sm font-semibold text-gray-800">Documents</h3>
-              </div>
-            <DocumentList numero={dossier.numero_dossier} items={docs} />
-          </div>
-
-          <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-6">
-            <div className="flex items-center gap-2.5 mb-5 pb-4 border-b border-gray-100">
-              <div className="w-7 h-7 rounded-lg bg-gray-50 flex items-center justify-center shrink-0"><Clock size={14} className="text-gray-500" /></div>
-              <h3 className="text-sm font-semibold text-gray-800">Historique</h3>
-            </div>
-            <Timeline events={events} />
-          </div>
-        </div>
-
-        <div className="space-y-5">
-          {/* Paiement */}
-          <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-6">
-            <div className="flex items-center gap-2.5 mb-5 pb-4 border-b border-gray-100">
-              <div className="w-7 h-7 rounded-lg bg-green-50 flex items-center justify-center shrink-0"><CreditCard size={14} className="text-green-600" /></div>
-              <h3 className="text-sm font-semibold text-gray-800">Paiement</h3>
-            </div>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Montant</span>
-                <span className="text-lg font-bold text-gray-900">{dossier.montant ?? 0} €</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Statut</span>
-                {dossier.paiement_effectue ? (
-                  <span className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[11px] font-semibold bg-green-50 text-green-700 ring-1 ring-inset ring-green-100"><CheckCircle size={12} />Payé</span>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-100"><XCircle size={12} />En attente</span>
-                )}
-              </div>
-              <div>
-                <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Mode</div>
-                <div className="text-sm text-gray-800">{renderPaymentMode()}</div>
-              </div>
-              {dossier.paiement_effectue && (
-                <div className="mt-3 border-t pt-3 text-sm text-gray-700 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">Date du paiement</span>
-                    <span className="text-sm font-medium text-gray-800">{dossier.date_paiement ? new Date(dossier.date_paiement).toLocaleDateString('fr-FR') : '—'}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">Référence</span>
-                    <span className="text-xs font-medium text-gray-700 break-all">{dossier.reference_paiement ?? '—'}</span>
-                  </div>
-                  {dossier.commentaire_paiement && (
-                    <div>
-                      <div className="text-xs text-gray-500">Commentaire</div>
-                      <div className="text-sm text-gray-800">{dossier.commentaire_paiement}</div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Statut */}
-          <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-6">
-            <div className="flex items-center gap-2.5 mb-5 pb-4 border-b border-gray-100">
-              <div className="w-7 h-7 rounded-lg bg-orange-50 flex items-center justify-center shrink-0"><Tag size={14} className="text-orange-500" /></div>
-              <h3 className="text-sm font-semibold text-gray-800">Statut dossier</h3>
-            </div>
-            <StatusSelector currentStatus={dossier.statut} dossierId={String(dossier.id)} onUpdated={async () => { await fetchDossier(); if (onUpdated) onUpdated() }} />
-          </div>
-
-          {/* Client */}
-          <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-6">
-            <div className="flex items-center gap-2.5 mb-5 pb-4 border-b border-gray-100">
-              <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center shrink-0"><User size={14} className="text-blue-600" /></div>
-              <div className="flex items-center gap-3">
-                <h3 className="text-sm font-semibold text-gray-800">Informations client</h3>
-                <button type="button" onClick={() => openEdit('client')} title="Modifier" className="inline-flex items-center justify-center w-7 h-7 rounded-md text-gray-500 hover:bg-gray-100"><Edit2 size={14} /></button>
-                {savedBadge.client && <div className="text-sm text-green-700 bg-green-50 px-2 py-0.5 rounded">Dernière modification enregistrée ✓</div>}
-              </div>
-            </div>
-            <div className="text-sm text-gray-800 space-y-3">
-                <div>
-                    <div className="text-[10px] text-gray-400 uppercase tracking-wider">Type de client</div>
-                    {(() => {
-                      const raw = dossier.type_client || ''
-                      const t = raw.toLowerCase()
-                      if (!t) return <div className="font-medium">—</div>
-                      if (t.includes('pro') || t.includes('professionnel')) {
-                        return (
-                          <span className="inline-flex items-center h-6 px-2 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-100">Professionnel</span>
-                        )
-                      }
-                      if (t.includes('part') || t.includes('particulier')) {
-                        return (
-                          <span className="inline-flex items-center h-6 px-2 rounded-full text-xs font-semibold bg-green-50 text-green-700 ring-1 ring-inset ring-green-100">Particulier</span>
-                        )
-                      }
-                      return <div className="font-medium">{dossier.type_client}</div>
-                    })()}
-                </div>
-              <div>
-                <div className="text-[10px] text-gray-400 uppercase tracking-wider">Nom</div>
-                <div className="font-medium">{dossier.nom} {dossier.prenom}</div>
-              </div>
-              {dossier.nom_societe && (
-                <div>
-                  <div className="text-[10px] text-gray-400 uppercase tracking-wider">Société</div>
-                  <div className="font-medium">{dossier.nom_societe}</div>
-                </div>
-              )}
-              {(dossier.lieu_naissance_ville || dossier.lieu_naissance_pays) && (
-                <div>
-                  <div className="text-[10px] text-gray-400 uppercase tracking-wider">Lieu de naissance</div>
-                  <div className="text-sm text-gray-700">{[dossier.lieu_naissance_ville, dossier.lieu_naissance_pays].filter(Boolean).join(', ')}</div>
-                </div>
-              )}
-              {dossier.email && (
-                <div>
-                  <div className="text-[10px] text-gray-400 uppercase tracking-wider">Email</div>
-                  <a href={`mailto:${dossier.email}`} className="text-sm text-gray-700 break-all">{dossier.email}</a>
-                </div>
-              )}
-              {dossier.telephone && (
-                <div>
-                  <div className="text-[10px] text-gray-400 uppercase tracking-wider">Téléphone</div>
-                  <div className="text-sm text-gray-700">{dossier.telephone}</div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Statistiques simples (inline) */}
-          <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-6">
-            <div className="flex items-center gap-2.5 mb-5 pb-4 border-b border-gray-100">
-              <div className="w-7 h-7 rounded-lg bg-purple-50 flex items-center justify-center shrink-0"><Clock size={14} className="text-purple-500" /></div>
-              <h3 className="text-sm font-semibold text-gray-800">Statistiques</h3>
-            </div>
-            <div className="divide-y divide-gray-50">
-              <div className="flex items-center justify-between py-2.5">
-                <span className="text-xs text-gray-500">Nombre de documents</span>
-                <span className="text-xs font-medium text-gray-800">{docCount}</span>
-              </div>
-              <div className="flex items-center justify-between py-2.5">
-                <span className="text-xs text-gray-500">Taille totale</span>
-                <span className="text-xs font-medium text-gray-800">{formatBytes(totalBytes)}</span>
-              </div>
-              <div className="flex items-center justify-between py-2.5">
-                <span className="text-xs text-gray-500">Dernier document</span>
-                <span className="text-xs font-medium text-gray-800">{lastDoc ? lastDoc.name : '—'}</span>
-              </div>
-              {/* Archive date moved to Timeline for traceability */}
-              <div className="flex items-center justify-between py-2.5">
-                <span className="text-xs text-gray-500">Dernière modification</span>
-                <span className="text-xs font-medium text-gray-800">{dossier.updated_at ? new Date(dossier.updated_at).toLocaleDateString('fr-FR') : '—'}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
+      {/* Archive Modal */}
       {showArchiveModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={closeArchiveModal} />
-          <div role="dialog" aria-modal="true" aria-labelledby="archive-title" className="relative bg-white rounded-xl shadow-xl max-w-lg w-full p-6 z-10 transform transition-all duration-200">
+          <div role="dialog" aria-modal="true" aria-labelledby="archive-title" className="relative bg-white rounded-xl shadow-xl max-w-lg w-full p-6 z-10">
             <div className="flex items-start gap-4">
               <div className="flex-shrink-0">
                 <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center text-red-600">
@@ -661,22 +687,16 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
                   type="button"
                   onClick={handleDownloadZip}
                   disabled={!hasAvailableDocs || zipDownloading}
-                  aria-busy={zipDownloading}
-                  title={!hasAvailableDocs ? 'Aucun fichier disponible' : undefined}
                   className={`inline-flex items-center gap-2 px-3 py-2 rounded border text-sm transition-colors duration-150 ${!hasAvailableDocs || zipDownloading ? 'bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-100'}`}
                 >
                   <Download size={14} className={zipDownloading ? 'animate-spin' : ''} />
                   {zipDownloading ? 'Téléchargement…' : 'Télécharger le dossier ZIP'}
                 </button>
-
                 <button type="button" onClick={closeArchiveModal} className="inline-flex items-center px-3 py-2 rounded border border-gray-100 bg-white text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-150">Annuler</button>
               </div>
-
               <div>
                 <div className="flex items-center gap-3">
-                  {!hasAvailableDocs && (
-                    <div className="text-sm text-gray-600">Aucun fichier non-archivé disponible.</div>
-                  )}
+                  {!hasAvailableDocs && <div className="text-sm text-gray-600">Aucun fichier non-archivé disponible.</div>}
                   <button type="button" onClick={handleConfirmArchive} disabled={!hasAvailableDocs || archiving} className={`inline-flex items-center gap-2 px-4 py-2 rounded text-white text-sm transition-colors duration-150 ${!hasAvailableDocs ? 'bg-gray-300 text-gray-700 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}>
                     {archiving ? 'Archivage…' : 'Archiver les documents'}
                   </button>
@@ -686,10 +706,12 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
           </div>
         </div>
       )}
+
+      {/* Delete Modal */}
       {showDeleteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={closeDeleteModal} />
-          <div role="dialog" aria-modal="true" aria-labelledby="delete-title" className="relative bg-white rounded-xl shadow-xl max-w-lg w-full p-6 z-10 transform transition-all duration-200">
+          <div role="dialog" aria-modal="true" aria-labelledby="delete-title" className="relative bg-white rounded-xl shadow-xl max-w-lg w-full p-6 z-10">
             <div className="flex items-start gap-4">
               <div className="shrink-0">
                 <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center text-red-600">
@@ -709,14 +731,11 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
                   type="button"
                   onClick={handleDownloadZip}
                   disabled={!hasAvailableDocs || zipDownloading || deleting}
-                  aria-busy={zipDownloading}
-                  title={!hasAvailableDocs ? 'Aucun fichier disponible' : undefined}
                   className={`inline-flex items-center gap-2 px-3 py-2 rounded border text-sm transition-colors duration-150 ${!hasAvailableDocs || zipDownloading || deleting ? 'bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-100'}`}
                 >
                   <Download size={14} className={zipDownloading ? 'animate-spin' : ''} />
                   {zipDownloading ? 'Téléchargement…' : 'Télécharger le dossier ZIP'}
                 </button>
-
                 <button
                   type="button"
                   onClick={closeDeleteModal}
@@ -726,7 +745,6 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
                   Annuler
                 </button>
               </div>
-
               <button
                 type="button"
                 onClick={handleConfirmDelete}
@@ -740,6 +758,7 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
           </div>
         </div>
       )}
+
       <PaymentDialog open={showPaymentDialog} onClose={() => setShowPaymentDialog(false)} dossierId={dossier.id} onSaved={handlePaymentSaved} />
       <EditDossierDialog open={showEditDialog} onClose={closeEdit} dossier={dossier} section={editSection} onSaved={handleSaved} />
     </div>
