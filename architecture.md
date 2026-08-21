@@ -309,7 +309,7 @@ Principes généraux
 
 Palette & identité
 - Variables CSS utilisées : `--eh-primary` (bleu foncé), `--eh-bordeaux` (rouge bordeaux), `--eh-light` (gris très clair), blanc.
-- Logo : `/public/logo.jpeg` (remplacé pour Esquiss Habitat) ; visuels de référence : `/public/flyer.jpeg`.
+- Logo : `/public/logo.png` (remplacé pour Esquiss Habitat) ; visuels de référence : `/public/flyer.jpeg`.
 
 Landing page — changements fonctionnels
 - Nouvelle page d'accueil orchestrée depuis `app/page.tsx` et composée des composants suivants (créés ou adaptés) :

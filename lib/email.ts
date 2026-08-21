@@ -265,11 +265,52 @@ export async function sendPaymentAssistanceEmail(
   return result
 }
 
+export async function sendDossierReceivedEmail(
+  email: string,
+  nom: string,
+  prenom: string,
+  numeroDossier: string,
+  suiviPassword: string
+): Promise<EmailResult> {
+  const subject = `Dossier reçu — ${numeroDossier}`
+
+  const html = `
+    <html>
+      <body style="font-family: Arial, sans-serif; color: #111;">
+        <h2>Merci — votre dossier a bien été reçu</h2>
+        <p>Bonjour ${prenom} ${nom},</p>
+        <p>Merci d'avoir déposé votre dossier auprès d'Esquiss Habitat.</p>
+        <p>Notre expertise initiale est gratuite. Votre dossier va maintenant être étudié par notre équipe.</p>
+        <p>Un membre de notre équipe prendra contact avec vous afin d'étudier votre projet et de vous communiquer un devis précis adapté à votre situation.</p>
+        <p><strong>Numéro de dossier :</strong><br/>${numeroDossier}</p>
+        <p><strong>Accès suivi :</strong><br/>Numéro : ${numeroDossier}<br/>Mot de passe : ${suiviPassword}</p>
+        <p>Vous pouvez suivre l'avancement de votre dossier depuis votre espace de suivi.</p>
+        <p>Cordialement,<br/>${sender().name}</p>
+      </body>
+    </html>
+  `
+
+  const text = `Bonjour ${prenom} ${nom},\n\nMerci d'avoir déposé votre dossier auprès d'Esquiss Habitat.\n\nNuméro de dossier: ${numeroDossier}\nAccès suivi: Numéro: ${numeroDossier} Mot de passe: ${suiviPassword}\n\nNotre équipe analysera votre dossier et vous contactera pour un devis.`
+
+  const payload = {
+    sender: sender(),
+    to: [{ email }],
+    subject,
+    htmlContent: html,
+    textContent: text,
+  }
+
+  const result = await sendEmailRaw(payload)
+  if (!result.ok) console.error('sendDossierReceivedEmail error', result.error)
+  return result
+}
+
 const emailClient = {
   sendClientConfirmationEmail,
   sendAdminNotificationEmail,
   sendPaymentConfirmationEmail,
   sendPaymentAssistanceEmail,
+  sendDossierReceivedEmail,
 }
 
 export default emailClient

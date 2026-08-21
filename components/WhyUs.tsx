@@ -83,8 +83,7 @@ export default function WhyUs() {
 
                 {/* Stats overlay */}
                 <div className="absolute bottom-6 right-6 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white text-center">
-                  <div className="text-2xl font-extrabold">500+</div>
-                  <div className="text-white/60 text-xs mt-0.5">dossiers traités</div>
+                  <div className="text-lg font-extrabold">+ de 1000 dossiers traités</div>
                 </div>
               </div>
             </div>

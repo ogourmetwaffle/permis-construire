@@ -1,27 +1,34 @@
 import React from 'react'
-import { CreditCard, FileText, Toolbox, Paperclip, CheckCircle, XCircle } from 'lucide-react'
+import { CreditCard, FileText, Toolbox, Paperclip, CheckCircle, XCircle, Clock } from 'lucide-react'
 
 type IconType = React.ComponentType<React.SVGProps<SVGSVGElement>>
 
 export type Status =
   | 'EN_ATTENTE_PAIEMENT'
+  | 'DEVIS'
   | 'NOUVEAU'
   | 'EN_COURS'
   | 'INFORMATIONS_MANQUANTES'
+  | 'EN_ATTENTE_CLIENT'
+  | 'ARCHIVE'
   | 'TERMINE'
   | 'REFUSE'
 
 export const STATUS = {
+  DEVIS: 'DEVIS',
   EN_ATTENTE_PAIEMENT: 'EN_ATTENTE_PAIEMENT',
   NOUVEAU: 'NOUVEAU',
   EN_COURS: 'EN_COURS',
   INFORMATIONS_MANQUANTES: 'INFORMATIONS_MANQUANTES',
   TERMINE: 'TERMINE',
+  EN_ATTENTE_CLIENT: 'EN_ATTENTE_CLIENT',
+  ARCHIVE: 'ARCHIVE',
   REFUSE: 'REFUSE',
 } as const
 
 export const STATUS_ORDER: Status[] = [
   STATUS.EN_ATTENTE_PAIEMENT,
+  STATUS.DEVIS,
   STATUS.NOUVEAU,
   STATUS.EN_COURS,
   STATUS.INFORMATIONS_MANQUANTES,
@@ -40,6 +47,15 @@ type StatusConfig = {
 }
 
 export const STATUS_CONFIG: Record<Status, StatusConfig> = {
+  DEVIS: {
+    label: 'Devis',
+    icon: FileText,
+    badgeClass: 'bg-amber-50 text-amber-800 ring-amber-100',
+    textClass: 'text-amber-800',
+    borderClass: 'ring-amber-100',
+    showOnDashboard: true,
+    order: 0,
+  },
   EN_ATTENTE_PAIEMENT: {
     label: 'Paiement',
     icon: CreditCard,
@@ -75,6 +91,24 @@ export const STATUS_CONFIG: Record<Status, StatusConfig> = {
     borderClass: 'ring-violet-100',
     showOnDashboard: false,
     order: 4,
+  },
+  EN_ATTENTE_CLIENT: {
+    label: 'En attente (client)',
+    icon: Clock,
+    badgeClass: 'bg-yellow-50 text-yellow-800 ring-yellow-100',
+    textClass: 'text-yellow-800',
+    borderClass: 'ring-yellow-100',
+    showOnDashboard: false,
+    order: 5,
+  },
+  ARCHIVE: {
+    label: 'Archivé',
+    icon: XCircle,
+    badgeClass: 'bg-gray-50 text-gray-700 ring-gray-100',
+    textClass: 'text-gray-700',
+    borderClass: 'ring-gray-100',
+    showOnDashboard: false,
+    order: 99,
   },
   TERMINE: {
     label: 'Terminé',
@@ -127,7 +161,7 @@ export function isFinished(value?: string | null) {
   return s === STATUS.TERMINE || s === STATUS.REFUSE
 }
 
-export default {
+const statusModule = {
   STATUS,
   STATUS_ORDER,
   STATUS_CONFIG,
@@ -135,3 +169,5 @@ export default {
   getStatusConfig,
   isFinished,
 }
+
+export default statusModule

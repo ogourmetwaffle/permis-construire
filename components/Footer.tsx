@@ -30,7 +30,7 @@ export default function Footer() {
           <div className="lg:col-span-1">
             <Link href="/" className="flex items-center gap-3 mb-4">
               <Image
-                src="/logo.jpeg"
+                src="/logo.png"
                 alt="Esquiss Habitat"
                 width={40}
                 height={40}

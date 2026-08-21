@@ -44,23 +44,43 @@ export default function Contact() {
         </div>
 
         <div className="grid lg:grid-cols-2 gap-12 items-start">
-          {/* Contact details */}
+          {/* Left column: Téléphone & Email */}
           <div className="space-y-6">
-            {contactInfo.map((info) => (
+            {contactInfo
+              .filter((i) => i.label === 'Téléphone' || i.label === 'Email')
+              .map((info) => (
+                <a
+                  key={info.label}
+                  href={info.href}
+                  className="flex items-center gap-5 p-5 bg-white/10 hover:bg-white/15 border border-white/20 rounded-2xl transition-colors group"
+                >
+                  <div className="w-11 h-11 rounded-xl bg-white/10 text-white/80 flex items-center justify-center shrink-0 group-hover:bg-[#7b2020] group-hover:text-white transition-colors">
+                    {info.icon}
+                  </div>
+                  <div>
+                    <div className="text-white/50 text-xs font-medium uppercase tracking-wide mb-0.5">{info.label}</div>
+                    <div className="text-white font-semibold">{info.value}</div>
+                  </div>
+                </a>
+              ))}
+          </div>
+
+          {/* Right column: Site web & Adresse */}
+          <div className="space-y-6">
+            {contactInfo.find((i) => i.label === 'Site web') && (
               <a
-                key={info.label}
-                href={info.href}
+                href={contactInfo.find((i) => i.label === 'Site web')!.href}
                 className="flex items-center gap-5 p-5 bg-white/10 hover:bg-white/15 border border-white/20 rounded-2xl transition-colors group"
               >
                 <div className="w-11 h-11 rounded-xl bg-white/10 text-white/80 flex items-center justify-center shrink-0 group-hover:bg-[#7b2020] group-hover:text-white transition-colors">
-                  {info.icon}
+                  {contactInfo.find((i) => i.label === 'Site web')!.icon}
                 </div>
                 <div>
-                  <div className="text-white/50 text-xs font-medium uppercase tracking-wide mb-0.5">{info.label}</div>
-                  <div className="text-white font-semibold">{info.value}</div>
+                  <div className="text-white/50 text-xs font-medium uppercase tracking-wide mb-0.5">Site web</div>
+                  <div className="text-white font-semibold">www.esquisshabitat.com</div>
                 </div>
               </a>
-            ))}
+            )}
 
             <div className="flex items-start gap-5 p-5 bg-white/10 border border-white/20 rounded-2xl">
               <div className="w-11 h-11 rounded-xl bg-white/10 text-white/80 flex items-center justify-center shrink-0">
@@ -75,14 +95,6 @@ export default function Contact() {
                 <div className="text-white/50 text-sm mt-0.5">Interventions sur tout le territoire national</div>
               </div>
             </div>
-          </div>
-
-          {/* Google Maps placeholder */}
-          <div className="rounded-2xl overflow-hidden border border-white/20 bg-white/5 h-80 flex flex-col items-center justify-center gap-4">
-            <svg className="w-12 h-12 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-            </svg>
-            <p className="text-white/30 text-sm">Carte — à configurer</p>
           </div>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import supabaseAdmin from '@/lib/supabase-admin'
-import { sendClientConfirmationEmail, sendAdminNotificationEmail } from '@/lib/email'
+import { sendClientConfirmationEmail, sendAdminNotificationEmail, sendDossierReceivedEmail } from '@/lib/email'
 
 export async function POST(req: Request) {
   try {
@@ -44,6 +44,9 @@ export async function POST(req: Request) {
 
     const numeroDossier = 'PE-' + Date.now()
 
+    // generate a short secure tracking password
+    const suiviPassword = Math.random().toString(36).slice(2, 10)
+
     const { data: dossier, error } = await supabase
       .from('dossiers')
       .insert({
@@ -66,7 +69,8 @@ export async function POST(req: Request) {
         montant,
         mode_paiement: 'VIREMENT',
         paiement_effectue: false,
-        statut: 'EN_ATTENTE_PAIEMENT',
+        statut: 'DEVIS',
+        mot_de_passe_suivi: suiviPassword,
       })
       .select('id, numero_dossier')
       .single()
@@ -76,55 +80,26 @@ export async function POST(req: Request) {
       return new Response(JSON.stringify({ error: 'Erreur lors de la création du dossier' }), { status: 500 })
     }
 
-    // Fetch bank details from parametres
-    const { data: params } = await supabase
-      .from('parametres')
-      .select('cle, valeur')
-      .in('cle', ['iban', 'bic', 'titulaire'])
-
-    const bankDetails: Record<string, string> = {}
-    if (params) {
-      for (const row of params as { cle: string; valeur: string }[]) {
-        bankDetails[row.cle] = row.valeur
+    // send 'dossier reçu' email to client and notify admin (no bank details at creation)
+    try {
+      try {
+        await sendDossierReceivedEmail(email, nom, prenom, dossier.numero_dossier, suiviPassword)
+      } catch (err) {
+        console.error('Error sending dossier received email to client', err)
       }
+
+      try {
+        await sendAdminNotificationEmail(dossier.numero_dossier, nom, prenom, email, telephone)
+      } catch (err) {
+        console.error('Error sending admin notification (dossier received)', err)
+      }
+    } catch (err) {
+      console.error('Error sending notifications for dossier received', err)
     }
 
-    // Prepare response payload
     const responsePayload = {
       numeroDossier: dossier.numero_dossier,
       dossierId: dossier.id,
-      iban: bankDetails.iban ?? null,
-      bic: bankDetails.bic ?? null,
-      titulaire: bankDetails.titulaire ?? null,
-    }
-
-    // send emails (fire-and-forget, log errors)
-    try {
-      const paymentInfo = {
-        mode: 'VIREMENT' as const,
-        montant: montant ?? undefined,
-        currency: 'EUR',
-        iban: bankDetails.iban ?? undefined,
-        bic: bankDetails.bic ?? undefined,
-        titulaire: bankDetails.titulaire ?? undefined,
-        reference: dossier.numero_dossier,
-      }
-
-      // client email
-      try {
-        await sendClientConfirmationEmail(email, nom, prenom, dossier.numero_dossier, paymentInfo)
-      } catch (err) {
-        console.error('Error sending client confirmation (virement)', err)
-      }
-
-      // admin notification
-      try {
-        await sendAdminNotificationEmail(dossier.numero_dossier, nom, prenom, email, telephone, paymentInfo)
-      } catch (err) {
-        console.error('Error sending admin notification (virement)', err)
-      }
-    } catch (err) {
-      console.error('Error preparing/sending emails for virement', err)
     }
 
     return new Response(JSON.stringify(responsePayload), { status: 200 })

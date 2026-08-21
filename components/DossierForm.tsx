@@ -40,6 +40,7 @@ export default function DossierForm() {
       }
 
       const numeroDossier = 'PE-' + Date.now()
+      const suiviPassword = Math.random().toString(36).slice(2, 10)
 
       const { data: dossierData, error: insertError } = await supabase
         .from('dossiers')
@@ -50,9 +51,10 @@ export default function DossierForm() {
           email: form.email,
           telephone: form.telephone,
           pays_permis: form.pays_permis,
-          statut: STATUS.NOUVEAU,
-          montant: 49,
-          paiement_effectue: false
+          statut: 'DEVIS',
+          montant: 0,
+          paiement_effectue: false,
+          mot_de_passe_suivi: suiviPassword,
         })
         .select()
         .single()
@@ -86,14 +88,18 @@ export default function DossierForm() {
         }
       }
 
-      const resp = await fetch('/api/create-checkout-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ numero: numeroDossier, dossierId })
-      })
-      const json = await resp.json()
-      if (json?.url) window.location.href = json.url
-      else router.push(`/merci?numero=${encodeURIComponent(numeroDossier)}`)
+      // notify server to send dossier-received email (server side)
+      try {
+        await fetch('/api/dossiers/notify-received', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dossierId, numero: numeroDossier }),
+        })
+      } catch (err) {
+        console.error('notify-received error', err)
+      }
+
+      router.push(`/merci?numero=${encodeURIComponent(numeroDossier)}`)
     } catch (err) {
       console.error(err)
       setErrors({ form: 'Erreur lors de la création du dossier' })

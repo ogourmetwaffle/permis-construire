@@ -11,6 +11,7 @@ import EditDossierDialog from './EditDossierDialog'
 import StatusSelector from './StatusSelector'
 import { supabase } from '@/lib/supabase'
 import { getStatusConfig, normalizeStatus } from '@/lib/status'
+import PrepareDevisDialog from './PrepareDevisDialog'
 
 type Dossier = {
   id: number | string
@@ -33,6 +34,11 @@ type Dossier = {
   montant?: number | null
   mode_paiement?: string | null
   paiement_effectue?: boolean
+  iban?: string | null
+  bic?: string | null
+  titulaire?: string | null
+  reference_virement?: string | null
+  mot_de_passe_suivi?: string | null
   statut?: string
   commentaire_admin?: string | null
   date_paiement?: string | null
@@ -55,6 +61,7 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
   const [deleting, setDeleting] = useState(false)
   const [zipDownloading, setZipDownloading] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
+  const [showPrepareDevis, setShowPrepareDevis] = useState(false)
   const [editSection, setEditSection] = useState<'client' | 'project'>('client')
   const [savedBadge, setSavedBadge] = useState<{ client?: boolean; project?: boolean }>({})
 
@@ -146,6 +153,13 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
     setShowEditDialog(true)
   }
   const closeEdit = () => setShowEditDialog(false)
+
+  const handleDevisSaved = (updated: any) => {
+    // merge updated fields into dossier state
+    setDossier((prev) => ({ ...(prev || {}), ...(updated || {}) }))
+    toast.success('Devis enregistré')
+    if (onUpdated) onUpdated()
+  }
 
   const handleSaved = (updated: any) => {
     // merge updated fields into dossier state
@@ -407,6 +421,13 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
             )}
             <button
               type="button"
+              onClick={() => setShowPrepareDevis(true)}
+              className={`${actionBase} bg-white text-[#7b2020] border-[#e6b8b8] hover:bg-[#fff2f2]`}
+            >
+              <FileText size={14} /> Préparer le devis
+            </button>
+            <button
+              type="button"
               onClick={hasAvailableDocs ? openArchiveModal : undefined}
               disabled={!hasAvailableDocs}
               title={!hasAvailableDocs ? 'Tous les documents sont déjà archivés' : undefined}
@@ -426,6 +447,14 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
           </div>
         </div>
       </div>
+      {/* Prepare Devis Dialog */}
+      <PrepareDevisDialog
+        open={showPrepareDevis}
+        onClose={() => setShowPrepareDevis(false)}
+        dossierId={dossier.id}
+        initial={{ montant: dossier.montant ?? 0, iban: dossier.iban ?? undefined, bic: dossier.bic ?? undefined, titulaire: dossier.titulaire ?? undefined, reference: dossier.reference_virement ?? dossier.numero_dossier, commentaire: dossier.commentaire_admin ?? '' }}
+        onSaved={(u) => { handleDevisSaved(u); setShowPrepareDevis(false); fetchDossier() }}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 items-start">
         <div className="space-y-6 min-w-0">
