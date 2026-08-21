@@ -11,6 +11,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname()
   const [checking, setChecking] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [adminEmail, setAdminEmail] = useState<string | undefined>(undefined)
 
   useEffect(() => {
     // Skip session check for the login page so it can render unauthenticated
@@ -25,6 +26,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         router.push('/admin/login')
         return
       }
+      setAdminEmail(data.session.user.email ?? undefined)
       setChecking(false)
     }
     check()
@@ -40,7 +42,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <div className="flex">
         <AdminSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <main className="flex-1 min-h-screen flex flex-col">
-          <AdminHeader onToggleSidebar={() => setSidebarOpen((s) => !s)} dossierLabel={pathname.startsWith('/admin/dossiers/') ? pathname.split('/').pop() ?? undefined : undefined} />
+          <AdminHeader onToggleSidebar={() => setSidebarOpen((s) => !s)} dossierLabel={pathname.startsWith('/admin/dossiers/') ? pathname.split('/').pop() ?? undefined : undefined} adminEmail={adminEmail} />
           <div className="flex-1 p-6">{children}</div>
         </main>
       </div>

@@ -12,7 +12,17 @@ export async function verifySupabaseToken(authHeader?: string | null): Promise<V
 
   try {
     const { data, error } = await supabaseAdmin.auth.getUser(token)
-    if (error) return { user: null, error: 'Invalid token' }
+    if (error) {
+      const msg = String(error.message || '')
+      if (msg.includes('JWT issued at future') || msg.includes('clock skew')) {
+        await new Promise((resolve) => setTimeout(resolve, 1500))
+        const { data: retryData, error: retryError } = await supabaseAdmin.auth.getUser(token)
+        if (retryError) return { user: null, error: 'Invalid token' }
+        if (!retryData || !retryData.user) return { user: null, error: 'No user found' }
+        return { user: retryData.user }
+      }
+      return { user: null, error: 'Invalid token' }
+    }
     if (!data || !data.user) return { user: null, error: 'No user found' }
     return { user: data.user }
   } catch (err) {
