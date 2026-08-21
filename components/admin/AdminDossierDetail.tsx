@@ -10,8 +10,9 @@ import { toast } from 'react-hot-toast'
 import EditDossierDialog from './EditDossierDialog'
 import StatusSelector from './StatusSelector'
 import { supabase } from '@/lib/supabase'
-import { getStatusConfig, normalizeStatus } from '@/lib/status'
+import { getStatusConfig, normalizeStatus, STATUS } from '@/lib/status'
 import PrepareDevisDialog from './PrepareDevisDialog'
+import ActionMenu from './ActionMenu'
 
 type Dossier = {
   id: number | string
@@ -380,7 +381,7 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
     <div className="w-full">
 
       {/* Header: back arrow + dossier label */}
-      <div className="flex items-center justify-between gap-4 mb-6 pb-4 border-b border-gray-100">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b border-gray-100">
         <div>
           <a href="/admin" className="inline-flex items-center gap-3 group rounded-lg bg-white border border-gray-100 shadow-sm p-3 hover:shadow-md transition-shadow">
             <div className="w-9 h-9 rounded-md bg-[var(--eh-primary)] flex items-center justify-center text-white">
@@ -393,10 +394,18 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
           </a>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">{renderStatusBadge()}{renderPaymentBadge()}</div>
+        <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-2">
-            <a href={`mailto:${dossier.email ?? ''}`} className={`${actionBase} bg-white text-gray-700 border-gray-200 hover:bg-gray-100`}> <Mail size={14} /> Email</a>
+            {renderStatusBadge()}
+            {renderPaymentBadge()}
+          </div>
+
+          <div className="h-6 w-px bg-gray-200 hidden sm:block" />
+
+          <div className="flex items-center gap-2">
+            <a href={`mailto:${dossier.email ?? ''}`} className={`${actionBase} bg-white text-gray-700 border-gray-200 hover:bg-gray-100`}>
+              <Mail size={14} /> Email
+            </a>
             <button
               type="button"
               onClick={handleDownloadZip}
@@ -408,42 +417,45 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
               <Download size={14} className={zipDownloading ? 'animate-spin' : ''} />
               {zipDownloading ? 'Téléchargement…' : 'Télécharger ZIP'}
             </button>
+
             {!dossier.paiement_effectue ? (
               <button
                 type="button"
                 onClick={() => setShowPaymentDialog(true)}
-                className={`${actionBase} ${dossier.paiement_effectue ? 'bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-100'}`}
+                className={`${actionBase} bg-white text-gray-700 border-gray-200 hover:bg-gray-100`}
               >
                 <CreditCard size={14} /> Paiement
               </button>
             ) : (
-              <span className={`${actionBase} bg-green-50 text-green-700 border-green-100`}><CheckCircle size={14} /> Paiement confirmé</span>
+              <span className={`${actionBase} bg-green-50 text-green-700 border-green-100`}>
+                <CheckCircle size={14} /> Paiement confirmé
+              </span>
             )}
-            <button
-              type="button"
-              onClick={() => setShowPrepareDevis(true)}
-              className={`${actionBase} bg-white text-[#7b2020] border-[#e6b8b8] hover:bg-[#fff2f2]`}
-            >
-              <FileText size={14} /> Préparer le devis
-            </button>
-            <button
-              type="button"
-              onClick={hasAvailableDocs ? openArchiveModal : undefined}
-              disabled={!hasAvailableDocs}
-              title={!hasAvailableDocs ? 'Tous les documents sont déjà archivés' : undefined}
-              className={`${actionBase} ${!hasAvailableDocs ? 'bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed' : 'bg-white text-gray-400 border-gray-200 hover:bg-red-100 hover:text-red-600'}`}
-            >
-              <Archive size={14} /> Archiver
-            </button>
-            <button
-              type="button"
-              onClick={openDeleteModal}
-              disabled={deleting}
-              aria-busy={deleting}
-              className={`${actionBase} ${deleting ? 'bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed' : 'bg-white text-red-600 border-red-200 hover:bg-red-50'}`}
-            >
-              <Trash2 size={14} /> Supprimer
-            </button>
+
+            {normalizeStatus(dossier.statut) === STATUS.DEVIS && (
+              <button
+                type="button"
+                onClick={() => setShowPrepareDevis(true)}
+                className={`${actionBase} bg-[#7b2020] text-white border-[#7b2020] hover:bg-[#6a1a1a] shadow-sm`}
+              >
+                <FileText size={14} /> Préparer le devis
+              </button>
+            )}
+
+            <ActionMenu
+              items={[
+                {
+                  label: 'Archiver',
+                  onClick: hasAvailableDocs ? openArchiveModal : () => {},
+                  disabled: !hasAvailableDocs,
+                },
+                {
+                  label: 'Supprimer',
+                  onClick: openDeleteModal,
+                  danger: true,
+                },
+              ]}
+            />
           </div>
         </div>
       </div>
