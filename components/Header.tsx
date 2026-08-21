@@ -13,6 +13,7 @@ const navLinks = [
   { href: '/#realisations', label: 'Réalisations' },
   { href: '/#faq', label: 'FAQ' },
   { href: '/#contact', label: 'Contact' },
+  { href: '/suivi', label: 'Suivi dossier' },
 ]
 
 export default function Header() {
@@ -44,10 +45,25 @@ export default function Header() {
 
         <nav aria-label="Navigation principale" className="hidden lg:flex items-center gap-7">
           {navLinks.map((link) => {
-            // determine active state
             const isAnchor = link.href.includes('#')
             const anchor = isAnchor ? link.href.split('#')[1] : ''
             const isActive = isAnchor ? pathname === '/' && hash === anchor : pathname === link.href
+            const isSuivi = link.href === '/suivi'
+
+            if (isSuivi) {
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="inline-flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-lg border border-gray-200 text-gray-700 hover:text-[#1e3a5f] hover:border-[#1e3a5f]/30 hover:bg-[#f5f6f8] transition-all"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  {link.label}
+                </Link>
+              )
+            }
 
             return (
               <Link

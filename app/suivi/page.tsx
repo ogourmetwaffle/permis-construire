@@ -1,12 +1,76 @@
 "use client"
 
 import React, { useState } from 'react'
+import { normalizeStatus, STATUS, getStatusConfig } from '@/lib/status'
+import { Lock, Search, CheckCircle2, Clock, FileText, CreditCard, Banknote } from 'lucide-react'
+
+type Dossier = {
+  id: number | string
+  numero_dossier: string
+  statut?: string
+  montant?: number | null
+  iban?: string | null
+  bic?: string | null
+  titulaire?: string | null
+  reference_virement?: string | null
+  paiement_effectue?: boolean
+  declarations?: Array<{ id: number; reference: string; montant?: number | null; date_declaration?: string | null; created_at?: string }>
+}
+
+type Step = {
+  id: string
+  label: string
+  icon: React.ComponentType<{ size?: number; className?: string }>
+}
+
+const timelineSteps: Step[] = [
+  { id: 'received', label: 'Dossier reçu', icon: CheckCircle2 },
+  { id: 'study', label: 'Étude de votre projet', icon: Clock },
+  { id: 'devis', label: 'Devis', icon: FileText },
+  { id: 'payment', label: 'Paiement', icon: CreditCard },
+  { id: 'processing', label: 'Traitement du dossier', icon: Banknote },
+  { id: 'done', label: 'Terminé', icon: CheckCircle2 },
+]
+
+function getStepStatus(dossier: Dossier, stepId: string): 'completed' | 'active' | 'pending' {
+  const s = normalizeStatus(dossier.statut)
+
+  if (stepId === 'received') return 'completed'
+
+  if (stepId === 'study') {
+    if (s === STATUS.DEVIS || s === STATUS.EN_ATTENTE_PAIEMENT || s === STATUS.NOUVEAU || s === STATUS.EN_COURS) return 'active'
+    return 'pending'
+  }
+
+  if (stepId === 'devis') {
+    if (s === STATUS.EN_ATTENTE_PAIEMENT || s === STATUS.NOUVEAU || s === STATUS.EN_COURS) return 'active'
+    return 'pending'
+  }
+
+  if (stepId === 'payment') {
+    if (s === STATUS.NOUVEAU || s === STATUS.EN_COURS) return 'active'
+    if (dossier.paiement_effectue) return 'completed'
+    return 'pending'
+  }
+
+  if (stepId === 'processing') {
+    if (s === STATUS.EN_COURS) return 'active'
+    return 'pending'
+  }
+
+  if (stepId === 'done') {
+    if (s === STATUS.TERMINE) return 'completed'
+    return 'pending'
+  }
+
+  return 'pending'
+}
 
 export default function SuiviPage() {
   const [numero, setNumero] = useState('')
   const [pwd, setPwd] = useState('')
   const [loading, setLoading] = useState(false)
-  const [dossier, setDossier] = useState<any>(null)
+  const [dossier, setDossier] = useState<Dossier | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [showDeclare, setShowDeclare] = useState(false)
   const [decl, setDecl] = useState({ date: '', reference: '', montant: '' })
@@ -20,7 +84,7 @@ export default function SuiviPage() {
       const j = await resp.json()
       if (!resp.ok) { setMessage(j?.error || 'Erreur'); setDossier(null); setLoading(false); return }
       setDossier(j.dossier)
-    } catch (err) {
+    } catch {
       setMessage('Erreur réseau')
       setDossier(null)
     } finally { setLoading(false) }
@@ -40,86 +104,250 @@ export default function SuiviPage() {
       if (!resp.ok) { setMessage(j?.error || 'Erreur'); setLoading(false); return }
       setMessage('Déclaration envoyée. L\'administration vérifiera votre virement.')
       setShowDeclare(false)
-    } catch (err) {
+    } catch {
       setMessage('Erreur réseau')
     } finally { setLoading(false) }
   }
 
+  const status = dossier ? normalizeStatus(dossier.statut) : undefined
+  const cfg = dossier ? getStatusConfig(dossier.statut) : null
+
   return (
-    <div className="max-w-3xl mx-auto py-12 px-4">
-      <h1 className="text-2xl font-bold mb-4">Suivi de dossier</h1>
-      {!dossier ? (
-        <form onSubmit={handleLogin} className="space-y-3">
-          <div>
-            <label className="text-sm">Numéro de dossier</label>
-            <input value={numero} onChange={e => setNumero(e.target.value)} className="w-full border rounded px-3 py-2" />
-          </div>
-          <div>
-            <label className="text-sm">Mot de passe de suivi</label>
-            <input value={pwd} onChange={e => setPwd(e.target.value)} className="w-full border rounded px-3 py-2" />
-          </div>
-          <div>
-            <button type="submit" className="bg-[#E30613] text-white px-4 py-2 rounded" disabled={loading}>{loading ? 'Chargement…' : 'Accéder au suivi'}</button>
-          </div>
-          {message && <div className="text-sm text-red-600">{message}</div>}
-        </form>
-      ) : (
-        <div className="bg-white border rounded p-6">
-          <h2 className="text-lg font-semibold mb-2">MON DOSSIER</h2>
-          <div className="mb-4">{dossier.numero_dossier}</div>
-          <div className="mb-4">
-            <strong>Statut:</strong> {dossier.statut}
-          </div>
+    <div className="min-h-screen bg-[#f5f6f8]">
+      <div className="max-w-7xl mx-auto px-6 py-12 sm:py-16">
+        {!dossier ? (
+          <div className="max-w-md mx-auto">
+            <div className="text-center mb-8">
+              <h1 className="text-3xl sm:text-4xl font-extrabold text-[#1e3a5f] mb-3">Suivez votre dossier</h1>
+              <p className="text-gray-500 text-base">Retrouvez l&apos;avancement de votre projet en quelques secondes.</p>
+            </div>
 
-          {dossier.statut === 'DEVIS' && (
-            <div className="mb-4">Votre dossier est actuellement étudié par notre équipe. Aucune action requise pour le moment.</div>
-          )}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-8">
+              <form onSubmit={handleLogin} className="space-y-5">
+                <div>
+                  <label htmlFor="numero" className="block text-sm font-medium text-gray-700 mb-1.5">Numéro de dossier</label>
+                  <input
+                    id="numero"
+                    value={numero}
+                    onChange={e => setNumero(e.target.value)}
+                    placeholder="Ex: PE-1787319666089"
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f] transition-colors"
+                    required
+                  />
+                </div>
 
-          {dossier.statut === 'EN_ATTENTE_PAIEMENT' && (
-            <div className="space-y-2">
-              <div className="text-sm">Votre devis est disponible.</div>
-              <div><strong>Montant:</strong> {dossier.montant ?? 0} €</div>
-              <div><strong>Titulaire:</strong> {dossier.titulaire}</div>
-              <div><strong>IBAN:</strong> {dossier.iban}</div>
-              <div><strong>BIC:</strong> {dossier.bic}</div>
-              <div><strong>Référence du virement:</strong> {dossier.reference_virement || dossier.numero_dossier}</div>
-              <div>
-                <button className="mt-3 bg-gray-800 text-white px-3 py-2 rounded" onClick={() => setShowDeclare(true)}>J'ai effectué mon virement</button>
+                <div>
+                  <label htmlFor="pwd" className="block text-sm font-medium text-gray-700 mb-1.5">Mot de passe de suivi</label>
+                  <input
+                    id="pwd"
+                    type="password"
+                    value={pwd}
+                    onChange={e => setPwd(e.target.value)}
+                    placeholder="Mot de passe reçu par email"
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f] transition-colors"
+                    required
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#7b2020] hover:bg-[#6a1a1a] text-white text-sm font-semibold rounded-xl shadow-sm transition-all hover:shadow-md disabled:opacity-60"
+                >
+                  {loading ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                      </svg>
+                      Chargement…
+                    </>
+                  ) : (
+                    <>
+                      <Search size={16} />
+                      Accéder à mon dossier
+                    </>
+                  )}
+                </button>
+
+                {message && (
+                  <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2.5">{message}</div>
+                )}
+              </form>
+
+              <div className="mt-5 flex items-center gap-2 text-xs text-gray-400">
+                <Lock size={14} className="shrink-0" />
+                <span>Vos informations sont sécurisées.</span>
               </div>
             </div>
-          )}
+          </div>
+        ) : (
+          <div className="max-w-3xl mx-auto space-y-6">
+            {/* Header */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-8">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <div>
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Mon dossier</p>
+                  <h2 className="text-2xl font-extrabold text-[#1e3a5f] tracking-tight">{dossier.numero_dossier}</h2>
+                </div>
+                <div>
+                  {cfg && (
+                    <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold shadow-sm ring-1 ring-inset ${cfg.badgeClass}`}>
+                      {React.createElement(cfg.icon, { width: 16, height: 16, className: 'shrink-0' })}
+                      {cfg.label}
+                    </span>
+                  )}
+                </div>
+              </div>
 
-          {dossier.statut === 'NOUVEAU' && (
-            <div className="mb-4">Paiement confirmé. Votre dossier va maintenant être traité par notre équipe.</div>
-          )}
+              {status === STATUS.DEVIS && (
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                  <p className="text-sm text-amber-800 leading-relaxed">
+                    Votre dossier est actuellement étudié par notre équipe. Notre équipe analyse votre demande afin de vous proposer un devis adapté à votre projet. Vous serez informé par email dès que votre devis sera disponible.
+                  </p>
+                </div>
+              )}
 
-          {dossier.declarations && dossier.declarations.length > 0 && (
-            <div className="mt-4">
-              <h3 className="font-semibold">Déclarations de virement</h3>
-              <ul className="space-y-2">
-                {dossier.declarations.map((d: any) => (
-                  <li key={d.id} className="text-sm">Réf: {d.reference} — Montant: {d.montant ?? '-'} — Déclaré: {d.date_declaration || d.created_at}</li>
-                ))}
-              </ul>
+              {status === STATUS.EN_ATTENTE_PAIEMENT && (
+                <div className="space-y-4">
+                  <p className="text-sm text-gray-600">Votre devis est disponible. Veuillez effectuer le virement selon les coordonnées ci-dessous.</p>
+                  <div className="bg-[#f5f6f8] rounded-xl border border-gray-100 p-5 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Montant</span>
+                      <span className="text-lg font-bold text-[#1e3a5f]">{dossier.montant ?? 0} €</span>
+                    </div>
+                    {dossier.titulaire && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Titulaire</span>
+                        <span className="text-sm font-medium text-gray-800">{dossier.titulaire}</span>
+                      </div>
+                    )}
+                    {dossier.iban && (
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider shrink-0">IBAN</span>
+                        <span className="text-sm font-medium text-gray-800 font-mono break-all text-right">{dossier.iban}</span>
+                      </div>
+                    )}
+                    {dossier.bic && (
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider shrink-0">BIC</span>
+                        <span className="text-sm font-medium text-gray-800 font-mono break-all text-right">{dossier.bic}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider shrink-0">Référence</span>
+                      <span className="text-sm font-medium text-gray-800 font-mono break-all text-right">{dossier.reference_virement || dossier.numero_dossier}</span>
+                    </div>
+                  </div>
+
+                  {!showDeclare ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowDeclare(true)}
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-[#7b2020] hover:bg-[#6a1a1a] text-white text-sm font-semibold rounded-xl shadow-sm transition-all hover:shadow-md"
+                    >
+                      <CheckCircle2 size={16} />
+                      J&apos;ai effectué mon virement
+                    </button>
+                  ) : (
+                    <div className="bg-[#f5f6f8] rounded-xl border border-gray-100 p-5 space-y-4">
+                      <h4 className="text-sm font-semibold text-[#1e3a5f]">Déclarer un virement</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label htmlFor="decl-date" className="block text-xs font-medium text-gray-500 mb-1">Date du virement</label>
+                          <input id="decl-date" type="date" value={decl.date} onChange={e => setDecl(s => ({ ...s, date: e.target.value }))} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f]" required />
+                        </div>
+                        <div>
+                          <label htmlFor="decl-ref" className="block text-xs font-medium text-gray-500 mb-1">Référence</label>
+                          <input id="decl-ref" value={decl.reference} onChange={e => setDecl(s => ({ ...s, reference: e.target.value }))} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f]" required />
+                        </div>
+                        <div>
+                          <label htmlFor="decl-montant" className="block text-xs font-medium text-gray-500 mb-1">Montant</label>
+                          <input id="decl-montant" value={decl.montant} onChange={e => setDecl(s => ({ ...s, montant: e.target.value }))} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f]" required />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <button type="button" onClick={submitDeclaration} disabled={loading} className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#7b2020] hover:bg-[#6a1a1a] text-white text-sm font-semibold rounded-lg shadow-sm transition-all disabled:opacity-60">
+                          {loading ? 'Envoi…' : 'Envoyer la déclaration'}
+                        </button>
+                        <button type="button" onClick={() => setShowDeclare(false)} className="px-5 py-2.5 border border-gray-200 bg-white text-sm text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">Annuler</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {status === STATUS.NOUVEAU && (
+                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle2 size={20} className="text-emerald-600 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-semibold text-emerald-800 mb-0.5">Paiement confirmé</p>
+                      <p className="text-sm text-emerald-700">Votre dossier va maintenant être traité par notre équipe.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
 
-          {message && <div className="mt-3 text-sm text-green-700">{message}</div>}
+            {/* Timeline */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-8">
+              <h3 className="text-sm font-semibold text-[#1e3a5f] uppercase tracking-wider mb-6">Avancement du dossier</h3>
+              <div className="space-y-0">
+                {timelineSteps.map((step, idx) => {
+                  const stepStatus = getStepStatus(dossier, step.id)
+                  const Icon = step.icon
+                  const isLast = idx === timelineSteps.length - 1
 
-          {showDeclare && (
-            <div className="mt-4 border p-3 rounded bg-gray-50">
-              <h4 className="font-semibold mb-2">Déclarer un virement</h4>
-              <div className="mb-2"><label className="text-sm">Date du virement</label><input type="date" value={decl.date} onChange={e => setDecl(s => ({ ...s, date: e.target.value }))} className="w-full border rounded px-2 py-1" /></div>
-              <div className="mb-2"><label className="text-sm">Référence</label><input value={decl.reference} onChange={e => setDecl(s => ({ ...s, reference: e.target.value }))} className="w-full border rounded px-2 py-1" /></div>
-              <div className="mb-2"><label className="text-sm">Montant</label><input value={decl.montant} onChange={e => setDecl(s => ({ ...s, montant: e.target.value }))} className="w-full border rounded px-2 py-1" /></div>
-              <div className="flex gap-2">
-                <button className="bg-green-600 text-white px-3 py-1 rounded" onClick={submitDeclaration} disabled={loading}>{loading ? 'Envoi…' : 'Envoyer'}</button>
-                <button className="px-3 py-1 rounded border" onClick={() => setShowDeclare(false)}>Annuler</button>
+                  return (
+                    <div key={step.id} className="relative flex gap-4">
+                      {!isLast && (
+                        <div className="absolute left-[15px] top-8 bottom-0 w-px bg-gray-200" aria-hidden="true" />
+                      )}
+                      <div className={`relative z-10 flex items-center justify-center w-8 h-8 rounded-full shrink-0 border-2 ${
+                        stepStatus === 'completed' ? 'bg-[#1e3a5f] border-[#1e3a5f] text-white' :
+                        stepStatus === 'active' ? 'bg-white border-[#1e3a5f] text-[#1e3a5f]' :
+                        'bg-white border-gray-200 text-gray-300'
+                      }`}>
+                        <Icon size={14} />
+                      </div>
+                      <div className={`pt-1 pb-6 ${isLast ? '' : 'border-b border-gray-50'}`}>
+                        <p className={`text-sm font-medium ${stepStatus === 'pending' ? 'text-gray-400' : 'text-gray-800'}`}>{step.label}</p>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
-          )}
-        </div>
-      )}
+
+            {/* Declarations history */}
+            {dossier.declarations && dossier.declarations.length > 0 && (
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-8">
+                <h3 className="text-sm font-semibold text-[#1e3a5f] uppercase tracking-wider mb-4">Déclarations de virement</h3>
+                <div className="space-y-3">
+                  {dossier.declarations.map((d) => (
+                    <div key={d.id} className="flex items-center justify-between p-3 bg-[#f5f6f8] rounded-lg">
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">Réf: {d.reference}</p>
+                        <p className="text-xs text-gray-500">Montant: {d.montant ?? '-'} €</p>
+                      </div>
+                      <div className="text-xs text-gray-400 text-right">
+                        {d.date_declaration ? new Date(d.date_declaration).toLocaleDateString('fr-FR') : d.created_at ? new Date(d.created_at).toLocaleDateString('fr-FR') : '—'}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {message && (
+              <div className={`text-sm px-4 py-3 rounded-xl border ${message.includes('envoyée') ? 'text-green-700 bg-green-50 border-green-200' : 'text-red-600 bg-red-50 border-red-100'}`}>
+                {message}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
