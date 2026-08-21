@@ -169,8 +169,8 @@ export default function DossierForm() {
             </div>
 
             <div>
-              <div className="text-xs text-gray-600 mb-2">🔒 Paiement sécurisé Stripe</div>
-              <Button type="submit" loading={loading} className="w-full bg-[#E30613] hover:bg-red-700 text-white text-sm py-3">Payer et déposer mon dossier</Button>
+              <div className="text-xs text-gray-600 mb-2">🔒 Paiement sécurisé</div>
+              <Button type="submit" loading={loading} className="w-full bg-[#E30613] hover:bg-red-700 text-white text-sm py-3">Déposer mon dossier</Button>
               <div className="mt-2 text-center text-xs text-gray-500">Visa • Mastercard • Stripe</div>
             </div>
           </div>

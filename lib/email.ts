@@ -59,67 +59,66 @@ export async function sendClientConfirmationEmail(
 ): Promise<EmailResult> {
   const mode = paymentInfo?.mode ?? 'VIREMENT'
 
-  const subject =
-    mode === 'CARTE'
-      ? `Votre paiement a bien été reçu — Dossier ${numeroDossier}`
-      : `Instructions de paiement par virement — Dossier ${numeroDossier}`
+  if (mode === 'CARTE') {
+    const subject = `Votre paiement a bien été reçu — Dossier ${numeroDossier}`
+    const amountLine = paymentInfo?.montant ? `<p><strong>Montant payé :</strong> ${paymentInfo.montant} ${paymentInfo.currency ?? 'EUR'}</p>` : ''
+    const html = `
+      <html>
+        <body style="font-family: Arial, sans-serif; color: #111;">
+          <h2>Paiement confirmé</h2>
+          <p>Bonjour ${prenom} ${nom},</p>
+          <p>Nous avons bien reçu votre paiement par carte bancaire.</p>
+          ${amountLine}
+          <p><strong>Numéro de dossier :</strong><br/>${numeroDossier}</p>
+          <p><strong>Référence transaction :</strong><br/>${paymentInfo?.transactionId ?? paymentInfo?.reference ?? '—'}</p>
+          <p>Votre dossier va maintenant être traité par notre équipe.</p>
+          <p>Cordialement,<br/>${sender().name}</p>
+        </body>
+      </html>
+    `
+    const text = `Bonjour ${prenom} ${nom},\n\nNous avons bien reçu votre paiement par carte bancaire.\n\nNuméro de dossier: ${numeroDossier}\n${paymentInfo?.montant ? `Montant: ${paymentInfo.montant} ${paymentInfo.currency ?? 'EUR'}` : ''}\nRéférence: ${paymentInfo?.transactionId ?? paymentInfo?.reference ?? '—'}\n\nVotre dossier va maintenant être traité.`
+    const payload = { sender: sender(), to: [{ email }], subject, htmlContent: html, textContent: text }
+    const result = await sendEmailRaw(payload)
+    if (!result.ok) console.error('sendClientConfirmationEmail error', result.error)
+    return result
+  }
 
-  const amountLine = paymentInfo?.montant ? `<p><strong>Montant payé / à payer :</strong> ${paymentInfo.montant} ${paymentInfo.currency ?? 'EUR'}</p>` : ''
-
-  const virementDetails =
-    mode === 'VIREMENT'
-      ? `<h3>Coordonnées bancaires</h3>
-         <p><strong>IBAN :</strong> ${paymentInfo?.iban ?? '—'}</p>
-         <p><strong>BIC :</strong> ${paymentInfo?.bic ?? '—'}</p>
-         <p><strong>Titulaire :</strong> ${paymentInfo?.titulaire ?? '—'}</p>
-         <p><strong>Référence à indiquer :</strong> ${paymentInfo?.reference ?? numeroDossier}</p>
-         <p>Merci d'effectuer le virement avec la référence indiquée afin que nous puissions retrouver rapidement votre paiement.</p>`
-      : ''
-
-  const paymentRecap =
-    mode === 'CARTE'
-      ? `<p>Nous avons bien reçu votre paiement.</p>
-         ${amountLine}
-         <p><strong>Référence transaction :</strong> ${paymentInfo?.transactionId ?? paymentInfo?.reference ?? '—'}</p>`
-      : ''
-
+  const subject = `Instructions de paiement par virement — Dossier ${numeroDossier}`
+  const amountLine = paymentInfo?.montant ? `<p><strong>Montant à payer :</strong> ${paymentInfo.montant} ${paymentInfo.currency ?? 'EUR'}</p>` : ''
+  const virementDetails = `
+    <h3>Coordonnées bancaires</h3>
+    <p><strong>IBAN :</strong> ${paymentInfo?.iban ?? '—'}</p>
+    <p><strong>BIC :</strong> ${paymentInfo?.bic ?? '—'}</p>
+    <p><strong>Titulaire :</strong> ${paymentInfo?.titulaire ?? '—'}</p>
+    <p><strong>Référence à indiquer :</strong> ${paymentInfo?.reference ?? numeroDossier}</p>
+    <p>Merci d'effectuer le virement avec la référence indiquée afin que nous puissions retrouver rapidement votre paiement.</p>
+  `
   const html = `
     <html>
       <body style="font-family: Arial, sans-serif; color: #111;">
-        <h2>Confirmation de réception de votre dossier</h2>
+        <h2>Votre devis est disponible</h2>
         <p>Bonjour ${prenom} ${nom},</p>
-        <p>Nous confirmons la bonne réception de votre dossier.</p>
-        <p><strong>Numéro de dossier :</strong><br/>${numeroDossier}</p>
-        ${paymentRecap}
+        <p>Nous avons étudié votre dossier et vous transmettons un devis personnalisé.</p>
+        ${amountLine}
         ${virementDetails}
-        <p>Notre équipe analysera votre dossier dans les meilleurs délais.</p>
+        <p>Vous pouvez suivre l'avancement de votre dossier depuis votre espace de suivi.</p>
         <p>Cordialement,<br/>${sender().name}</p>
       </body>
     </html>
   `
-
-  const textParts: string[] = []
-  textParts.push(`Bonjour ${prenom} ${nom},`)
-  textParts.push('Nous confirmons la bonne réception de votre dossier.')
-  textParts.push(`Numéro de dossier : ${numeroDossier}`)
-  if (paymentInfo?.montant) textParts.push(`Montant : ${paymentInfo.montant} ${paymentInfo.currency ?? 'EUR'}`)
-  if (mode === 'VIREMENT') {
-    textParts.push('Coordonnées bancaires:')
-    textParts.push(`IBAN: ${paymentInfo?.iban ?? '—'}`)
-    textParts.push(`BIC: ${paymentInfo?.bic ?? '—'}`)
-    textParts.push(`Titulaire: ${paymentInfo?.titulaire ?? '—'}`)
-    textParts.push(`Référence: ${paymentInfo?.reference ?? numeroDossier}`)
-  }
-  textParts.push(`Cordialement, ${sender().name}`)
-
-  const payload = {
-    sender: sender(),
-    to: [{ email }],
-    subject,
-    htmlContent: html,
-    textContent: textParts.join('\n\n')
-  }
-
+  const textParts = [
+    `Bonjour ${prenom} ${nom},`,
+    'Nous avons étudié votre dossier et vous transmettons un devis personnalisé.',
+    `Numéro de dossier : ${numeroDossier}`,
+    paymentInfo?.montant ? `Montant à payer : ${paymentInfo.montant} ${paymentInfo.currency ?? 'EUR'}` : '',
+    'Coordonnées bancaires :',
+    `IBAN: ${paymentInfo?.iban ?? '—'}`,
+    `BIC: ${paymentInfo?.bic ?? '—'}`,
+    `Titulaire: ${paymentInfo?.titulaire ?? '—'}`,
+    `Référence: ${paymentInfo?.reference ?? numeroDossier}`,
+    'Cordialement, ' + sender().name,
+  ].filter(Boolean)
+  const payload = { sender: sender(), to: [{ email }], subject, htmlContent: html, textContent: textParts.join('\n\n') }
   const result = await sendEmailRaw(payload)
   if (!result.ok) console.error('sendClientConfirmationEmail error', result.error)
   return result
@@ -270,9 +269,12 @@ export async function sendDossierReceivedEmail(
   nom: string,
   prenom: string,
   numeroDossier: string,
-  suiviPassword: string
+  suiviPassword: string,
+  suiviUrl?: string
 ): Promise<EmailResult> {
   const subject = `Dossier reçu — ${numeroDossier}`
+  const trackingLink = suiviUrl ? `<p>Vous pouvez suivre l'avancement de votre dossier depuis votre <a href="${suiviUrl}">espace de suivi</a>.</p>` : '<p>Vous pouvez suivre l\'avancement de votre dossier depuis votre espace de suivi.</p>'
+  const trackingText = suiviUrl ? `Espace de suivi: ${suiviUrl}` : "Espace de suivi: utilisez le numéro de dossier et le mot de passe fournis."
 
   const html = `
     <html>
@@ -284,13 +286,13 @@ export async function sendDossierReceivedEmail(
         <p>Un membre de notre équipe prendra contact avec vous afin d'étudier votre projet et de vous communiquer un devis précis adapté à votre situation.</p>
         <p><strong>Numéro de dossier :</strong><br/>${numeroDossier}</p>
         <p><strong>Accès suivi :</strong><br/>Numéro : ${numeroDossier}<br/>Mot de passe : ${suiviPassword}</p>
-        <p>Vous pouvez suivre l'avancement de votre dossier depuis votre espace de suivi.</p>
+        ${trackingLink}
         <p>Cordialement,<br/>${sender().name}</p>
       </body>
     </html>
   `
 
-  const text = `Bonjour ${prenom} ${nom},\n\nMerci d'avoir déposé votre dossier auprès d'Esquiss Habitat.\n\nNuméro de dossier: ${numeroDossier}\nAccès suivi: Numéro: ${numeroDossier} Mot de passe: ${suiviPassword}\n\nNotre équipe analysera votre dossier et vous contactera pour un devis.`
+  const text = `Bonjour ${prenom} ${nom},\n\nMerci d'avoir déposé votre dossier auprès d'Esquiss Habitat.\n\nNuméro de dossier: ${numeroDossier}\nAccès suivi: Numéro: ${numeroDossier} Mot de passe: ${suiviPassword}\n\n${trackingText}\n\nNotre équipe analysera votre dossier et vous contactera pour un devis.`
 
   const payload = {
     sender: sender(),

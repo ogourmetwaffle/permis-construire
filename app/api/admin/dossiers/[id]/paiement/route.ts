@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import supabaseAdmin from '@/lib/supabase-admin'
 import { verifySupabaseToken } from '@/lib/server/verifySupabaseToken'
+import { sendPaymentConfirmationEmail } from '@/lib/email'
 
 export async function POST(req: Request, context: any) {
   const auth = req.headers.get('authorization')
@@ -61,6 +62,20 @@ export async function POST(req: Request, context: any) {
     if (updateRes.error) {
       console.error('supabase update error', updateRes.error)
       return NextResponse.json({ error: updateRes.error.message }, { status: 500 })
+    }
+
+    try {
+      if (dossier.email) {
+        await sendPaymentConfirmationEmail(
+          dossier.email,
+          dossier.numero_dossier,
+          Number(dossier.montant) || undefined,
+          'EUR',
+          reference.trim()
+        )
+      }
+    } catch (err) {
+      console.error('Error sending payment confirmation email', err)
     }
 
     return NextResponse.json({ ok: true, data: updateRes.data?.[0] ?? null })

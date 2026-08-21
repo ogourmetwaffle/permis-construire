@@ -1,5 +1,5 @@
 import supabaseAdmin from '@/lib/supabase-admin'
-import { sendClientConfirmationEmail, sendAdminNotificationEmail, sendDossierReceivedEmail } from '@/lib/email'
+import { sendAdminNotificationEmail, sendDossierReceivedEmail } from '@/lib/email'
 
 export async function POST(req: Request) {
   try {
@@ -80,10 +80,13 @@ export async function POST(req: Request) {
       return new Response(JSON.stringify({ error: 'Erreur lors de la création du dossier' }), { status: 500 })
     }
 
+    const origin = req.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_VERCEL_URL || 'http://localhost:3000'
+    const suiviUrl = `${origin}/suivi`
+
     // send 'dossier reçu' email to client and notify admin (no bank details at creation)
     try {
       try {
-        await sendDossierReceivedEmail(email, nom, prenom, dossier.numero_dossier, suiviPassword)
+        await sendDossierReceivedEmail(email, nom, prenom, dossier.numero_dossier, suiviPassword, suiviUrl)
       } catch (err) {
         console.error('Error sending dossier received email to client', err)
       }
@@ -100,6 +103,7 @@ export async function POST(req: Request) {
     const responsePayload = {
       numeroDossier: dossier.numero_dossier,
       dossierId: dossier.id,
+      montant: montant ?? 0,
     }
 
     return new Response(JSON.stringify(responsePayload), { status: 200 })

@@ -14,9 +14,6 @@ import { supabase } from '@/lib/supabase'
 
 interface VirementConfirmation {
   numeroDossier: string
-  iban: string | null
-  bic: string | null
-  titulaire: string | null
   montant: number
 }
 
@@ -230,10 +227,7 @@ export default function Wizard() {
         await uploadFiles(json.numeroDossier, json.dossierId)
         setVirementInfo({
           numeroDossier: json.numeroDossier,
-          iban: json.iban,
-          bic: json.bic,
-          titulaire: json.titulaire,
-          montant: tarif ?? 0,
+          montant: json.montant ?? tarif ?? 0,
         })
       } else {
         // CARTE — create dossier + redirect to Stripe
@@ -354,7 +348,7 @@ export default function Wizard() {
               </div>
               <h2 className="text-2xl font-bold text-[#1e3a5f] mb-2">Dossier créé avec succès !</h2>
               <p className="text-gray-500 text-base">
-                Votre dossier a été enregistré. Effectuez le virement pour démarrer le traitement.
+                Votre dossier a été enregistré. Notre équipe va étudier votre projet et vous transmettre un devis personnalisé dans les meilleurs délais.
               </p>
             </div>
 
@@ -364,38 +358,17 @@ export default function Wizard() {
               <span className="text-sm font-bold text-[#1e3a5f] tracking-wide">{virementInfo.numeroDossier}</span>
             </div>
 
-            {/* Bank details */}
-            <div className="border border-gray-200 rounded-2xl overflow-hidden mb-6">
-              <div className="bg-[#1e3a5f] px-5 py-3">
-                <h3 className="text-sm font-semibold text-white">Coordonnées bancaires Wise</h3>
-              </div>
-              <div className="p-5 space-y-4">
-                {virementInfo.titulaire && (
-                  <BankRow label="Titulaire" value={virementInfo.titulaire} />
-                )}
-                {virementInfo.iban && (
-                  <BankRow label="IBAN" value={virementInfo.iban} mono />
-                )}
-                {virementInfo.bic && (
-                  <BankRow label="BIC / SWIFT" value={virementInfo.bic} mono />
-                )}
-                <BankRow label="Montant" value={`${virementInfo.montant} € TTC`} highlight />
-                <BankRow label="Référence" value={virementInfo.numeroDossier} mono />
-              </div>
-            </div>
-
-            <div className="flex gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl mb-8">
-              <span className="text-xl shrink-0">⚠️</span>
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl mb-8">
               <p className="text-sm text-amber-800">
-                Indiquez impérativement la <strong>référence du dossier</strong> dans le libellé de votre virement pour un traitement rapide.
+                Un email de confirmation vous a été envoyé avec votre numéro de dossier et vos identifiants de suivi. Vous pouvez suivre l&apos;avancement de votre dossier depuis votre espace de suivi.
               </p>
             </div>
 
             <Link
-              href="/"
-              className="inline-flex items-center justify-center w-full px-6 py-3.5 rounded-xl bg-[#7b2020] hover:bg-[#6a1a1a] text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200"
+              href="/suivi"
+              className="inline-flex items-center justify-center w-full px-6 py-3.5 rounded-xl bg-[#1e3a5f] hover:bg-[#17314f] text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200"
             >
-              Retour à l&apos;accueil
+              Accéder à mon suivi
             </Link>
           </div>
         </div>
@@ -490,17 +463,6 @@ export default function Wizard() {
           </div>
         )}
       </div>
-    </div>
-  )
-}
-
-function BankRow({ label, value, mono = false, highlight = false }: { label: string; value: string; mono?: boolean; highlight?: boolean }) {
-  return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-      <span className="text-xs text-gray-400 shrink-0">{label}</span>
-      <span className={`text-sm font-semibold break-all ${mono ? 'font-mono' : ''} ${highlight ? 'text-[#7b2020]' : 'text-gray-800'}`}>
-        {value}
-      </span>
     </div>
   )
 }

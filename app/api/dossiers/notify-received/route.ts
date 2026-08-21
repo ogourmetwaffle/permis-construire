@@ -20,9 +20,11 @@ export async function POST(req: Request) {
     if (!dossier) return NextResponse.json({ error: 'Dossier not found' }, { status: 404 })
 
     const suiviPassword = dossier.mot_de_passe_suivi ?? ''
+    const origin = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_VERCEL_URL || 'http://localhost:3000'
+    const suiviUrl = `${origin}/suivi`
 
     try {
-      if (dossier.email) await sendDossierReceivedEmail(dossier.email, dossier.nom ?? '', dossier.prenom ?? '', dossier.numero_dossier, suiviPassword)
+      if (dossier.email) await sendDossierReceivedEmail(dossier.email, dossier.nom ?? '', dossier.prenom ?? '', dossier.numero_dossier, suiviPassword, suiviUrl)
     } catch (err) {
       console.error('Error sending dossier received email', err)
     }
