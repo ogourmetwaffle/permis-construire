@@ -15,6 +15,7 @@ type Dossier = {
   titulaire?: string | null
   reference_virement?: string | null
   commentaire_admin?: string | null
+  commentaire_statut?: string | null
   paiement_effectue?: boolean
   declarations?: Array<{ id: number; reference: string; montant?: number | null; date_declaration?: string | null; created_at?: string }>
   historique?: Array<{ id: number; action: string; description?: string; acteur_type?: string; metadata?: Record<string, unknown>; created_at?: string }>
@@ -247,6 +248,41 @@ export default function SuiviPage() {
                         {cfg?.icon && React.createElement(cfg.icon, { width: 16, height: 16, className: 'shrink-0' })}
                         {clientLabel}
                       </span>
+                    )}
+                    {dossier.commentaire_statut && status === STATUS.INFORMATIONS_MANQUANTES && (
+                      <div className="mt-2 text-xs text-gray-600 bg-[#f5f6f8] rounded-lg p-3 border border-gray-100">
+                        <span className="font-semibold text-gray-700">Commentaire :</span> {dossier.commentaire_statut}
+                      </div>
+                    )}
+                    {status === STATUS.INFORMATIONS_MANQUANTES && (
+                      <div className="mt-3">
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (!dossier) return
+                            setLoading(true)
+                            setMessage(null)
+                            try {
+                              const resp = await fetch(`/api/dossiers/${encodeURIComponent(String(dossier.id))}/signaler-documents`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ mot_de_passe: pwd }),
+                              })
+                              const j = await resp.json()
+                              if (!resp.ok) { setMessage(j?.error || 'Erreur'); setLoading(false); return }
+                              setMessage('Merci, votre déclaration a été transmise. Le dossier va être réexaminé.')
+                              setDossier((prev) => prev ? { ...prev, statut: STATUS.EN_COURS } : prev)
+                            } catch {
+                              setMessage('Erreur réseau')
+                            } finally { setLoading(false) }
+                          }}
+                          disabled={loading}
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-[#7b2020] hover:bg-[#6a1a1a] text-white text-sm font-semibold rounded-lg shadow-sm transition-all disabled:opacity-60"
+                        >
+                          <CheckCircle2 size={16} />
+                          J&apos;ai envoyé les documents manquants
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>

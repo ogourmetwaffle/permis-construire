@@ -307,12 +307,80 @@ export async function sendDossierReceivedEmail(
   return result
 }
 
+export async function sendStatusChangeEmail(
+  email: string,
+  nom: string,
+  prenom: string,
+  numeroDossier: string,
+  statut: string,
+  commentaire?: string | null
+): Promise<EmailResult> {
+  let subject = ''
+  let title = ''
+  let message = ''
+
+  if (statut === 'INFORMATIONS_MANQUANTES') {
+    subject = `Informations manquantes — Dossier ${numeroDossier}`
+    title = 'Informations manquantes'
+    message = 'Votre dossier nécessite des informations ou des documents supplémentaires. Merci de consulter votre espace de suivi.'
+  } else if (statut === 'EN_COURS') {
+    subject = `Dossier en cours de traitement — Dossier ${numeroDossier}`
+    title = 'Dossier en cours de traitement'
+    message = 'Votre dossier est maintenant en cours de traitement par notre équipe.'
+  } else if (statut === 'TERMINE') {
+    subject = `Dossier terminé — Dossier ${numeroDossier}`
+    title = 'Dossier terminé'
+    message = 'Votre dossier a été traité et est maintenant terminé.'
+  } else {
+    subject = `Mise à jour du dossier — Dossier ${numeroDossier}`
+    title = 'Mise à jour du dossier'
+    message = 'Le statut de votre dossier a été mis à jour.'
+  }
+
+  const commentaireBlock = commentaire ? `<p><strong>Commentaire :</strong><br/>${commentaire.replace(/\n/g, '<br/>')}</p>` : ''
+
+  const html = `
+    <html>
+      <body style="font-family: Arial, sans-serif; color: #111;">
+        <h2>${title}</h2>
+        <p>Bonjour ${prenom} ${nom},</p>
+        <p>${message}</p>
+        <p><strong>Numéro de dossier :</strong><br/>${numeroDossier}</p>
+        ${commentaireBlock}
+        <p>Vous pouvez suivre l'avancement de votre dossier depuis votre espace de suivi.</p>
+        <p>Cordialement,<br/>${sender().name}</p>
+      </body>
+    </html>
+  `
+
+  const textParts = [
+    `Bonjour ${prenom} ${nom},`,
+    message,
+    `Numéro de dossier: ${numeroDossier}`,
+    commentaire ? `Commentaire:\n${commentaire}` : '',
+    'Cordialement, ' + sender().name,
+  ].filter(Boolean)
+
+  const payload = {
+    sender: sender(),
+    to: [{ email }],
+    subject,
+    htmlContent: html,
+    textContent: textParts.join('\n\n'),
+  }
+
+  const result = await sendEmailRaw(payload)
+  if (!result.ok) console.error('sendStatusChangeEmail error', result.error)
+  return result
+}
+
 const emailClient = {
   sendClientConfirmationEmail,
   sendAdminNotificationEmail,
   sendPaymentConfirmationEmail,
   sendPaymentAssistanceEmail,
   sendDossierReceivedEmail,
+  sendStatusChangeEmail,
 }
 
 export default emailClient

@@ -9,7 +9,7 @@ export async function POST(req: Request) {
 
     const { data: dossier, error } = await supabaseAdmin
       .from('dossiers')
-      .select('id, numero_dossier, statut, montant, iban, bic, titulaire, reference_virement, commentaire_admin, created_at, updated_at')
+      .select('id, numero_dossier, statut, montant, iban, bic, titulaire, reference_virement, commentaire_admin, commentaire_statut, created_at, updated_at')
       .eq('numero_dossier', numero)
       .maybeSingle()
 

@@ -19,12 +19,13 @@ import {
   Edit2,
   Tag,
   Clock,
+  X,
 } from 'lucide-react'
 import PaymentDialog from './PaymentDialog'
 import { toast } from 'react-hot-toast'
 import EditDossierDialog from './EditDossierDialog'
 import { supabase } from '@/lib/supabase'
-import { getStatusConfig, normalizeStatus, STATUS } from '@/lib/status'
+import { getStatusConfig, normalizeStatus, STATUS, STATUS_CONFIG } from '@/lib/status'
 import PrepareDevisDialog from './PrepareDevisDialog'
 import ActionMenu from './ActionMenu'
 
@@ -59,6 +60,7 @@ type Dossier = {
   date_paiement?: string | null
   reference_paiement?: string | null
   commentaire_paiement?: string | null
+  commentaire_statut?: string | null
   created_at?: string
   updated_at?: string
 }
@@ -83,6 +85,10 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
   const [savedBadge, setSavedBadge] = useState<{ client?: boolean; project?: boolean }>({})
   const [activeTab, setActiveTab] = useState<Tab>('overview')
   const [historique, setHistorique] = useState<Array<{ id: number; action: string; description?: string; acteur_type?: string; metadata?: Record<string, unknown>; created_at?: string }>>([])
+  const [showStatusModal, setShowStatusModal] = useState(false)
+  const [newStatus, setNewStatus] = useState<string>('')
+  const [statusComment, setStatusComment] = useState<string>('')
+  const [updatingStatus, setUpdatingStatus] = useState(false)
 
   useEffect(() => {
     fetchDossier()
@@ -243,6 +249,43 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
     setTimeout(() => {
       try { window.location.reload() } catch (e) { /* ignore */ }
     }, 700)
+  }
+
+  const openStatusModal = () => {
+    if (!dossier) return
+    setNewStatus(dossier.statut || STATUS.NOUVEAU)
+    setStatusComment(dossier.commentaire_statut || '')
+    setShowStatusModal(true)
+  }
+
+  const closeStatusModal = () => setShowStatusModal(false)
+
+  const handleStatusUpdate = async () => {
+    if (!dossier || !newStatus) return
+    setUpdatingStatus(true)
+    try {
+      const session = await supabase.auth.getSession()
+      const token = session.data?.session?.access_token
+      if (!token) { toast.error('Session expirée'); setUpdatingStatus(false); return }
+
+      const resp = await fetch('/api/admin/update-statut', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dossierId: dossier.id, statut: newStatus, commentaire: statusComment || null }),
+      })
+      const json = await resp.json()
+      if (!resp.ok) { toast.error(json?.error || 'Erreur'); setUpdatingStatus(false); return }
+
+      toast.success('Statut mis à jour')
+      setShowStatusModal(false)
+      setDossier((prev) => (prev ? { ...prev, statut: newStatus, commentaire_statut: statusComment || null } : prev))
+      if (onUpdated) onUpdated()
+    } catch (err) {
+      console.error('status update error', err)
+      toast.error('Erreur réseau')
+    } finally {
+      setUpdatingStatus(false)
+    }
   }
 
   const handleDownloadZip = async () => {
@@ -582,25 +625,35 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
                       Mis à jour le {dossier.updated_at ? new Date(dossier.updated_at).toLocaleDateString('fr-FR') : '—'}
                     </div>
                   </div>
-                  <div>
-                    {nextAction && (
-                      <div className="text-right">
-                        <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">Prochaine action</div>
-                        <div className="text-sm font-medium text-gray-800">{nextAction.label}</div>
-                        {nextAction.detail && <div className="text-xs text-gray-500 mt-0.5">{nextAction.detail}</div>}
-                        {nextAction.variant === 'primary' && (
-                          <button
-                            type="button"
-                            onClick={nextAction.action}
-                            className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-[#7b2020] hover:bg-[#6a1a1a] text-white text-sm font-semibold rounded-lg shadow-sm transition-all"
-                          >
-                            <FileText size={14} />
-                            {nextAction.label}
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                   <div>
+                     {nextAction && (
+                       <div className="text-right">
+                         <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">Prochaine action</div>
+                         <div className="text-sm font-medium text-gray-800">{nextAction.label}</div>
+                         {nextAction.detail && <div className="text-xs text-gray-500 mt-0.5">{nextAction.detail}</div>}
+                         {nextAction.variant === 'primary' && (
+                           <button
+                             type="button"
+                             onClick={nextAction.action}
+                             className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-[#7b2020] hover:bg-[#6a1a1a] text-white text-sm font-semibold rounded-lg shadow-sm transition-all"
+                           >
+                             <FileText size={14} />
+                             {nextAction.label}
+                           </button>
+                         )}
+                       </div>
+                     )}
+                     <div className="mt-3">
+                       <button
+                         type="button"
+                         onClick={openStatusModal}
+                         className="inline-flex items-center gap-2 px-3 py-1.5 rounded border border-gray-200 bg-white text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                       >
+                         <Tag size={13} />
+                         Changer le statut
+                       </button>
+                     </div>
+                   </div>
                 </div>
               </div>
 
@@ -858,7 +911,38 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
         onSaved={(u) => { handleDevisSaved(u); setShowPrepareDevis(false); fetchDossier() }}
       />
 
-      {/* Archive Modal */}
+      {/* Status Change Modal */}
+      {showStatusModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={closeStatusModal} />
+          <div role="dialog" aria-modal="true" className="relative bg-white rounded-xl shadow-xl max-w-lg w-full p-4 sm:p-6 z-10 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start justify-between mb-3">
+              <h3 className="text-base font-semibold">Modifier le statut</h3>
+              <button type="button" onClick={closeStatusModal} className="text-gray-500 hover:bg-gray-100 p-2 rounded-md"><X size={16} /></button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs text-gray-500">Statut</label>
+                <select value={newStatus} onChange={(e) => setNewStatus(e.target.value)} className="mt-1 block w-full rounded border-gray-200 shadow-sm px-2 py-1.5">
+                  {Object.values(STATUS).map((s) => (
+                    <option key={s} value={s}>{STATUS_CONFIG[s].label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-gray-500">Commentaire (optionnel)</label>
+                <textarea value={statusComment} onChange={(e) => setStatusComment(e.target.value)} className="mt-1 block w-full rounded border-gray-200 shadow-sm px-2 py-1.5" rows={3} />
+              </div>
+            </div>
+            <div className="mt-4 flex justify-end gap-2">
+              <button type="button" onClick={closeStatusModal} disabled={updatingStatus} className="px-3 py-1.5 rounded border bg-white text-sm text-gray-700 hover:bg-gray-50">Annuler</button>
+              <button type="button" onClick={handleStatusUpdate} disabled={updatingStatus} className="px-3 py-1.5 rounded bg-[#7b2020] text-white hover:bg-[#5f1919] text-sm">{updatingStatus ? 'Enregistrement…' : 'Enregistrer'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Archive Modal }}
       {showArchiveModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={closeArchiveModal} />
