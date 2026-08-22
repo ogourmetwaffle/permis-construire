@@ -31,13 +31,13 @@ export default function Header() {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-40 transition-all duration-300 bg-white/95 backdrop-blur-md shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 h-18 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-6 h-24 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3 shrink-0">
           <Image
             src="/logo.png"
             alt="Esquiss Habitat"
-            width={64}
-            height={64}
+            width={80}
+            height={80}
             className="rounded-lg object-contain"
             priority
           />
