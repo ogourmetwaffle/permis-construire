@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import Header from '@/components/Header'
 import { normalizeStatus, STATUS, getStatusConfig, CLIENT_STATUS_LABELS } from '@/lib/status'
-import { Lock, Search, CheckCircle2, Clock, FileText, CreditCard, Banknote } from 'lucide-react'
+import { Lock, Search, CheckCircle2, Clock, FileText, CreditCard, Banknote, FolderOpen } from 'lucide-react'
 import FileUpload from '@/components/FileUpload'
 
 type Dossier = {
@@ -239,169 +239,247 @@ export default function SuiviPage() {
             </div>
           ) : (
             <div className="max-w-3xl mx-auto space-y-6">
-              {/* Header */}
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-8">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                  <div>
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Mon dossier</p>
-                    <h2 className="text-2xl font-extrabold text-[#1e3a5f] tracking-tight">{dossier.numero_dossier}</h2>
+              {/* Dossier Identification - Compact Zone */}
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-[#1e3a5f]/10 flex items-center justify-center shrink-0">
+                      <FolderOpen size={20} className="text-[#1e3a5f]" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Mon dossier</p>
+                      <p className="text-xl font-bold text-[#1e3a5f] tracking-tight">{dossier.numero_dossier}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">Suivi de votre demande</p>
+                    </div>
                   </div>
-                  <div>
-                    {clientLabel && (
-                      <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold shadow-sm ring-1 ring-inset ${cfg?.badgeClass ?? 'bg-gray-50 text-gray-700 ring-gray-100'}`}>
-                        {cfg?.icon && React.createElement(cfg.icon, { width: 16, height: 16, className: 'shrink-0' })}
+                  {clientLabel && cfg && (
+                    <div className="flex flex-col items-start sm:items-end gap-2">
+                      <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold shadow-sm ring-1 ring-inset ${cfg.badgeClass}`}>
+                        {cfg.icon && React.createElement(cfg.icon, { width: 16, height: 16, className: 'shrink-0' })}
                         {clientLabel}
                       </span>
-                    )}
-                    {dossier.commentaire_statut && status === STATUS.INFORMATIONS_MANQUANTES && (
-                      <div className="mt-2 text-xs text-gray-600 bg-[#f5f6f8] rounded-lg p-3 border border-gray-100">
-                        <span className="font-semibold text-gray-700">Commentaire :</span> {dossier.commentaire_statut}
-                      </div>
-                    )}
-                    {status === STATUS.INFORMATIONS_MANQUANTES && (
-                      <div className="mt-3 space-y-3">
-                        <FileUpload key={trackingUploadKey} onFilesChange={(f: File[]) => setTrackingFiles(f)} />
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            if (!dossier || trackingFiles.length === 0) return
-                            setUploadingTracking(true)
-                            setMessage(null)
-                            try {
-                              const form = new FormData()
-                              form.append('mot_de_passe', pwd)
-                              trackingFiles.forEach(f => form.append('files', f))
-                              const resp = await fetch(`/api/dossiers/${encodeURIComponent(String(dossier.id))}/upload-documents`, {
-                                method: 'POST',
-                                body: form,
-                              })
-                              const j = await resp.json()
-                              if (!resp.ok) { setMessage(j?.error || 'Erreur'); setUploadingTracking(false); return }
-                              setMessage('Documents envoyés. Votre dossier va être réexaminé.')
-                              setTrackingFiles([])
-                              setTrackingUploadKey(k => k + 1)
-                              setDossier((prev) => prev ? { ...prev, statut: STATUS.EN_COURS } : prev)
-                            } catch {
-                              setMessage('Erreur réseau')
-                            } finally { setUploadingTracking(false) }
-                          }}
-                          disabled={uploadingTracking || trackingFiles.length === 0}
-                          className="inline-flex items-center gap-2 px-4 py-2 bg-[#7b2020] hover:bg-[#6a1a1a] text-white text-sm font-semibold rounded-lg shadow-sm transition-all disabled:opacity-60"
-                        >
-                          {uploadingTracking ? 'Envoi…' : 'Envoyer les documents'}
-                        </button>
-                      </div>
-                    )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Status Context */}
+              {status === STATUS.INFORMATIONS_MANQUANTES && (
+                <div className="bg-violet-50 border border-violet-200 rounded-2xl p-5 sm:p-6">
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-violet-100 flex items-center justify-center shrink-0 mt-0.5">
+                      <FileText size={18} className="text-violet-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-violet-800 mb-1">Informations manquantes</p>
+                      <p className="text-sm text-violet-700 leading-relaxed">Votre dossier nécessite des informations complémentaires.</p>
+                      {dossier.commentaire_statut && (
+                        <div className="mt-3 p-3 bg-white/70 rounded-lg border border-violet-100">
+                          <p className="text-xs font-semibold text-violet-600 uppercase tracking-wider mb-1">Commentaire de l&apos;administration</p>
+                          <p className="text-sm text-violet-800 whitespace-pre-line">{dossier.commentaire_statut}</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
+              )}
 
-                {status === STATUS.DEVIS && (
-                  <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                    <p className="text-sm text-amber-800 leading-relaxed">
-                      Votre dossier est actuellement étudié par notre équipe. Notre équipe analyse votre demande afin de vous proposer un devis adapté à votre projet. Vous serez informé par email dès que votre devis sera disponible.
-                    </p>
-                  </div>
-                )}
-
-                {status === STATUS.EN_ATTENTE_PAIEMENT && (
-                  <div className="space-y-4">
-                    <p className="text-sm text-gray-600">Votre devis est disponible. Veuillez effectuer le virement selon les coordonnées ci-dessous.</p>
-                    <div className="bg-[#f5f6f8] rounded-xl border border-gray-100 p-5 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Montant</span>
-                        <span className="text-lg font-bold text-[#1e3a5f]">{dossier.montant ?? 0} €</span>
-                      </div>
-                      {dossier.titulaire && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Titulaire</span>
-                          <span className="text-sm font-medium text-gray-800">{dossier.titulaire}</span>
-                        </div>
-                      )}
-                      {dossier.iban && (
-                        <div className="flex items-center justify-between gap-4">
-                          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider shrink-0">IBAN</span>
-                          <span className="text-sm font-medium text-gray-800 font-mono break-all text-right">{dossier.iban}</span>
-                        </div>
-                      )}
-                      {dossier.bic && (
-                        <div className="flex items-center justify-between gap-4">
-                          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider shrink-0">BIC</span>
-                          <span className="text-sm font-medium text-gray-800 font-mono break-all text-right">{dossier.bic}</span>
-                        </div>
-                      )}
-                      <div className="flex items-center justify-between gap-4">
-                        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider shrink-0">Référence</span>
-                        <span className="text-sm font-medium text-gray-800 font-mono break-all text-right">{dossier.reference_virement || dossier.numero_dossier}</span>
-                      </div>
-                      {dossier.commentaire_admin && (
-                        <div className="mt-2 p-3 bg-white rounded-lg border border-gray-200">
-                          <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Commentaire</div>
-                          <p className="text-sm text-gray-800 whitespace-pre-line">{dossier.commentaire_admin}</p>
-                        </div>
-                      )}
+              {status === STATUS.DEVIS && (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 sm:p-6">
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-amber-100 flex items-center justify-center shrink-0 mt-0.5">
+                      <Clock size={18} className="text-amber-600" />
                     </div>
+                    <div>
+                      <p className="text-sm font-semibold text-amber-800 mb-1">En cours d&apos;étude</p>
+                      <p className="text-sm text-amber-700 leading-relaxed">Votre dossier est actuellement étudié par notre équipe. Vous serez informé par email dès que votre devis sera disponible.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
-                    {!showDeclare ? (
-                      <button
-                        type="button"
-                        onClick={() => setShowDeclare(true)}
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-[#7b2020] hover:bg-[#6a1a1a] text-white text-sm font-semibold rounded-xl shadow-sm transition-all hover:shadow-md"
-                      >
-                        <CheckCircle2 size={16} />
-                        J&apos;ai effectué mon virement
-                      </button>
-                    ) : (
-                      <div className="bg-[#f5f6f8] rounded-xl border border-gray-100 p-5 space-y-4">
-                        <h4 className="text-sm font-semibold text-[#1e3a5f]">Déclarer un virement</h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div>
-                            <label htmlFor="decl-date" className="block text-xs font-medium text-gray-500 mb-1">Date du virement <span className="text-red-600">*</span></label>
-                            <input id="decl-date" type="date" value={decl.date} onChange={e => setDecl(s => ({ ...s, date: e.target.value }))} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f]" required />
-                          </div>
-                          <div>
-                            <label htmlFor="decl-ref" className="block text-xs font-medium text-gray-500 mb-1">Référence <span className="text-red-600">*</span></label>
-                            <input id="decl-ref" value={decl.reference} onChange={e => setDecl(s => ({ ...s, reference: e.target.value }))} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f]" required />
-                          </div>
-                          <div>
-                            <label htmlFor="decl-montant" className="block text-xs font-medium text-gray-500 mb-1">Montant <span className="text-red-600">*</span></label>
-                            <input id="decl-montant" value={decl.montant} onChange={e => setDecl(s => ({ ...s, montant: e.target.value }))} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f]" required />
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <button type="button" onClick={submitDeclaration} disabled={loading} className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#7b2020] hover:bg-[#6a1a1a] text-white text-sm font-semibold rounded-lg shadow-sm transition-all disabled:opacity-60">
-                            {loading ? 'Envoi…' : 'Envoyer la déclaration'}
-                          </button>
-                          <button type="button" onClick={() => setShowDeclare(false)} className="px-5 py-2.5 border border-gray-200 bg-white text-sm text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">Annuler</button>
-                        </div>
+              {status === STATUS.EN_ATTENTE_PAIEMENT && (
+                <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5 sm:p-6">
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center shrink-0 mt-0.5">
+                      <CreditCard size={18} className="text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-blue-800 mb-1">En attente de paiement</p>
+                      <p className="text-sm text-blue-700 leading-relaxed">Votre devis est disponible. Veuillez effectuer le virement selon les coordonnées ci-dessous.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {status === STATUS.EN_ATTENTE_VERIFICATION_PAIEMENT && (
+                <div className="bg-orange-50 border border-orange-200 rounded-2xl p-5 sm:p-6">
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-orange-100 flex items-center justify-center shrink-0 mt-0.5">
+                      <Clock size={18} className="text-orange-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-orange-800 mb-1">Paiement en cours de vérification</p>
+                      <p className="text-sm text-orange-700 leading-relaxed">Merci, votre déclaration de virement a bien été transmise. L&apos;administration vérifiera votre virement.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {status === STATUS.NOUVEAU && (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 sm:p-6">
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0 mt-0.5">
+                      <CheckCircle2 size={18} className="text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-emerald-800 mb-1">Paiement confirmé</p>
+                      <p className="text-sm text-emerald-700 leading-relaxed">Votre dossier va maintenant être traité par notre équipe.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {status === STATUS.EN_COURS && (
+                <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-5 sm:p-6">
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0 mt-0.5">
+                      <Clock size={18} className="text-indigo-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-indigo-800 mb-1">En cours de traitement</p>
+                      <p className="text-sm text-indigo-700 leading-relaxed">Votre dossier est en cours de traitement par notre équipe.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {status === STATUS.TERMINE && (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 sm:p-6">
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0 mt-0.5">
+                      <CheckCircle2 size={18} className="text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-emerald-800 mb-1">Dossier terminé</p>
+                      <p className="text-sm text-emerald-700 leading-relaxed">Votre dossier est terminé. Merci pour votre confiance.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Payment Details - EN_ATTENTE_PAIEMENT */}
+              {status === STATUS.EN_ATTENTE_PAIEMENT && (
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-6 space-y-4">
+                  <h3 className="text-sm font-semibold text-[#1e3a5f] uppercase tracking-wider">Coordonnées bancaires</h3>
+                  <div className="bg-[#f5f6f8] rounded-xl border border-gray-100 p-5 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Montant</span>
+                      <span className="text-lg font-bold text-[#1e3a5f]">{dossier.montant ?? 0} €</span>
+                    </div>
+                    {dossier.titulaire && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Titulaire</span>
+                        <span className="text-sm font-medium text-gray-800">{dossier.titulaire}</span>
+                      </div>
+                    )}
+                    {dossier.iban && (
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider shrink-0">IBAN</span>
+                        <span className="text-sm font-medium text-gray-800 font-mono break-all text-right">{dossier.iban}</span>
+                      </div>
+                    )}
+                    {dossier.bic && (
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider shrink-0">BIC</span>
+                        <span className="text-sm font-medium text-gray-800 font-mono break-all text-right">{dossier.bic}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider shrink-0">Référence</span>
+                      <span className="text-sm font-medium text-gray-800 font-mono break-all text-right">{dossier.reference_virement || dossier.numero_dossier}</span>
+                    </div>
+                    {dossier.commentaire_admin && (
+                      <div className="mt-2 p-3 bg-white rounded-lg border border-gray-200">
+                        <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Commentaire</div>
+                        <p className="text-sm text-gray-800 whitespace-pre-line">{dossier.commentaire_admin}</p>
                       </div>
                     )}
                   </div>
-                )}
 
-                {status === STATUS.EN_ATTENTE_VERIFICATION_PAIEMENT && (
-                  <div className="p-4 bg-orange-50 border border-orange-200 rounded-xl">
-                    <div className="flex items-start gap-3">
-                      <Clock size={20} className="text-orange-600 shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-semibold text-orange-800 mb-0.5">Déclaration envoyée</p>
-                        <p className="text-sm text-orange-700">Merci, votre déclaration de virement a bien été transmise. L&apos;administration vérifiera votre virement.</p>
+                  {!showDeclare ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowDeclare(true)}
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-[#7b2020] hover:bg-[#6a1a1a] text-white text-sm font-semibold rounded-xl shadow-sm transition-all hover:shadow-md"
+                    >
+                      <CheckCircle2 size={16} />
+                      J&apos;ai effectué mon virement
+                    </button>
+                  ) : (
+                    <div className="bg-[#f5f6f8] rounded-xl border border-gray-100 p-5 space-y-4">
+                      <h4 className="text-sm font-semibold text-[#1e3a5f]">Déclarer un virement</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label htmlFor="decl-date" className="block text-xs font-medium text-gray-500 mb-1">Date du virement <span className="text-red-600">*</span></label>
+                          <input id="decl-date" type="date" value={decl.date} onChange={e => setDecl(s => ({ ...s, date: e.target.value }))} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f]" required />
+                        </div>
+                        <div>
+                          <label htmlFor="decl-ref" className="block text-xs font-medium text-gray-500 mb-1">Référence <span className="text-red-600">*</span></label>
+                          <input id="decl-ref" value={decl.reference} onChange={e => setDecl(s => ({ ...s, reference: e.target.value }))} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f]" required />
+                        </div>
+                        <div>
+                          <label htmlFor="decl-montant" className="block text-xs font-medium text-gray-500 mb-1">Montant <span className="text-red-600">*</span></label>
+                          <input id="decl-montant" value={decl.montant} onChange={e => setDecl(s => ({ ...s, montant: e.target.value }))} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f]" required />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <button type="button" onClick={submitDeclaration} disabled={loading} className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#7b2020] hover:bg-[#6a1a1a] text-white text-sm font-semibold rounded-lg shadow-sm transition-all disabled:opacity-60">
+                          {loading ? 'Envoi…' : 'Envoyer la déclaration'}
+                        </button>
+                        <button type="button" onClick={() => setShowDeclare(false)} className="px-5 py-2.5 border border-gray-200 bg-white text-sm text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">Annuler</button>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
+              )}
 
-                {status === STATUS.NOUVEAU && (
-                  <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
-                    <div className="flex items-start gap-3">
-                      <CheckCircle2 size={20} className="text-emerald-600 shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-semibold text-emerald-800 mb-0.5">Paiement confirmé</p>
-                        <p className="text-sm text-emerald-700">Votre dossier va maintenant être traité par notre équipe.</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
+              {/* Upload Zone - INFORMATIONS_MANQUANTES */}
+              {status === STATUS.INFORMATIONS_MANQUANTES && (
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-6 space-y-4">
+                  <h3 className="text-sm font-semibold text-[#1e3a5f] uppercase tracking-wider">Documents</h3>
+                  <FileUpload key={trackingUploadKey} onFilesChange={(f: File[]) => setTrackingFiles(f)} />
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!dossier || trackingFiles.length === 0) return
+                      setUploadingTracking(true)
+                      setMessage(null)
+                      try {
+                        const form = new FormData()
+                        form.append('mot_de_passe', pwd)
+                        trackingFiles.forEach(f => form.append('files', f))
+                        const resp = await fetch(`/api/dossiers/${encodeURIComponent(String(dossier.id))}/upload-documents`, {
+                          method: 'POST',
+                          body: form,
+                        })
+                        const j = await resp.json()
+                        if (!resp.ok) { setMessage(j?.error || 'Erreur'); setUploadingTracking(false); return }
+                        setMessage('Documents envoyés. Votre dossier va être réexaminé.')
+                        setTrackingFiles([])
+                        setTrackingUploadKey(k => k + 1)
+                        setDossier((prev) => prev ? { ...prev, statut: STATUS.EN_COURS } : prev)
+                      } catch {
+                        setMessage('Erreur réseau')
+                      } finally { setUploadingTracking(false) }
+                    }}
+                    disabled={uploadingTracking || trackingFiles.length === 0}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-[#7b2020] hover:bg-[#6a1a1a] text-white text-sm font-semibold rounded-lg shadow-sm transition-all disabled:opacity-60"
+                  >
+                    {uploadingTracking ? 'Envoi…' : 'Envoyer les documents'}
+                  </button>
+                </div>
+              )}
 
               {/* Timeline */}
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-8">
