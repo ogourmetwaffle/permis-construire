@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import Header from '@/components/Header'
 import { normalizeStatus, STATUS, getStatusConfig, CLIENT_STATUS_LABELS } from '@/lib/status'
 import { Lock, Search, CheckCircle2, Clock, FileText, CreditCard, Banknote } from 'lucide-react'
+import FileUpload from '@/components/FileUpload'
 
 type Dossier = {
   id: number | string
@@ -87,6 +88,9 @@ export default function SuiviPage() {
   const [message, setMessage] = useState<string | null>(null)
   const [showDeclare, setShowDeclare] = useState(false)
   const [decl, setDecl] = useState({ date: '', reference: '', montant: '' })
+  const [trackingFiles, setTrackingFiles] = useState<File[]>([])
+  const [uploadingTracking, setUploadingTracking] = useState(false)
+  const [trackingUploadKey, setTrackingUploadKey] = useState(0)
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -255,32 +259,36 @@ export default function SuiviPage() {
                       </div>
                     )}
                     {status === STATUS.INFORMATIONS_MANQUANTES && (
-                      <div className="mt-3">
+                      <div className="mt-3 space-y-3">
+                        <FileUpload key={trackingUploadKey} onFilesChange={(f: File[]) => setTrackingFiles(f)} />
                         <button
                           type="button"
                           onClick={async () => {
-                            if (!dossier) return
-                            setLoading(true)
+                            if (!dossier || trackingFiles.length === 0) return
+                            setUploadingTracking(true)
                             setMessage(null)
                             try {
-                              const resp = await fetch(`/api/dossiers/${encodeURIComponent(String(dossier.id))}/signaler-documents`, {
+                              const form = new FormData()
+                              form.append('mot_de_passe', pwd)
+                              trackingFiles.forEach(f => form.append('files', f))
+                              const resp = await fetch(`/api/dossiers/${encodeURIComponent(String(dossier.id))}/upload-documents`, {
                                 method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ mot_de_passe: pwd }),
+                                body: form,
                               })
                               const j = await resp.json()
-                              if (!resp.ok) { setMessage(j?.error || 'Erreur'); setLoading(false); return }
-                              setMessage('Merci, votre déclaration a été transmise. Le dossier va être réexaminé.')
+                              if (!resp.ok) { setMessage(j?.error || 'Erreur'); setUploadingTracking(false); return }
+                              setMessage('Documents envoyés. Votre dossier va être réexaminé.')
+                              setTrackingFiles([])
+                              setTrackingUploadKey(k => k + 1)
                               setDossier((prev) => prev ? { ...prev, statut: STATUS.EN_COURS } : prev)
                             } catch {
                               setMessage('Erreur réseau')
-                            } finally { setLoading(false) }
+                            } finally { setUploadingTracking(false) }
                           }}
-                          disabled={loading}
+                          disabled={uploadingTracking || trackingFiles.length === 0}
                           className="inline-flex items-center gap-2 px-4 py-2 bg-[#7b2020] hover:bg-[#6a1a1a] text-white text-sm font-semibold rounded-lg shadow-sm transition-all disabled:opacity-60"
                         >
-                          <CheckCircle2 size={16} />
-                          J&apos;ai envoyé les documents manquants
+                          {uploadingTracking ? 'Envoi…' : 'Envoyer les documents'}
                         </button>
                       </div>
                     )}
