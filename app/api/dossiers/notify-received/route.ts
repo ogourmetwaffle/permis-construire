@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import supabaseAdmin from '@/lib/supabase-admin'
 import { sendDossierReceivedEmail, sendAdminNotificationEmail } from '@/lib/email'
+import { recordHistorique } from '@/lib/server/historique'
 
 export async function POST(req: Request) {
   try {
@@ -33,6 +34,15 @@ export async function POST(req: Request) {
       await sendAdminNotificationEmail(dossier.numero_dossier, dossier.nom ?? '', dossier.prenom ?? '', dossier.email ?? '', dossier.telephone ?? undefined)
     } catch (err) {
       console.error('Error sending admin notification (notify-received)', err)
+    }
+
+    try {
+      await recordHistorique(dossier.id, 'DOSSIER_DEPOSE', 'Dossier déposé', 'CLIENT', {
+        numero_dossier: dossier.numero_dossier,
+        date_creation: dossier.created_at,
+      })
+    } catch (err) {
+      console.error('Error recording historique on notify-received', err)
     }
 
     return NextResponse.json({ ok: true })

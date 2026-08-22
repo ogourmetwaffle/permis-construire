@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import Header from '@/components/Header'
-import { normalizeStatus, STATUS, getStatusConfig } from '@/lib/status'
+import { normalizeStatus, STATUS, getStatusConfig, CLIENT_STATUS_LABELS } from '@/lib/status'
 import { Lock, Search, CheckCircle2, Clock, FileText, CreditCard, Banknote } from 'lucide-react'
 
 type Dossier = {
@@ -17,6 +17,7 @@ type Dossier = {
   commentaire_admin?: string | null
   paiement_effectue?: boolean
   declarations?: Array<{ id: number; reference: string; montant?: number | null; date_declaration?: string | null; created_at?: string }>
+  historique?: Array<{ id: number; action: string; description?: string; acteur_type?: string; metadata?: Record<string, unknown>; created_at?: string }>
 }
 
 type Step = {
@@ -46,23 +47,26 @@ function getStepStatus(dossier: Dossier, stepId: string): 'completed' | 'active'
   }
 
   if (stepId === 'study') {
-    if (s === STATUS.DEVIS || s === STATUS.EN_ATTENTE_PAIEMENT || s === STATUS.NOUVEAU || s === STATUS.EN_COURS) return 'active'
+    if (s === STATUS.DEVIS || s === STATUS.EN_ATTENTE_PAIEMENT || s === STATUS.EN_ATTENTE_VERIFICATION_PAIEMENT || s === STATUS.NOUVEAU || s === STATUS.EN_COURS) return 'active'
     return 'pending'
   }
 
   if (stepId === 'devis') {
-    if (s === STATUS.EN_ATTENTE_PAIEMENT || s === STATUS.NOUVEAU || s === STATUS.EN_COURS) return 'active'
+    if (s === STATUS.EN_ATTENTE_PAIEMENT || s === STATUS.EN_ATTENTE_VERIFICATION_PAIEMENT || s === STATUS.NOUVEAU || s === STATUS.EN_COURS) return 'completed'
+    if (s === STATUS.DEVIS) return 'active'
     return 'pending'
   }
 
   if (stepId === 'payment') {
-    if (s === STATUS.NOUVEAU || s === STATUS.EN_COURS) return 'active'
-    if (dossier.paiement_effectue) return 'completed'
+    if (s === STATUS.NOUVEAU || s === STATUS.EN_COURS || s === STATUS.TERMINE) return 'completed'
+    if (s === STATUS.EN_ATTENTE_VERIFICATION_PAIEMENT) return 'active'
+    if (s === STATUS.EN_ATTENTE_PAIEMENT) return 'active'
     return 'pending'
   }
 
   if (stepId === 'processing') {
-    if (s === STATUS.EN_COURS) return 'active'
+    if (s === STATUS.EN_COURS || s === STATUS.TERMINE) return 'active'
+    if (s === STATUS.NOUVEAU) return 'pending'
     return 'pending'
   }
 
@@ -103,10 +107,15 @@ export default function SuiviPage() {
     setLoading(true)
     setMessage(null)
     try {
+      const montantNum = decl.montant ? Number(decl.montant) : null
+      if (!decl.date) { setMessage('La date du virement est obligatoire'); setLoading(false); return }
+      if (!decl.reference || !decl.reference.trim()) { setMessage('La référence du virement est obligatoire'); setLoading(false); return }
+      if (montantNum == null || Number.isNaN(montantNum) || montantNum <= 0) { setMessage('Le montant du virement est obligatoire et doit être positif'); setLoading(false); return }
+
       const resp = await fetch(`/api/dossiers/${encodeURIComponent(String(dossier.id))}/declarer-virement`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mot_de_passe: pwd, date: decl.date, reference: decl.reference, montant: decl.montant ? Number(decl.montant) : null }),
+        body: JSON.stringify({ mot_de_passe: pwd, date: decl.date, reference: decl.reference, montant: montantNum }),
       })
       const j = await resp.json()
       if (!resp.ok) { setMessage(j?.error || 'Erreur'); setLoading(false); return }
@@ -119,6 +128,38 @@ export default function SuiviPage() {
 
   const status = dossier ? normalizeStatus(dossier.statut) : undefined
   const cfg = dossier ? getStatusConfig(dossier.statut) : null
+  const clientLabel = dossier && status ? CLIENT_STATUS_LABELS[status] : undefined
+
+  const formatHistoriqueDate = (dateStr?: string) => {
+    if (!dateStr) return '—'
+    const d = new Date(dateStr)
+    if (isNaN(d.getTime())) return '—'
+    return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
+  }
+
+  const formatHistoriqueTime = (dateStr?: string) => {
+    if (!dateStr) return ''
+    const d = new Date(dateStr)
+    if (isNaN(d.getTime())) return ''
+    return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+  }
+
+  const getHistoriqueTitle = (action?: string) => {
+    switch (action) {
+      case 'DOSSIER_DEPOSE':
+        return 'Dossier déposé'
+      case 'DEVIS_ENVOYE':
+        return 'Devis envoyé'
+      case 'VIREMENT_DECLARE':
+        return 'Déclaration de virement'
+      case 'PAIEMENT_CONFIRME':
+        return 'Paiement confirmé'
+      case 'STATUT_MODIFIE':
+        return 'Statut modifié'
+      default:
+        return action || 'Événement'
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#F5F7FA]">
@@ -201,10 +242,10 @@ export default function SuiviPage() {
                     <h2 className="text-2xl font-extrabold text-[#1e3a5f] tracking-tight">{dossier.numero_dossier}</h2>
                   </div>
                   <div>
-                    {cfg && (
-                      <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold shadow-sm ring-1 ring-inset ${cfg.badgeClass}`}>
-                        {React.createElement(cfg.icon, { width: 16, height: 16, className: 'shrink-0' })}
-                        {cfg.label}
+                    {clientLabel && (
+                      <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold shadow-sm ring-1 ring-inset ${cfg?.badgeClass ?? 'bg-gray-50 text-gray-700 ring-gray-100'}`}>
+                        {cfg?.icon && React.createElement(cfg.icon, { width: 16, height: 16, className: 'shrink-0' })}
+                        {clientLabel}
                       </span>
                     )}
                   </div>
@@ -270,15 +311,15 @@ export default function SuiviPage() {
                         <h4 className="text-sm font-semibold text-[#1e3a5f]">Déclarer un virement</h4>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
-                            <label htmlFor="decl-date" className="block text-xs font-medium text-gray-500 mb-1">Date du virement</label>
+                            <label htmlFor="decl-date" className="block text-xs font-medium text-gray-500 mb-1">Date du virement <span className="text-red-600">*</span></label>
                             <input id="decl-date" type="date" value={decl.date} onChange={e => setDecl(s => ({ ...s, date: e.target.value }))} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f]" required />
                           </div>
                           <div>
-                            <label htmlFor="decl-ref" className="block text-xs font-medium text-gray-500 mb-1">Référence</label>
+                            <label htmlFor="decl-ref" className="block text-xs font-medium text-gray-500 mb-1">Référence <span className="text-red-600">*</span></label>
                             <input id="decl-ref" value={decl.reference} onChange={e => setDecl(s => ({ ...s, reference: e.target.value }))} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f]" required />
                           </div>
                           <div>
-                            <label htmlFor="decl-montant" className="block text-xs font-medium text-gray-500 mb-1">Montant</label>
+                            <label htmlFor="decl-montant" className="block text-xs font-medium text-gray-500 mb-1">Montant <span className="text-red-600">*</span></label>
                             <input id="decl-montant" value={decl.montant} onChange={e => setDecl(s => ({ ...s, montant: e.target.value }))} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f]" required />
                           </div>
                         </div>
@@ -290,6 +331,18 @@ export default function SuiviPage() {
                         </div>
                       </div>
                     )}
+                  </div>
+                )}
+
+                {status === STATUS.EN_ATTENTE_VERIFICATION_PAIEMENT && (
+                  <div className="p-4 bg-orange-50 border border-orange-200 rounded-xl">
+                    <div className="flex items-start gap-3">
+                      <Clock size={20} className="text-orange-600 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-semibold text-orange-800 mb-0.5">Déclaration envoyée</p>
+                        <p className="text-sm text-orange-700">Merci, votre déclaration de virement a bien été transmise. L&apos;administration vérifiera votre virement.</p>
+                      </div>
+                    </div>
                   </div>
                 )}
 
@@ -336,7 +389,33 @@ export default function SuiviPage() {
                 </div>
               </div>
 
-              {/* Declarations history */}
+              {/* Historique client */}
+              {dossier.historique && dossier.historique.length > 0 && (
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-8">
+                  <h3 className="text-sm font-semibold text-[#1e3a5f] uppercase tracking-wider mb-6">Historique</h3>
+                  <div className="space-y-0">
+                    {dossier.historique.map((event) => (
+                      <div key={event.id} className="relative flex gap-4">
+                        <div className="absolute left-[15px] top-8 bottom-0 w-px bg-gray-200 last:bg-transparent" aria-hidden="true" />
+                        <div className="relative z-10 flex items-center justify-center w-8 h-8 rounded-full shrink-0 border-2 bg-blue-500 border-blue-500 text-white">
+                          <CheckCircle2 size={14} />
+                        </div>
+                         <div className="pt-1 pb-6">
+                           <div className="text-sm font-semibold text-gray-800 mb-0.5">{getHistoriqueTitle(event.action)}</div>
+                           <div className="text-xs text-gray-400 mb-1">
+                             {event.action === 'DOSSIER_DEPOSE' && event.metadata?.date_creation
+                               ? formatHistoriqueDate(event.metadata.date_creation as string)
+                               : `${formatHistoriqueDate(event.created_at)} ${formatHistoriqueTime(event.created_at)}`}
+                           </div>
+                           {event.description && <p className="text-xs text-gray-500 leading-relaxed">{event.description}</p>}
+                         </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Declarations de virement (legacy display, kept for redundancy) */}
               {dossier.declarations && dossier.declarations.length > 0 && (
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-8">
                   <h3 className="text-sm font-semibold text-[#1e3a5f] uppercase tracking-wider mb-4">Déclarations de virement</h3>

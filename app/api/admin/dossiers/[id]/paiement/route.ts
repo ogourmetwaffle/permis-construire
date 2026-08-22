@@ -2,13 +2,13 @@ import { NextResponse } from 'next/server'
 import supabaseAdmin from '@/lib/supabase-admin'
 import { verifySupabaseToken } from '@/lib/server/verifySupabaseToken'
 import { sendPaymentConfirmationEmail } from '@/lib/email'
+import { recordHistorique } from '@/lib/server/historique'
 
 export async function POST(req: Request, context: any) {
   const auth = req.headers.get('authorization')
   const { user } = await verifySupabaseToken(auth)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  // support both shapes for params (Next.js may give a promise)
   const params = typeof context?.params?.then === 'function' ? await context.params : context?.params
   const idParam = params?.id
 
@@ -23,14 +23,12 @@ export async function POST(req: Request, context: any) {
   if (!reference || typeof reference !== 'string' || !reference.trim()) {
     return NextResponse.json({ error: 'Reference bancaire obligatoire' }, { status: 400 })
   }
-  // simple date validation (YYYY-MM-DD) or allow ISO
   const parsedDate = date ? new Date(date) : new Date()
   if (isNaN(parsedDate.getTime())) {
     return NextResponse.json({ error: 'Date invalide' }, { status: 400 })
   }
 
   try {
-    // fetch dossier
     let fetchRes
     if (typeof idParam === 'string' && idParam.startsWith('PE-')) {
       fetchRes = await supabaseAdmin.from('dossiers').select('*').eq('numero_dossier', idParam).single()
@@ -43,11 +41,16 @@ export async function POST(req: Request, context: any) {
       return NextResponse.json({ error: 'Dossier introuvable' }, { status: 404 })
     }
 
-    // Prevent marking already paid or archived/terminated dossiers
     if (dossier.paiement_effectue) return NextResponse.json({ error: 'Dossier déjà payé' }, { status: 409 })
     const blockedStatuses = ['ARCHIVE', 'ARCHIVED', 'TERMINE']
     if (dossier.statut && blockedStatuses.includes(String(dossier.statut).toUpperCase())) {
       return NextResponse.json({ error: 'Dossier archivé ou terminé — modification refusée' }, { status: 409 })
+    }
+
+    const allowedStatuses = ['EN_ATTENTE_PAIEMENT', 'EN_ATTENTE_VERIFICATION_PAIEMENT']
+    const currentStatus = String(dossier.statut || '').toUpperCase()
+    if (!allowedStatuses.includes(currentStatus)) {
+      return NextResponse.json({ error: 'Statut du dossier non autorisé pour la confirmation de paiement' }, { status: 409 })
     }
 
     const updatePayload: Record<string, any> = {
@@ -76,6 +79,16 @@ export async function POST(req: Request, context: any) {
       }
     } catch (err) {
       console.error('Error sending payment confirmation email', err)
+    }
+
+    try {
+      await recordHistorique(dossier.id, 'PAIEMENT_CONFIRME', 'Paiement confirmé', 'ADMINISTRATION', {
+        montant: Number(dossier.montant) || null,
+        reference: reference.trim(),
+        date_paiement: parsedDate.toISOString(),
+      })
+    } catch (err) {
+      console.error('Error recording historique for payment confirmation', err)
     }
 
     return NextResponse.json({ ok: true, data: updateRes.data?.[0] ?? null })

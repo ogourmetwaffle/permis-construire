@@ -5,6 +5,7 @@ type IconType = React.ComponentType<React.SVGProps<SVGSVGElement>>
 
 export type Status =
   | 'EN_ATTENTE_PAIEMENT'
+  | 'EN_ATTENTE_VERIFICATION_PAIEMENT'
   | 'DEVIS'
   | 'NOUVEAU'
   | 'EN_COURS'
@@ -17,6 +18,7 @@ export type Status =
 export const STATUS = {
   DEVIS: 'DEVIS',
   EN_ATTENTE_PAIEMENT: 'EN_ATTENTE_PAIEMENT',
+  EN_ATTENTE_VERIFICATION_PAIEMENT: 'EN_ATTENTE_VERIFICATION_PAIEMENT',
   NOUVEAU: 'NOUVEAU',
   EN_COURS: 'EN_COURS',
   INFORMATIONS_MANQUANTES: 'INFORMATIONS_MANQUANTES',
@@ -28,6 +30,7 @@ export const STATUS = {
 
 export const STATUS_ORDER: Status[] = [
   STATUS.EN_ATTENTE_PAIEMENT,
+  STATUS.EN_ATTENTE_VERIFICATION_PAIEMENT,
   STATUS.DEVIS,
   STATUS.NOUVEAU,
   STATUS.EN_COURS,
@@ -57,13 +60,22 @@ export const STATUS_CONFIG: Record<Status, StatusConfig> = {
     order: 0,
   },
   EN_ATTENTE_PAIEMENT: {
-    label: 'Paiement',
+    label: 'En attente de paiement',
     icon: CreditCard,
     badgeClass: 'bg-amber-50 text-amber-700 ring-amber-100',
     textClass: 'text-amber-700',
     borderClass: 'ring-amber-100',
     showOnDashboard: true,
     order: 1,
+  },
+  EN_ATTENTE_VERIFICATION_PAIEMENT: {
+    label: 'Virement à vérifier',
+    icon: Clock,
+    badgeClass: 'bg-orange-50 text-orange-800 ring-orange-100',
+    textClass: 'text-orange-800',
+    borderClass: 'ring-orange-100',
+    showOnDashboard: true,
+    order: 2,
   },
   NOUVEAU: {
     label: 'Nouveau',
@@ -72,7 +84,7 @@ export const STATUS_CONFIG: Record<Status, StatusConfig> = {
     textClass: 'text-blue-800',
     borderClass: 'ring-blue-100',
     showOnDashboard: true,
-    order: 2,
+    order: 3,
   },
   EN_COURS: {
     label: 'En cours',
@@ -81,7 +93,7 @@ export const STATUS_CONFIG: Record<Status, StatusConfig> = {
     textClass: 'text-indigo-800',
     borderClass: 'ring-indigo-100',
     showOnDashboard: true,
-    order: 3,
+    order: 4,
   },
   INFORMATIONS_MANQUANTES: {
     label: 'À compléter',
@@ -90,7 +102,7 @@ export const STATUS_CONFIG: Record<Status, StatusConfig> = {
     textClass: 'text-violet-800',
     borderClass: 'ring-violet-100',
     showOnDashboard: false,
-    order: 4,
+    order: 5,
   },
   EN_ATTENTE_CLIENT: {
     label: 'En attente (client)',
@@ -99,7 +111,7 @@ export const STATUS_CONFIG: Record<Status, StatusConfig> = {
     textClass: 'text-yellow-800',
     borderClass: 'ring-yellow-100',
     showOnDashboard: false,
-    order: 5,
+    order: 6,
   },
   ARCHIVE: {
     label: 'Archivé',
@@ -117,7 +129,7 @@ export const STATUS_CONFIG: Record<Status, StatusConfig> = {
     textClass: 'text-emerald-700',
     borderClass: 'ring-emerald-100',
     showOnDashboard: true,
-    order: 5,
+    order: 7,
   },
   REFUSE: {
     label: 'Refusé',
@@ -126,8 +138,21 @@ export const STATUS_CONFIG: Record<Status, StatusConfig> = {
     textClass: 'text-red-700',
     borderClass: 'ring-red-100',
     showOnDashboard: false,
-    order: 6,
+    order: 8,
   },
+}
+
+export const CLIENT_STATUS_LABELS: Record<Status, string> = {
+  DEVIS: 'En cours d\'étude',
+  EN_ATTENTE_PAIEMENT: 'En attente de paiement',
+  EN_ATTENTE_VERIFICATION_PAIEMENT: 'Paiement en cours de vérification',
+  NOUVEAU: 'Paiement confirmé',
+  EN_COURS: 'En cours de traitement',
+  INFORMATIONS_MANQUANTES: 'Informations manquantes',
+  EN_ATTENTE_CLIENT: 'En attente (client)',
+  ARCHIVE: 'Archivé',
+  TERMINE: 'Terminé',
+  REFUSE: 'Refusé',
 }
 
 const LEGACY_MAP: Record<string, Status> = {
@@ -165,6 +190,7 @@ const statusModule = {
   STATUS,
   STATUS_ORDER,
   STATUS_CONFIG,
+  CLIENT_STATUS_LABELS,
   normalizeStatus,
   getStatusConfig,
   isFinished,

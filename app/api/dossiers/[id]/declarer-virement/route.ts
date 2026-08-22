@@ -1,11 +1,22 @@
 import { NextResponse } from 'next/server'
 import supabaseAdmin from '@/lib/supabase-admin'
+import { recordHistorique } from '@/lib/server/historique'
 
 export async function POST(req: any, context: any) {
   try {
     const body = await req.json()
     const { mot_de_passe, date, reference, montant } = body || {}
-    if (!mot_de_passe || !reference) return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
+
+    if (!mot_de_passe) return NextResponse.json({ error: 'Mot de passe requis' }, { status: 400 })
+    if (!reference || !String(reference).trim()) return NextResponse.json({ error: 'Référence du virement obligatoire' }, { status: 400 })
+    if (!date) return NextResponse.json({ error: 'Date du virement obligatoire' }, { status: 400 })
+    const parsedDate = new Date(date)
+    if (isNaN(parsedDate.getTime())) return NextResponse.json({ error: 'Date du virement invalide' }, { status: 400 })
+
+    const montantNum = montant == null ? null : Number(montant)
+    if (montantNum == null || Number.isNaN(montantNum) || montantNum <= 0) {
+      return NextResponse.json({ error: 'Montant du virement obligatoire et doit être positif' }, { status: 400 })
+    }
 
     const params = context?.params
     const resolvedParams = params && typeof params.then === 'function' ? await params : params
@@ -14,7 +25,7 @@ export async function POST(req: any, context: any) {
 
     const { data: dossier, error } = await supabaseAdmin
       .from('dossiers')
-      .select('id, numero_dossier, mot_de_passe_suivi')
+      .select('id, numero_dossier, mot_de_passe_suivi, statut')
       .eq('id', dossierId)
       .maybeSingle()
 
@@ -26,10 +37,16 @@ export async function POST(req: any, context: any) {
 
     if (String(dossier.mot_de_passe_suivi || '') !== String(mot_de_passe)) return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
 
-    // insert declaration
+    const insertPayload: Record<string, unknown> = {
+      dossier_id: dossierId,
+      reference: String(reference).trim(),
+      montant: montantNum,
+      date_declaration: parsedDate,
+    }
+
     const { data: dec, error: insertErr } = await supabaseAdmin
       .from('virements_declarations')
-      .insert({ dossier_id: dossierId, reference: reference, montant: montant ?? null, date_declaration: date ? new Date(date) : null })
+      .insert(insertPayload)
       .select('*')
       .single()
 
@@ -38,11 +55,24 @@ export async function POST(req: any, context: any) {
       return NextResponse.json({ error: 'Unable to save declaration' }, { status: 500 })
     }
 
-    // update dossier.reference_virement for convenience
+    const updatePayload: Record<string, unknown> = {
+      reference_virement: String(reference).trim(),
+      statut: 'EN_ATTENTE_VERIFICATION_PAIEMENT',
+    }
+
+    const { error: updateErr } = await supabaseAdmin.from('dossiers').update(updatePayload).eq('id', dossierId)
+    if (updateErr) {
+      console.error('declarer-virement dossier update error', updateErr)
+    }
+
     try {
-      await supabaseAdmin.from('dossiers').update({ reference_virement: reference }).eq('id', dossierId)
-    } catch (e) {
-      console.error('unable to update dossier reference_virement', e)
+      await recordHistorique(dossierId, 'VIREMENT_DECLARE', 'Déclaration de virement envoyée', 'CLIENT', {
+        date_virement: parsedDate.toISOString(),
+        reference: String(reference).trim(),
+        montant: montantNum,
+      })
+    } catch (err) {
+      console.error('Error recording historique for virement declaration', err)
     }
 
     return NextResponse.json({ ok: true, declaration: dec })

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import supabaseAdmin from '@/lib/supabase-admin'
 import { verifySupabaseToken } from '@/lib/server/verifySupabaseToken'
 import { sendClientConfirmationEmail, sendAdminNotificationEmail } from '@/lib/email'
+import { recordHistorique } from '@/lib/server/historique'
 
 export async function POST(req: Request, context: any) {
   const auth = req.headers.get('authorization')
@@ -22,7 +23,6 @@ export async function POST(req: Request, context: any) {
   if (montant == null || Number.isNaN(Number(montant))) return NextResponse.json({ error: 'Montant invalide' }, { status: 400 })
 
   try {
-    // fetch dossier
     let fetchRes
     if (typeof idParam === 'string' && idParam.startsWith('PE-')) {
       fetchRes = await supabaseAdmin.from('dossiers').select('*').eq('numero_dossier', idParam).single()
@@ -44,7 +44,6 @@ export async function POST(req: Request, context: any) {
       commentaire_admin: typeof commentaire === 'string' ? `${dossier.commentaire_admin || ''}\n[Devis] ${commentaire}` : dossier.commentaire_admin || null,
     }
 
-    // if send is explicitly true or undefined (default), transition to EN_ATTENTE_PAIEMENT and mark as send
     const shouldSend = send === undefined ? true : Boolean(send)
     if (shouldSend) updatePayload.statut = 'EN_ATTENTE_PAIEMENT'
 
@@ -54,7 +53,6 @@ export async function POST(req: Request, context: any) {
       return NextResponse.json({ error: updateRes.error.message }, { status: 500 })
     }
 
-    // send email only if shouldSend
     if (shouldSend) {
       try {
         const paymentInfo = {
@@ -80,6 +78,18 @@ export async function POST(req: Request, context: any) {
         }
       } catch (err) {
         console.error('Error preparing/sending devis emails', err)
+      }
+
+      try {
+        await recordHistorique(dossier.id, 'DEVIS_ENVOYE', 'Devis envoyé', 'ADMINISTRATION', {
+          montant: Number(montant),
+          reference: reference ?? dossier.numero_dossier,
+          iban: iban ?? null,
+          bic: bic ?? null,
+          titulaire: titulaire ?? null,
+        })
+      } catch (err) {
+        console.error('Error recording historique for devis', err)
       }
     }
 

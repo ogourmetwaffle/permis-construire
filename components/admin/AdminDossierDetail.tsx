@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from 'react'
 import DocumentList, { DocItem } from './DocumentList'
 import ProjectCard from './ProjectCard'
-import Timeline from './Timeline'
 import {
   ArrowLeft,
   Mail,
@@ -19,6 +18,7 @@ import {
   XCircle,
   Edit2,
   Tag,
+  Clock,
 } from 'lucide-react'
 import PaymentDialog from './PaymentDialog'
 import { toast } from 'react-hot-toast'
@@ -70,6 +70,7 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
   const [loading, setLoading] = useState(false)
 
   const [docs, setDocs] = useState<DocItem[]>([])
+  const [declarations, setDeclarations] = useState<Array<{ id: number; reference: string; montant?: number | null; date_declaration?: string | null; created_at?: string }>>([])
   const [showArchiveModal, setShowArchiveModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showPaymentDialog, setShowPaymentDialog] = useState(false)
@@ -81,6 +82,7 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
   const [editSection, setEditSection] = useState<'client' | 'project'>('client')
   const [savedBadge, setSavedBadge] = useState<{ client?: boolean; project?: boolean }>({})
   const [activeTab, setActiveTab] = useState<Tab>('overview')
+  const [historique, setHistorique] = useState<Array<{ id: number; action: string; description?: string; acteur_type?: string; metadata?: Record<string, unknown>; created_at?: string }>>([])
 
   useEffect(() => {
     fetchDossier()
@@ -150,10 +152,65 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
     }
   }
 
+  const fetchDeclarations = async (dossierId?: number | string) => {
+    if (!dossierId) return
+    try {
+      const session = await supabase.auth.getSession()
+      const token = session.data?.session?.access_token
+      if (!token) {
+        setDeclarations([])
+        return
+      }
+
+      const resp = await fetch(`/api/admin/dossiers/${encodeURIComponent(String(dossierId))}/virements`, { headers: { Authorization: `Bearer ${token}` } })
+      const text = await resp.text()
+      if (!text) {
+        setDeclarations([])
+      } else {
+        let json: unknown = null
+        try { json = JSON.parse(text) } catch (e) { console.error('invalid declarations response', e); setDeclarations([]) }
+        if (json && resp.ok) setDeclarations((json as { items?: Array<{ id: number; reference: string; montant?: number | null; date_declaration?: string | null; created_at?: string }> }).items || [])
+        else setDeclarations([])
+      }
+    } catch (err) {
+      console.error(err)
+      setDeclarations([])
+    }
+  }
+
   useEffect(() => {
     if (!dossier?.numero_dossier) return
     fetchDocs(dossier.numero_dossier)
   }, [dossier?.numero_dossier])
+
+  useEffect(() => {
+    if (!dossier?.id) return
+    fetchDeclarations(dossier.id)
+  }, [dossier?.id])
+
+  useEffect(() => {
+    if (!dossier?.id) return
+    let mounted = true
+    ;(async () => {
+      try {
+        const session = await supabase.auth.getSession()
+        const token = session.data?.session?.access_token
+        if (!token) return
+        const resp = await fetch(`/api/admin/dossiers/${encodeURIComponent(String(dossier.id))}/historique`, { headers: { Authorization: `Bearer ${token}` } })
+        const text = await resp.text()
+        if (!text || !resp.ok) return
+        let json: unknown = null
+        try { json = JSON.parse(text) } catch (e) { /* ignore */ }
+        if (json && mounted) {
+          const data = (json as { data?: Array<{ id: number; action: string; description?: string; acteur_type?: string; metadata?: Record<string, unknown>; created_at?: string }> }).data
+          if (Array.isArray(data)) setHistorique(data)
+        }
+      } catch (e) {
+        // ignore
+      }
+    })()
+    return () => { mounted = false }
+  }, [dossier?.id])
 
   const openArchiveModal = () => setShowArchiveModal(true)
   const closeArchiveModal = () => setShowArchiveModal(false)
@@ -336,6 +393,14 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
         detail: `Montant : ${dossier.montant ?? 0} €`,
       }
     }
+    if (status === STATUS.EN_ATTENTE_VERIFICATION_PAIEMENT) {
+      return {
+        label: 'Vérifier et confirmer le paiement',
+        action: () => setShowPaymentDialog(true),
+        variant: 'primary' as const,
+        detail: `Montant attendu : ${dossier.montant ?? 0} €`,
+      }
+    }
     if (status === STATUS.NOUVEAU) {
       return {
         label: 'Dossier prêt à être traité',
@@ -365,6 +430,23 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
       }
     }
     return null
+  }
+
+  const getHistoriqueTitle = (action?: string) => {
+    switch (action) {
+      case 'DOSSIER_DEPOSE':
+        return 'Dossier déposé'
+      case 'DEVIS_ENVOYE':
+        return 'Devis envoyé'
+      case 'VIREMENT_DECLARE':
+        return 'Déclaration de virement'
+      case 'PAIEMENT_CONFIRME':
+        return 'Paiement confirmé'
+      case 'STATUT_MODIFIE':
+        return 'Statut modifié'
+      default:
+        return action || 'Événement'
+    }
   }
 
   const nextAction = getNextAction()
@@ -521,6 +603,47 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
                   </div>
                 </div>
               </div>
+
+              {status === STATUS.EN_ATTENTE_VERIFICATION_PAIEMENT && (
+                <div className="bg-[#f5f6f8] rounded-xl border border-gray-100 p-5">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-7 h-7 rounded-lg bg-orange-50 flex items-center justify-center shrink-0">
+                      <Clock size={14} className="text-orange-500" />
+                    </div>
+                    <h3 className="text-sm font-semibold text-gray-800">Virement à vérifier</h3>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Le client a déclaré avoir effectué son virement. Veuillez vérifier votre compte bancaire et confirmer la réception.
+                  </p>
+                  {declarations.length > 0 && (
+                    <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-2">
+                      {(() => {
+                        const last = declarations[0]
+                        return (
+                          <>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Date du virement</span>
+                              <span className="text-sm font-medium text-gray-800">{last.date_declaration ? new Date(last.date_declaration).toLocaleDateString('fr-FR') : '—'}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Référence</span>
+                              <span className="text-sm font-medium text-gray-800 break-all text-right">{last.reference || '—'}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Montant déclaré</span>
+                              <span className="text-sm font-medium text-gray-800">{last.montant ?? '—'} €</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Montant attendu</span>
+                              <span className="text-sm font-medium text-gray-800">{dossier.montant ?? 0} €</span>
+                            </div>
+                          </>
+                        )
+                      })()}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -609,6 +732,47 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
                 </div>
               </div>
 
+              {status === STATUS.EN_ATTENTE_VERIFICATION_PAIEMENT && (
+                <div className="bg-[#f5f6f8] rounded-xl border border-gray-100 p-5">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-7 h-7 rounded-lg bg-orange-50 flex items-center justify-center shrink-0">
+                      <Clock size={14} className="text-orange-500" />
+                    </div>
+                    <h3 className="text-sm font-semibold text-gray-800">Virement à vérifier</h3>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Le client a déclaré avoir effectué son virement. Veuillez vérifier votre compte bancaire et confirmer la réception.
+                  </p>
+                  {declarations.length > 0 && (
+                    <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-2">
+                      {(() => {
+                        const last = declarations[0]
+                        return (
+                          <>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Date du virement</span>
+                              <span className="text-sm font-medium text-gray-800">{last.date_declaration ? new Date(last.date_declaration).toLocaleDateString('fr-FR') : '—'}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Référence</span>
+                              <span className="text-sm font-medium text-gray-800 break-all text-right">{last.reference || '—'}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Montant déclaré</span>
+                              <span className="text-sm font-medium text-gray-800">{last.montant ?? '—'} €</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Montant attendu</span>
+                              <span className="text-sm font-medium text-gray-800">{dossier.montant ?? 0} €</span>
+                            </div>
+                          </>
+                        )
+                      })()}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {!dossier.paiement_effectue && status === STATUS.DEVIS && (
                 <div className="bg-[#f5f6f8] rounded-xl border border-gray-100 p-5">
                   <div className="flex items-center gap-2 mb-4">
@@ -648,7 +812,38 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
           {activeTab === 'history' && (
             <div>
               <h3 className="text-sm font-semibold text-[#1e3a5f] uppercase tracking-wider mb-6">Historique du dossier</h3>
-              <Timeline events={events} />
+              {historique.length === 0 ? (
+                <div className="text-sm text-gray-400">Aucun événement pour le moment.</div>
+              ) : (
+                <div className="relative pl-8">
+                  <div className="absolute left-3.5 top-2 bottom-2 w-px bg-gray-200" />
+                  {historique.map((h) => (
+                    <div key={h.id} className="relative mb-6 last:mb-0">
+                      <div className="absolute -left-6 top-1 w-3 h-3 rounded-full bg-blue-500 ring-2 ring-white shadow-sm" />
+                      <div className="text-sm font-semibold text-gray-800 mb-0.5">{getHistoriqueTitle(h.action)}</div>
+                      {h.action === 'DOSSIER_DEPOSE' && h.metadata?.date_creation ? (
+                        <div className="text-xs text-gray-400 mb-1.5">{new Date(h.metadata.date_creation as string).toLocaleString('fr-FR')}</div>
+                      ) : (
+                        h.created_at && <div className="text-xs text-gray-400 mb-1.5">{new Date(h.created_at).toLocaleString('fr-FR')}</div>
+                      )}
+                      {h.description && <p className="text-xs text-gray-500 leading-relaxed">{h.description}</p>}
+                      {h.metadata && typeof h.metadata === 'object' && Object.keys(h.metadata).length > 0 && (
+                        <div className="mt-2 text-xs text-gray-500 bg-[#f5f6f8] rounded-lg p-3 border border-gray-100">
+                          {Object.entries(h.metadata).map(([key, value]) => (
+                            <div key={key} className="flex justify-between gap-4">
+                              <span className="text-gray-400 capitalize">{key.replace(/_/g, ' ')}</span>
+                              <span className="text-gray-700 font-medium break-all text-right">{String(value ?? '—')}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mt-1">
+                        {h.acteur_type === 'CLIENT' ? 'Client' : h.acteur_type === 'ADMINISTRATION' ? 'Administration' : 'Système'}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

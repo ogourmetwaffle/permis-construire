@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import supabaseAdmin from '@/lib/supabase-admin'
 import { verifySupabaseToken } from '@/lib/server/verifySupabaseToken'
+import { recordHistorique } from '@/lib/server/historique'
 
 export async function POST(req: Request) {
   try {
@@ -12,10 +13,27 @@ export async function POST(req: Request) {
     const { dossierId, statut } = body
     if (!dossierId || !statut) return NextResponse.json({ error: 'Missing parameters' }, { status: 400 })
 
+    const { data: existing, error: fetchError } = await supabaseAdmin
+      .from('dossiers')
+      .select('statut')
+      .eq('id', dossierId)
+      .single()
+
+    const ancienStatut = existing?.statut ?? null
+
     const { data, error } = await supabaseAdmin.from('dossiers').update({ statut }).eq('id', dossierId).select().single()
     if (error) {
       console.error('update-statut error', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    try {
+      await recordHistorique(dossierId, 'STATUT_MODIFIE', 'Statut modifié', 'ADMINISTRATION', {
+        ancien_statut: ancienStatut,
+        nouveau_statut: statut,
+      })
+    } catch (err) {
+      console.error('Error recording historique for statut change', err)
     }
 
     return NextResponse.json({ ok: true, dossier: data })

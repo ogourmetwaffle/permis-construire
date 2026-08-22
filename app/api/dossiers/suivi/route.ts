@@ -19,7 +19,6 @@ export async function POST(req: Request) {
     }
     if (!dossier) return NextResponse.json({ error: 'Dossier not found' }, { status: 404 })
 
-    // verify tracking password server-side
     const { data: pwdRow, error: pwdError } = await supabaseAdmin
       .from('dossiers')
       .select('mot_de_passe_suivi')
@@ -34,15 +33,19 @@ export async function POST(req: Request) {
     const stored = pwdRow?.mot_de_passe_suivi ?? ''
     if (!stored || String(stored) !== String(mot_de_passe)) return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
 
-    // fetch any client-declared virements
     const { data: declarations } = await supabaseAdmin
       .from('virements_declarations')
       .select('id, reference, montant, date_declaration, created_at')
       .eq('dossier_id', dossier.id)
       .order('created_at', { ascending: false })
 
-    // do NOT return mot_de_passe_suivi
-    return NextResponse.json({ ok: true, dossier, declarations: declarations || [] })
+    const { data: historique } = await supabaseAdmin
+      .from('dossier_historique')
+      .select('id, action, description, acteur_type, metadata, created_at')
+      .eq('dossier_id', dossier.id)
+      .order('created_at', { ascending: false })
+
+    return NextResponse.json({ ok: true, dossier, declarations: declarations || [], historique: historique || [] })
   } catch (err) {
     console.error('suivi unexpected', err)
     return NextResponse.json({ error: 'Server error' }, { status: 500 })
