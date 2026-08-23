@@ -101,7 +101,9 @@ export default function PaymentDialog({ open, onClose, dossierId, onSaved }: Pro
         </div>
 
         <div className="mt-4 flex justify-end gap-2">
-          <button type="button" onClick={onClose} disabled={saving} className="px-3 py-1.5 rounded border bg-white text-sm text-gray-700 hover:bg-gray-50">Annuler</button>
+          {!confirming && (
+            <button type="button" onClick={onClose} disabled={saving} className="px-3 py-1.5 rounded border bg-white text-sm text-gray-700 hover:bg-gray-50">Annuler</button>
+          )}
           {confirming ? (
             <div className="inline-flex items-center gap-2">
               <button type="button" onClick={() => setConfirming(false)} disabled={saving} className="px-3 py-1.5 rounded border bg-white text-sm text-gray-700 hover:bg-gray-50">Annuler</button>

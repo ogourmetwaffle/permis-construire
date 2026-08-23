@@ -416,6 +416,16 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
     events.push({ date: latestArchivedAt.toISOString(), title: 'Documents archivés', description: `Date et heure d'archivage ${latestArchivedAt.toLocaleString('fr-FR')}` })
   }
 
+  const hasDeposeEvent = historique.some(h => h.action === 'DOSSIER_DEPOSE')
+  const historyItems: Array<{ id: string | number; date?: string | null; title: string; description?: string; action?: string; metadata?: Record<string, unknown>; acteur_type?: string }> = []
+  if (dossier.created_at && !hasDeposeEvent) {
+    historyItems.push({ id: `local-${dossier.id}-created`, date: dossier.created_at, title: 'Dossier créé', description: `Dossier ${dossier.numero_dossier} déposé en ligne.`, action: 'DOSSIER_CREATED' })
+  }
+  historique.forEach(h => {
+    historyItems.push({ id: h.id, date: h.created_at, title: getHistoriqueTitle(h.action), description: h.description, action: h.action, metadata: h.metadata, acteur_type: h.acteur_type })
+  })
+  historyItems.sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime())
+
   const tabs: { id: Tab; label: string }[] = [
     { id: 'overview', label: 'Vue d\'ensemble' },
     { id: 'documents', label: 'Documents' },
@@ -478,7 +488,7 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
     return null
   }
 
-  const getHistoriqueTitle = (action?: string) => {
+  function getHistoriqueTitle(action?: string) {
     switch (action) {
       case 'DOSSIER_DEPOSE':
         return 'Dossier déposé'
@@ -892,19 +902,19 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
           {activeTab === 'history' && (
             <div>
               <h3 className="text-sm font-semibold text-[#1e3a5f] uppercase tracking-wider mb-6">Historique du dossier</h3>
-              {historique.length === 0 ? (
+              {historyItems.length === 0 ? (
                 <div className="text-sm text-gray-400">Aucun événement pour le moment.</div>
               ) : (
                 <div className="relative pl-8">
                   <div className="absolute left-3.5 top-2 bottom-2 w-px bg-gray-200" />
-                  {historique.map((h) => (
+                  {historyItems.map((h) => (
                     <div key={h.id} className="relative mb-6 last:mb-0">
                       <div className="absolute -left-6 top-1 w-3 h-3 rounded-full bg-blue-500 ring-2 ring-white shadow-sm" />
                       <div className="text-sm font-semibold text-gray-800 mb-0.5">{getHistoriqueTitle(h.action)}</div>
                       {h.action === 'DOSSIER_DEPOSE' && h.metadata?.date_creation ? (
                         <div className="text-xs text-gray-400 mb-1.5">{new Date(h.metadata.date_creation as string).toLocaleString('fr-FR')}</div>
                       ) : (
-                        h.created_at && <div className="text-xs text-gray-400 mb-1.5">{new Date(h.created_at).toLocaleString('fr-FR')}</div>
+                        h.date && <div className="text-xs text-gray-400 mb-1.5">{new Date(h.date).toLocaleString('fr-FR')}</div>
                       )}
                       {h.description && <p className="text-xs text-gray-500 leading-relaxed">{h.description}</p>}
                       {h.metadata && typeof h.metadata === 'object' && Object.keys(h.metadata).length > 0 && (
