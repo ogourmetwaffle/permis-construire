@@ -492,6 +492,8 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
     switch (action) {
       case 'DOSSIER_DEPOSE':
         return 'Dossier déposé'
+      case 'DOSSIER_CREATED':
+        return 'Dossier déposé'
       case 'DEVIS_ENVOYE':
         return 'Devis envoyé'
       case 'VIREMENT_DECLARE':
