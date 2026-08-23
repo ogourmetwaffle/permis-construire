@@ -146,7 +146,7 @@ export default function StepProjet({ data, onChange, onNext, onPrev }: StepProje
                   </div>
                 ) : price !== null ? (
                   <div className={`inline-flex items-baseline gap-1 px-3 py-1.5 rounded-full text-sm font-bold ${isSelected ? 'bg-[#1e3a5f] text-white' : 'bg-gray-100 text-gray-700'}`}>
-                    <span className="text-lg">À partir de {price} €</span>
+                    <span className="text-lg">À partir de {price}&nbsp;€</span>
                     <span className="text-xs font-normal opacity-75">TTC</span>
                   </div>
                 ) : (

@@ -81,9 +81,11 @@ export default function WhyUs() {
                   <text x="132" y="282" fill="white" fontSize="11" fontFamily="monospace" opacity="0.4">10.00 m</text>
                 </svg>
 
-                {/* Stats overlay */}
-                <div className="absolute bottom-6 right-6 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white text-center">
-                  <div className="text-lg font-extrabold">+ de 1000 dossiers traités</div>
+              </div>
+              {/* Badge vertical - stats overlay */}
+              <div className="absolute top-1/2 -right-2 -translate-y-1/2">
+                <div className="bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-white transform rotate-90 origin-center whitespace-nowrap shadow-lg">
+                  <span className="text-sm font-extrabold">+ de 1000 dossiers traités</span>
                 </div>
               </div>
             </div>

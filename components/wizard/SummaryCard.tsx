@@ -69,7 +69,7 @@ export default function SummaryCard({ data, tarif }: SummaryCardProps) {
       {tarif !== null && (
         <div className="mt-4 pt-4 border-t border-gray-200 flex items-center justify-between">
           <span className="text-sm font-medium text-gray-600">Total</span>
-          <span className="text-xl font-bold text-[#1e3a5f]">À partir de {tarif} €</span>
+          <span className="text-xl font-bold text-[#1e3a5f]">          À partir de {tarif}&nbsp;€</span>
         </div>
       )}
     </div>

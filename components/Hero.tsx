@@ -4,10 +4,10 @@ import Image from 'next/image'
 import { FileText, Layers, Home, Mail, UploadCloud } from 'lucide-react'
 
 const pricing = [
-  { label: 'Permis de construire', price: 'à partir de 400 €', icon: FileText },
-  { label: 'Déclaration préalable', price: 'à partir de 300 €', icon: FileText },
-  { label: 'Extension / Véranda', price: 'à partir de 300 €', icon: Home },
-  { label: 'Plans 3D', price: 'à partir de 150 €', icon: Layers },
+  { label: 'Permis de construire', price: 'à partir de 400\u00A0€', icon: FileText },
+  { label: 'Déclaration préalable', price: 'à partir de 300\u00A0€', icon: FileText },
+  { label: 'Extension / Véranda', price: 'à partir de 300\u00A0€', icon: Home },
+  { label: 'Plans 3D', price: 'à partir de 150\u00A0€', icon: Layers },
   { label: 'Accompagnement administratif', price: 'Sur devis', icon: FileText },
 ]
 
