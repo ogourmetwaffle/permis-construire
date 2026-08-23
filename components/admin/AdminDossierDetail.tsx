@@ -225,7 +225,10 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
     return () => { mounted = false }
   }, [dossier?.id])
 
-  const openArchiveModal = () => setShowArchiveModal(true)
+  const openArchiveModal = () => {
+    console.log('openArchiveModal clicked', { hasAvailableDocs, docs: docs.map(d => ({ id: d.id, name: d.name, archived_at: d.archived_at })) })
+    setShowArchiveModal(true)
+  }
   const closeArchiveModal = () => setShowArchiveModal(false)
   const openDeleteModal = () => setShowDeleteModal(true)
   const closeDeleteModal = () => setShowDeleteModal(false)
@@ -591,7 +594,7 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
               { label: 'Envoyer un email', onClick: () => window.location.href = `mailto:${dossier.email ?? ''}` },
               { label: 'Télécharger les documents', onClick: handleDownloadZip, disabled: !hasAvailableDocs },
               { label: 'Télécharger ZIP', onClick: handleDownloadZip, disabled: !hasAvailableDocs },
-              { label: 'Archiver', onClick: hasAvailableDocs ? openArchiveModal : () => {}, disabled: !hasAvailableDocs },
+              { label: 'Archiver', onClick: () => { console.log('Archive menu item clicked'); openArchiveModal() } },
               { label: 'Supprimer', onClick: openDeleteModal, danger: true },
             ]}
           />
@@ -812,9 +815,11 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
                   </button>
                   <button
                     type="button"
-                    onClick={openArchiveModal}
-                    disabled={!hasAvailableDocs}
-                    className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${!hasAvailableDocs ? 'bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed' : 'bg-white text-gray-700 border-gray-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200'}`}
+                    onClick={(e) => {
+                      console.log('Archive button clicked', e)
+                      openArchiveModal()
+                    }}
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
                   >
                     <Archive size={14} />
                     Archiver
@@ -1113,8 +1118,9 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
         </div>
       )}
 
-      {/* Archive Modal }}
+      {/* Archive Modal */}
       {showArchiveModal && (
+        console.log('Archive modal rendered', { showArchiveModal, hasAvailableDocs, docCount: docs.length }),
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={closeArchiveModal} />
           <div role="dialog" aria-modal="true" aria-labelledby="archive-title" className="relative bg-white rounded-xl shadow-xl max-w-lg w-full p-6 z-10">
