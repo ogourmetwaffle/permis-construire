@@ -20,6 +20,9 @@ import {
   Tag,
   Clock,
   X,
+  Calendar,
+  Building2,
+  Globe,
 } from 'lucide-react'
 import PaymentDialog from './PaymentDialog'
 import { toast } from 'react-hot-toast'
@@ -532,11 +535,11 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
       {/* Client Info Card */}
       <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-5 mb-6">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-          <div className="flex items-start gap-4">
+          <div className="flex items-start gap-4 flex-1 min-w-0">
             <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
               <User size={20} />
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Informations client</div>
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <span className="text-sm font-semibold text-gray-900">{dossier.nom} {dossier.prenom}</span>
@@ -546,24 +549,48 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
                   </span>
                 )}
               </div>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm text-gray-600">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 mt-3">
                 {dossier.email && (
-                  <a href={`mailto:${dossier.email}`} className="inline-flex items-center gap-1.5 hover:text-[#1e3a5f] transition-colors">
-                    <Mail size={13} className="text-gray-400" />
-                    {dossier.email}
-                  </a>
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Mail size={13} className="text-gray-400 shrink-0" />
+                    <a href={`mailto:${dossier.email}`} className="hover:text-[#1e3a5f] transition-colors truncate">{dossier.email}</a>
+                  </div>
                 )}
                 {dossier.telephone && (
-                  <span className="inline-flex items-center gap-1.5">
-                    <Phone size={13} className="text-gray-400" />
-                    {dossier.telephone}
-                  </span>
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Phone size={13} className="text-gray-400 shrink-0" />
+                    <span>{dossier.telephone}</span>
+                  </div>
+                )}
+                {dossier.type_client?.toLowerCase().includes('pro') && dossier.nom_societe && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Building2 size={13} className="text-gray-400 shrink-0" />
+                    <span>{dossier.nom_societe}</span>
+                  </div>
+                )}
+                {!dossier.type_client?.toLowerCase().includes('pro') && dossier.date_naissance && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Calendar size={13} className="text-gray-400 shrink-0" />
+                    <span>Né(e) le {new Date(dossier.date_naissance).toLocaleDateString('fr-FR')}</span>
+                  </div>
+                )}
+                {!dossier.type_client?.toLowerCase().includes('pro') && dossier.lieu_naissance_ville && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <MapPin size={13} className="text-gray-400 shrink-0" />
+                    <span>Né(e) à {dossier.lieu_naissance_ville}{dossier.lieu_naissance_pays ? `, ${dossier.lieu_naissance_pays}` : ''}</span>
+                  </div>
+                )}
+                {!dossier.type_client?.toLowerCase().includes('pro') && dossier.lieu_naissance_pays && !dossier.lieu_naissance_ville && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Globe size={13} className="text-gray-400 shrink-0" />
+                    <span>Pays de naissance : {dossier.lieu_naissance_pays}</span>
+                  </div>
                 )}
                 {dossier.adresse_client && (
-                  <span className="inline-flex items-center gap-1.5">
-                    <MapPin size={13} className="text-gray-400" />
-                    {dossier.adresse_client}
-                  </span>
+                  <div className="flex items-center gap-2 text-sm text-gray-600 sm:col-span-2">
+                    <MapPin size={13} className="text-gray-400 shrink-0" />
+                    <span>{dossier.adresse_client}</span>
+                  </div>
                 )}
               </div>
             </div>

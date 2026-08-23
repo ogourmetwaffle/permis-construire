@@ -25,7 +25,7 @@ function SidebarContent({ pathname, onClose }: { pathname: string; onClose?: () 
   }
 
   return (
-    <div className="h-full flex flex-col relative overflow-hidden" style={{ background: '#0F2F5A' }}>
+    <div className="h-full flex flex-col relative overflow-hidden" style={{ background: 'linear-gradient(to bottom, #0F2F5A, #0B1D3A)' }}>
       {/* Logo */}
       <div className="px-4 py-4 border-b border-white/10">
         <div className="flex items-center gap-2">
@@ -39,7 +39,6 @@ function SidebarContent({ pathname, onClose }: { pathname: string; onClose?: () 
 
       {/* Nav */}
       <nav className="flex-1 px-2 py-4 space-y-1">
-        <div className="text-[11px] font-semibold text-blue-300/70 uppercase tracking-wider px-2 mb-3">Menu</div>
         {navItems.map((item) => {
           const active = pathname === item.href || (item.href !== '/admin' && pathname?.startsWith(item.href + '/'))
           const Icon = item.icon
@@ -90,7 +89,7 @@ export default function AdminSidebar({ open, onClose }: Props) {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex md:flex-col md:w-44 lg:w-48 min-h-screen shrink-0" style={{ background: '#0F2F5A' }}>
+      <aside className="hidden md:flex md:flex-col md:w-44 lg:w-48 min-h-screen shrink-0" style={{ background: 'linear-gradient(to bottom, #0F2F5A, #0B1D3A)' }}>
         <SidebarContent pathname={pathname} />
       </aside>
 
@@ -98,7 +97,7 @@ export default function AdminSidebar({ open, onClose }: Props) {
       {open ? (
         <div className="fixed inset-0 z-40 md:hidden">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-          <div className="absolute left-0 top-0 bottom-0 w-64 shadow-xl overflow-auto" style={{ background: '#0F2F5A' }}>
+          <div className="absolute left-0 top-0 bottom-0 w-64 shadow-xl overflow-auto" style={{ background: 'linear-gradient(to bottom, #0F2F5A, #0B1D3A)' }}>
             <SidebarContent pathname={pathname} onClose={onClose} />
           </div>
         </div>

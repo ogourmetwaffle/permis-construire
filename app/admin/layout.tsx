@@ -42,7 +42,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <div className="flex">
         <AdminSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <main className="flex-1 min-h-screen flex flex-col">
-          <AdminHeader onToggleSidebar={() => setSidebarOpen((s) => !s)} dossierLabel={pathname.startsWith('/admin/dossiers/') ? pathname.split('/').pop() ?? undefined : undefined} adminEmail={adminEmail} />
+          <AdminHeader onToggleSidebar={() => setSidebarOpen((s) => !s)} adminEmail={adminEmail} />
           <div className="flex-1 p-6">{children}</div>
         </main>
       </div>
