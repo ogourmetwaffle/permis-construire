@@ -1,7 +1,7 @@
 const points = [
   {
     title: 'Expertise reconnue',
-    desc: "Des années d&apos;expérience dans la constitution de dossiers d&apos;urbanisme conformes aux règles en vigueur.",
+    desc: "Des années d'expérience dans la constitution de dossiers d'urbanisme conformes aux règles en vigueur.",
   },
   {
     title: 'Conseils personnalisés',
@@ -9,7 +9,7 @@ const points = [
   },
   {
     title: 'Suivi complet',
-    desc: "Vous suivez l&apos;avancement de votre dossier en temps réel depuis votre espace personnel.",
+    desc: 'Vous suivez l\'avancement de votre dossier en temps réel depuis votre espace personnel.',
   },
   {
     title: 'Délais rapides',
@@ -17,7 +17,7 @@ const points = [
   },
   {
     title: "Accompagnement jusqu'au dépôt",
-    desc: "Nous vous guidons jusqu&apos;au dépôt en mairie, étape par étape, sans rien laisser au hasard.",
+    desc: "Nous vous guidons jusqu'au dépôt en mairie, étape par étape, sans rien laisser au hasard.",
   },
 ]
 
