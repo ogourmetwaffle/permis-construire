@@ -120,10 +120,10 @@ export default function AdminDossierList({ dossiers: propDossiers, onSelect }: {
       </div>
 
       <div>
-        <div className="hidden md:grid text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-2 border-b border-slate-100 bg-slate-50/60" style={{ gridTemplateColumns: '220px 1fr 120px 110px 140px 140px 96px' }}>
+        <div className="hidden md:grid text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-2 border-b border-slate-100 bg-slate-50/60" style={{ gridTemplateColumns: '200px 1fr 130px 110px 170px 130px 96px' }}>
           <div className="text-left">Numéro dossier</div>
           <div className="text-left">Client</div>
-          <div className="text-left">Pays</div>
+          <div className="text-center">Type client</div>
           <div className="text-center">Paiement</div>
           <div className="text-center">Statut</div>
           <div className="text-left">Date dépôt</div>
