@@ -38,8 +38,18 @@ export async function POST(req: any, context: any) {
     if (String(dossier.mot_de_passe_suivi || '') !== String(mot_de_passe)) return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
 
     const montantAcompte = Number(dossier.montant_acompte || 0)
-    if (montantAcompte > 0 && montantNum !== montantAcompte) {
-      return NextResponse.json({ error: `Le montant déclaré (${montantNum} €) ne correspond pas au montant attendu (${montantAcompte} €).` }, { status: 400 })
+    const montantTotal = Number(dossier.montant || 0)
+    const currentStatus = String(dossier.statut || '').toUpperCase()
+
+    if (currentStatus === 'SOLDE_A_PAYER') {
+      const soldeRestant = montantTotal - montantAcompte
+      if (soldeRestant > 0 && montantNum !== soldeRestant) {
+        return NextResponse.json({ error: `Le montant déclaré (${montantNum} €) ne correspond pas au solde restant (${soldeRestant} €).` }, { status: 400 })
+      }
+    } else if (montantAcompte > 0) {
+      if (montantNum !== montantAcompte) {
+        return NextResponse.json({ error: `Le montant déclaré (${montantNum} €) ne correspond pas au montant attendu (${montantAcompte} €).` }, { status: 400 })
+      }
     }
 
     const insertPayload: Record<string, unknown> = {

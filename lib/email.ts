@@ -388,6 +388,69 @@ export async function sendStatusChangeEmail(
   return result
 }
 
+export async function sendBalanceRequestEmail(
+  email: string,
+  numeroDossier: string,
+  soldeRestant: number,
+  iban?: string,
+  bic?: string,
+  titulaire?: string,
+  reference?: string,
+  commentaire?: string
+): Promise<EmailResult> {
+  const subject = `Règlement du solde — Dossier ${numeroDossier}`
+  const amountLine = `<p><strong>Solde restant à régler :</strong> ${soldeRestant} EUR</p>`
+  const virementDetails = `
+    <h3>Coordonnées bancaires</h3>
+    <p><strong>IBAN :</strong> ${iban ?? '—'}</p>
+    <p><strong>BIC :</strong> ${bic ?? '—'}</p>
+    <p><strong>Titulaire :</strong> ${titulaire ?? '—'}</p>
+    <p><strong>Référence :</strong> ${reference ?? numeroDossier}</p>
+  `
+  const commentaireBlock = commentaire ? `<p><strong>Commentaire :</strong><br/>${commentaire.replace(/\n/g, '<br/>')}</p>` : ''
+
+  const html = `
+    <html>
+      <body style="font-family: Arial, sans-serif; color: #111;">
+        <h2>Règlement du solde</h2>
+        <p>Bonjour,</p>
+        <p>Nous vous remercions pour le paiement de votre accompte. Le solde restant de votre dossier est maintenant disponible pour règlement.</p>
+        ${amountLine}
+        ${virementDetails}
+        ${commentaireBlock}
+        <p>Veuillez effectuer le virement du montant indiqué et déclarer votre paiement depuis votre espace de suivi.</p>
+        <p>Cordialement,<br/>${sender().name}</p>
+      </body>
+    </html>
+  `
+
+  const textParts = [
+    'Bonjour,',
+    'Nous vous remercions pour le paiement de votre accompte. Le solde restant de votre dossier est maintenant disponible pour règlement.',
+    `Solde restant à régler : ${soldeRestant} EUR`,
+    'Coordonnées bancaires :',
+    `IBAN: ${iban ?? '—'}`,
+    `BIC: ${bic ?? '—'}`,
+    `Titulaire: ${titulaire ?? '—'}`,
+    `Référence: ${reference ?? numeroDossier}`,
+    commentaire ? `Commentaire:\n${commentaire}` : '',
+    'Veuillez effectuer le virement du montant indiqué et déclarer votre paiement depuis votre espace de suivi.',
+    'Cordialement, ' + sender().name,
+  ].filter(Boolean)
+
+  const payload = {
+    sender: sender(),
+    to: [{ email }],
+    subject,
+    htmlContent: html,
+    textContent: textParts.join('\n\n'),
+  }
+
+  const result = await sendEmailRaw(payload)
+  if (!result.ok) console.error('sendBalanceRequestEmail error', result.error)
+  return result
+}
+
 const emailClient = {
   sendClientConfirmationEmail,
   sendAdminNotificationEmail,
@@ -395,6 +458,7 @@ const emailClient = {
   sendPaymentAssistanceEmail,
   sendDossierReceivedEmail,
   sendStatusChangeEmail,
+  sendBalanceRequestEmail,
 }
 
 export default emailClient

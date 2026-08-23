@@ -47,14 +47,31 @@ export async function POST(req: Request, context: any) {
       return NextResponse.json({ error: 'Dossier archivé ou terminé — modification refusée' }, { status: 409 })
     }
 
-    const allowedStatuses = ['EN_ATTENTE_PAIEMENT', 'EN_ATTENTE_VERIFICATION_PAIEMENT']
+    const allowedStatuses = ['EN_ATTENTE_PAIEMENT', 'EN_ATTENTE_VERIFICATION_PAIEMENT', 'SOLDE_A_PAYER']
     const currentStatus = String(dossier.statut || '').toUpperCase()
     if (!allowedStatuses.includes(currentStatus)) {
       return NextResponse.json({ error: 'Statut du dossier non autorisé pour la confirmation de paiement' }, { status: 409 })
     }
 
     const montantAcompte = Number(dossier.montant_acompte || 0)
+    const montantTotal = Number(dossier.montant || 0)
     const hasAcompte = montantAcompte > 0
+
+    let isBalanceConfirmation = false
+    if (hasAcompte && currentStatus === 'SOLDE_A_PAYER') {
+      isBalanceConfirmation = true
+    } else if (hasAcompte && currentStatus === 'EN_ATTENTE_VERIFICATION_PAIEMENT') {
+      const { data: declarations } = await supabaseAdmin
+        .from('virements_declarations')
+        .select('montant')
+        .eq('dossier_id', dossier.id)
+        .order('created_at', { ascending: false })
+      const lastAmount = declarations?.[0]?.montant ? Number(declarations[0].montant) : null
+      const soldeRestant = montantTotal - montantAcompte
+      if (lastAmount !== null && soldeRestant > 0 && lastAmount === soldeRestant) {
+        isBalanceConfirmation = true
+      }
+    }
 
     const updatePayload: Record<string, any> = {
       date_paiement: parsedDate.toISOString(),
@@ -62,7 +79,10 @@ export async function POST(req: Request, context: any) {
       commentaire_paiement: commentaire ?? null,
     }
 
-    if (hasAcompte) {
+    if (isBalanceConfirmation) {
+      updatePayload.paiement_effectue = true
+      updatePayload.statut = 'NOUVEAU'
+    } else if (hasAcompte) {
       updatePayload.paiement_effectue = false
       updatePayload.statut = 'SOLDE_A_PAYER'
     } else {
@@ -78,14 +98,33 @@ export async function POST(req: Request, context: any) {
 
     try {
       if (dossier.email) {
-        await sendPaymentConfirmationEmail(
-          dossier.email,
-          dossier.numero_dossier,
-          Number(dossier.montant) || undefined,
-          'EUR',
-          reference.trim(),
-          hasAcompte ? { mode: 'ACOMPTE', montant_acompte: montantAcompte, solde: Number(dossier.montant) - montantAcompte } : undefined
-        )
+        if (isBalanceConfirmation) {
+          await sendPaymentConfirmationEmail(
+            dossier.email,
+            dossier.numero_dossier,
+            Number(dossier.montant) || undefined,
+            'EUR',
+            reference.trim(),
+            { mode: 'ACOMPTE', montant_acompte: montantAcompte, solde: 0 }
+          )
+        } else if (hasAcompte) {
+          await sendPaymentConfirmationEmail(
+            dossier.email,
+            dossier.numero_dossier,
+            Number(dossier.montant) || undefined,
+            'EUR',
+            reference.trim(),
+            { mode: 'ACOMPTE', montant_acompte: montantAcompte, solde: montantTotal - montantAcompte }
+          )
+        } else {
+          await sendPaymentConfirmationEmail(
+            dossier.email,
+            dossier.numero_dossier,
+            Number(dossier.montant) || undefined,
+            'EUR',
+            reference.trim()
+          )
+        }
       }
     } catch (err) {
       console.error('Error sending payment confirmation email', err)
@@ -97,11 +136,17 @@ export async function POST(req: Request, context: any) {
         reference: reference.trim(),
         date_paiement: parsedDate.toISOString(),
       }
-      if (hasAcompte) {
+      if (isBalanceConfirmation) {
+        await recordHistorique(dossier.id, 'SOLDE_PAYE', 'Solde payé', 'ADMINISTRATION', {
+          ...historiqueMetadata,
+          montant_acompte: montantAcompte,
+          solde_restant: 0,
+        })
+      } else if (hasAcompte) {
         await recordHistorique(dossier.id, 'ACOMPTE_PAYE', 'Accompte payé', 'ADMINISTRATION', {
           ...historiqueMetadata,
           montant_acompte: montantAcompte,
-          solde_restant: Number(dossier.montant) - montantAcompte,
+          solde_restant: montantTotal - montantAcompte,
         })
       } else {
         await recordHistorique(dossier.id, 'PAIEMENT_CONFIRME', 'Paiement confirmé', 'ADMINISTRATION', historiqueMetadata)

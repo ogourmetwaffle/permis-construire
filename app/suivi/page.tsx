@@ -163,6 +163,10 @@ export default function SuiviPage() {
         return 'Paiement confirmé'
       case 'ACOMPTE_PAYE':
         return 'Accompte payé'
+      case 'SOLDE_PAYE':
+        return 'Solde payé'
+      case 'DEMANDE_SOLDE':
+        return 'Demande de solde'
       case 'STATUT_MODIFIE':
         return 'Statut modifié'
       default:
@@ -342,7 +346,7 @@ export default function SuiviPage() {
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-orange-800 mb-1">Accompte payé</p>
-                      <p className="text-sm text-orange-700 leading-relaxed">Votre acompte a bien été reçu. Le solde restant vous sera demandé ultérieurement.</p>
+                      <p className="text-sm text-orange-700 leading-relaxed">Votre acompte a bien été reçu. Veuillez régler le solde restant pour finaliser votre dossier.</p>
                     </div>
                   </div>
                 </div>
@@ -506,6 +510,72 @@ export default function SuiviPage() {
                       <span className="text-sm font-medium text-gray-800">{(total - acompte).toLocaleString('fr-FR')} €</span>
                     </div>
                   </div>
+
+                  {dossier.iban && (
+                    <div className="bg-[#f5f6f8] rounded-xl border border-gray-100 p-5 space-y-3">
+                      <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Coordonnées bancaires</h4>
+                      {dossier.titulaire && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Titulaire</span>
+                          <span className="text-sm font-medium text-gray-800">{dossier.titulaire}</span>
+                        </div>
+                      )}
+                      {dossier.iban && (
+                        <div className="flex items-center justify-between gap-4">
+                          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider shrink-0">IBAN</span>
+                          <span className="text-sm font-medium text-gray-800 font-mono break-all text-right">{dossier.iban}</span>
+                        </div>
+                      )}
+                      {dossier.bic && (
+                        <div className="flex items-center justify-between gap-4">
+                          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider shrink-0">BIC</span>
+                          <span className="text-sm font-medium text-gray-800 font-mono break-all text-right">{dossier.bic}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider shrink-0">Référence</span>
+                        <span className="text-sm font-medium text-gray-800 font-mono break-all text-right">{dossier.reference_virement || dossier.numero_dossier}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {!showDeclare ? (
+                    <button
+                      type="button"
+                      onClick={() => { setShowDeclare(true); setDecl({ date: '', reference: '', montant: String(total - acompte) }) }}
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-[#7b2020] hover:bg-[#6a1a1a] text-white text-sm font-semibold rounded-xl shadow-sm transition-all hover:shadow-md"
+                    >
+                      <CheckCircle2 size={16} />
+                      J&apos;ai effectué mon virement pour le solde
+                    </button>
+                  ) : (
+                    <div className="bg-[#f5f6f8] rounded-xl border border-gray-100 p-5 space-y-4">
+                      <h4 className="text-sm font-semibold text-[#1e3a5f]">Déclarer le virement du solde</h4>
+                      <div className="text-xs text-gray-600 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
+                        Le montant attendu pour le solde est de <strong>{(total - acompte).toLocaleString('fr-FR')} €</strong>.
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label htmlFor="decl-date" className="block text-xs font-medium text-gray-500 mb-1">Date du virement <span className="text-red-600">*</span></label>
+                          <input id="decl-date" type="date" value={decl.date} onChange={e => setDecl(s => ({ ...s, date: e.target.value }))} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f]" required />
+                        </div>
+                        <div>
+                          <label htmlFor="decl-ref" className="block text-xs font-medium text-gray-500 mb-1">Référence <span className="text-red-600">*</span></label>
+                          <input id="decl-ref" value={decl.reference} onChange={e => setDecl(s => ({ ...s, reference: e.target.value }))} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f]" required />
+                        </div>
+                        <div>
+                          <label htmlFor="decl-montant" className="block text-xs font-medium text-gray-500 mb-1">Montant <span className="text-red-600">*</span></label>
+                          <input id="decl-montant" value={decl.montant} onChange={e => setDecl(s => ({ ...s, montant: e.target.value }))} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f]" required />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <button type="button" onClick={submitDeclaration} disabled={loading} className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#7b2020] hover:bg-[#6a1a1a] text-white text-sm font-semibold rounded-lg shadow-sm transition-all disabled:opacity-60">
+                          {loading ? 'Envoi…' : 'Envoyer la déclaration'}
+                        </button>
+                        <button type="button" onClick={() => setShowDeclare(false)} className="px-5 py-2.5 border border-gray-200 bg-white text-sm text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">Annuler</button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

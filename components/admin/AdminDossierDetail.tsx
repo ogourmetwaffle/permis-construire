@@ -85,6 +85,9 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
   const [zipDownloading, setZipDownloading] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [showPrepareDevis, setShowPrepareDevis] = useState(false)
+  const [showBalanceRequest, setShowBalanceRequest] = useState(false)
+  const [balanceComment, setBalanceComment] = useState('')
+  const [sendingBalanceRequest, setSendingBalanceRequest] = useState(false)
   const [editSection, setEditSection] = useState<'client' | 'project'>('client')
   const [savedBadge, setSavedBadge] = useState<{ client?: boolean; project?: boolean }>({})
   const [activeTab, setActiveTab] = useState<Tab>('overview')
@@ -237,6 +240,42 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
     setDossier((prev) => ({ ...(prev || {}), ...(updated || {}) }))
     toast.success('Devis enregistré')
     if (onUpdated) onUpdated()
+  }
+
+  const handleBalanceRequest = async () => {
+    if (!dossier) return
+    setSendingBalanceRequest(true)
+    try {
+      const session = await supabase.auth.getSession()
+      const token = session.data?.session?.access_token
+      if (!token) {
+        toast.error('Session expirée — reconnectez-vous')
+        setSendingBalanceRequest(false)
+        return
+      }
+
+      const resp = await fetch(`/api/admin/dossiers/${dossier.id}/demander-solde`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ commentaire: balanceComment || null }),
+      })
+      const json = await resp.json()
+      if (!resp.ok) {
+        toast.error(json?.error || 'Erreur lors de l\'envoi de la demande de solde')
+        setSendingBalanceRequest(false)
+        return
+      }
+
+      toast.success('Demande de solde envoyée au client')
+      setShowBalanceRequest(false)
+      setBalanceComment('')
+      if (onUpdated) onUpdated()
+    } catch (err) {
+      console.error('balance request error', err)
+      toast.error('Erreur réseau')
+    } finally {
+      setSendingBalanceRequest(false)
+    }
   }
 
   const handleSaved = (updated: any) => {
@@ -461,8 +500,8 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
     if (status === STATUS.SOLDE_A_PAYER) {
       return {
         label: 'Solde restant à payer',
-        action: () => {},
-        variant: 'info' as const,
+        action: () => setShowBalanceRequest(true),
+        variant: 'primary' as const,
         detail: `Solde : ${(Number(dossier.montant) - Number(dossier.montant_acompte || 0)).toLocaleString('fr-FR')} €`,
       }
     }
@@ -509,6 +548,12 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
         return 'Déclaration de virement'
       case 'PAIEMENT_CONFIRME':
         return 'Paiement confirmé'
+      case 'ACOMPTE_PAYE':
+        return 'Accompte payé'
+      case 'SOLDE_PAYE':
+        return 'Solde payé'
+      case 'DEMANDE_SOLDE':
+        return 'Demande de solde'
       case 'STATUT_MODIFIE':
         return 'Statut modifié'
       default:
@@ -864,7 +909,11 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
                     <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-2">
                       {(() => {
                         const last = declarations[0]
-                        const expectedAmount = (dossier.montant_acompte && Number(dossier.montant_acompte) > 0) ? Number(dossier.montant_acompte) : Number(dossier.montant || 0)
+                        const montantAcompte = Number(dossier.montant_acompte || 0)
+                        const montantTotal = Number(dossier.montant || 0)
+                        const isBalanceVerification = declarations.length > 1 || (montantAcompte > 0 && last.montant != null && Number(last.montant) === montantTotal - montantAcompte)
+                        const expectedAmount = isBalanceVerification ? montantTotal - montantAcompte : (montantAcompte > 0 ? montantAcompte : montantTotal)
+                        const verificationLabel = isBalanceVerification ? 'Solde à vérifier' : (montantAcompte > 0 ? 'Acompte à vérifier' : 'Montant à vérifier')
                         return (
                           <>
                             <div className="flex items-center justify-between">
@@ -880,7 +929,7 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
                               <span className="text-sm font-medium text-gray-800">{last.montant ?? '—'} €</span>
                             </div>
                             <div className="flex items-center justify-between">
-                              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Montant attendu</span>
+                              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{verificationLabel}</span>
                               <span className="text-sm font-medium text-gray-800">{expectedAmount.toLocaleString('fr-FR')} €</span>
                             </div>
                           </>
@@ -913,6 +962,38 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
                       <span className="text-sm font-medium text-gray-800">{(Number(dossier.montant || 0) - Number(dossier.montant_acompte || 0)).toLocaleString('fr-FR')} €</span>
                     </div>
                   </div>
+                  {!showBalanceRequest ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowBalanceRequest(true)}
+                      className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-[#7b2020] hover:bg-[#6a1a1a] text-white text-sm font-semibold rounded-lg shadow-sm transition-all"
+                    >
+                      <Mail size={14} />
+                      Demander le solde
+                    </button>
+                  ) : (
+                    <div className="mt-4 bg-white rounded-lg border border-gray-200 p-4 space-y-3">
+                      <h4 className="text-sm font-semibold text-gray-800">Demander le solde au client</h4>
+                      <p className="text-xs text-gray-500">Un email sera envoyé au client avec les coordonnées bancaires et le montant du solde restant.</p>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Commentaire (optionnel)</label>
+                        <textarea
+                          value={balanceComment}
+                          onChange={(e) => setBalanceComment(e.target.value)}
+                          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f]"
+                          rows={3}
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button type="button" onClick={handleBalanceRequest} disabled={sendingBalanceRequest} className="inline-flex items-center gap-2 px-4 py-2 bg-[#7b2020] hover:bg-[#6a1a1a] text-white text-sm font-semibold rounded-lg shadow-sm transition-all disabled:opacity-60">
+                          {sendingBalanceRequest ? 'Envoi…' : 'Envoyer la demande'}
+                        </button>
+                        <button type="button" onClick={() => { setShowBalanceRequest(false); setBalanceComment('') }} className="px-4 py-2 border border-gray-200 bg-white text-sm text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                          Annuler
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
