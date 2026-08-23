@@ -82,10 +82,13 @@ export default function WhyUs() {
                 </svg>
 
               </div>
-              {/* Badge vertical - stats overlay */}
-              <div className="absolute top-1/2 -right-2 -translate-y-1/2">
-                <div className="bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-white transform rotate-90 origin-center whitespace-nowrap shadow-lg">
-                  <span className="text-sm font-extrabold">+ de 1000 dossiers traités</span>
+              {/* Badge de certification - pill premium */}
+              <div className="absolute top-3 -right-1 transform rotate-[-8deg] z-10">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#2d5a87] border border-[#e6d7b8]/40 text-white text-xs font-medium shadow-sm whitespace-nowrap">
+                  <svg className="w-3 h-3 text-white shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>✓ + de 1&nbsp;000 dossiers traités</span>
                 </div>
               </div>
             </div>
