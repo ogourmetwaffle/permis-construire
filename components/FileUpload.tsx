@@ -63,7 +63,7 @@ export default function FileUpload({ onFilesChange }: Props) {
   }
 
   return (
-    <div className="bg-white rounded-lg border p-4 h-95 flex flex-col">
+    <div className="bg-white rounded-lg border border-gray-100 p-4">
       {/* Header */}
       <div className="flex items-center gap-3 mb-3">
         <div className="text-gray-600 rounded p-1">
@@ -101,7 +101,7 @@ export default function FileUpload({ onFilesChange }: Props) {
       {/* Selected files (inside card) */}
       <div className="mt-2">
         <div className="text-sm font-medium text-gray-900 mb-2">Fichiers sélectionnés ({files.length})</div>
-        <div className="border border-gray-100 rounded-md bg-white shadow-sm overflow-auto" style={{ maxHeight: '168px' }}>
+        <div className="border border-gray-100 rounded-md bg-white shadow-sm overflow-y-auto min-h-0" style={{ maxHeight: '180px' }}>
           <div className="p-2">
             {files.length === 0 && (
               <div className="text-sm text-gray-500 py-3">Ajoutez vos documents pour continuer.</div>
@@ -110,15 +110,15 @@ export default function FileUpload({ onFilesChange }: Props) {
 
           <div className="divide-y divide-gray-100">
             {files.map((f, idx) => (
-              <div key={`${f.name}-${idx}`} className="flex items-center justify-between px-3" style={{ height: '52px' }}>
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-8 h-8 bg-indigo-50 text-indigo-600 rounded flex items-center justify-center text-sm">{fileIcon(f.name)}</div>
-                  <div className="min-w-0">
-                    <div className="text-sm text-gray-800 truncate max-w-[60%] sm:max-w-70">{shortName(f.name, 40)}</div>
+              <div key={`${f.name}-${idx}`} className="flex items-center justify-between gap-3 px-3 min-w-0" style={{ height: '52px' }}>
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className="w-8 h-8 bg-indigo-50 text-indigo-600 rounded flex items-center justify-center text-sm shrink-0">{fileIcon(f.name)}</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm text-gray-800 truncate">{shortName(f.name, 40)}</div>
                   </div>
-                  <div className="text-xs text-gray-500 ml-3">{(f.size/1024/1024).toFixed(2)} MB</div>
+                  <div className="text-xs text-gray-500 shrink-0">{(f.size/1024/1024).toFixed(2)} MB</div>
                 </div>
-                <button type="button" onClick={() => removeFile(f.name)} className="ml-3 text-red-600 rounded-full p-2 cursor-pointer" aria-label={`Supprimer ${f.name}`}>
+                <button type="button" onClick={() => removeFile(f.name)} className="text-red-600 rounded-full p-2 cursor-pointer shrink-0" aria-label={`Supprimer ${f.name}`}>
                   <Trash2Icon size={16} />
                 </button>
               </div>

@@ -90,6 +90,7 @@ export default function SuiviPage() {
   const [decl, setDecl] = useState({ date: '', reference: '', montant: '' })
   const [trackingFiles, setTrackingFiles] = useState<File[]>([])
   const [uploadingTracking, setUploadingTracking] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
   const [trackingUploadKey, setTrackingUploadKey] = useState(0)
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -451,33 +452,63 @@ export default function SuiviPage() {
                   <FileUpload key={trackingUploadKey} onFilesChange={(f: File[]) => setTrackingFiles(f)} />
                   <button
                     type="button"
-                    onClick={async () => {
+                    onClick={() => {
                       if (!dossier || trackingFiles.length === 0) return
                       setUploadingTracking(true)
+                      setUploadProgress(0)
                       setMessage(null)
                       try {
                         const form = new FormData()
                         form.append('mot_de_passe', pwd)
                         trackingFiles.forEach(f => form.append('files', f))
-                        const resp = await fetch(`/api/dossiers/${encodeURIComponent(String(dossier.id))}/upload-documents`, {
-                          method: 'POST',
-                          body: form,
-                        })
-                        const j = await resp.json()
-                        if (!resp.ok) { setMessage(j?.error || 'Erreur'); setUploadingTracking(false); return }
-                        setMessage('Documents envoyés. Votre dossier va être réexaminé.')
-                        setTrackingFiles([])
-                        setTrackingUploadKey(k => k + 1)
-                        setDossier((prev) => prev ? { ...prev, statut: STATUS.EN_COURS } : prev)
+                        const xhr = new XMLHttpRequest()
+                        xhr.open('POST', `/api/dossiers/${encodeURIComponent(String(dossier.id))}/upload-documents`)
+                        xhr.upload.onprogress = (e: ProgressEvent) => {
+                          if (e.lengthComputable) setUploadProgress(Math.round((e.loaded / e.total) * 100))
+                        }
+                        xhr.onload = () => {
+                          setUploadingTracking(false)
+                          let j: { error?: string } | null = null
+                          try { j = JSON.parse(xhr.responseText) } catch { /* ignore */ }
+                          if (xhr.status >= 200 && xhr.status < 300) {
+                            setMessage('Documents envoyés. Votre dossier va être réexaminé.')
+                            setTrackingFiles([])
+                            setTrackingUploadKey(k => k + 1)
+                            setDossier((prev) => prev ? { ...prev, statut: STATUS.EN_COURS } : prev)
+                          } else {
+                            setMessage(j?.error || 'Erreur')
+                          }
+                        }
+                        xhr.onerror = () => {
+                          setUploadingTracking(false)
+                          setMessage('Erreur réseau')
+                        }
+                        xhr.send(form)
                       } catch {
+                        setUploadingTracking(false)
                         setMessage('Erreur réseau')
-                      } finally { setUploadingTracking(false) }
+                      }
                     }}
                     disabled={uploadingTracking || trackingFiles.length === 0}
                     className="inline-flex items-center gap-2 px-4 py-2 bg-[#7b2020] hover:bg-[#6a1a1a] text-white text-sm font-semibold rounded-lg shadow-sm transition-all disabled:opacity-60"
                   >
                     {uploadingTracking ? 'Envoi…' : 'Envoyer les documents'}
                   </button>
+
+                  {uploadingTracking && (
+                    <div className="mt-3">
+                      <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                        <span>Téléversement en cours…</span>
+                        <span className="font-medium text-gray-700">{uploadProgress}%</span>
+                      </div>
+                      <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-[#7b2020] rounded-full transition-all duration-200"
+                          style={{ width: `${uploadProgress}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
