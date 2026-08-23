@@ -11,6 +11,7 @@ type Dossier = {
   numero_dossier: string
   statut?: string
   montant?: number | null
+  montant_acompte?: number | null
   iban?: string | null
   bic?: string | null
   titulaire?: string | null
@@ -49,26 +50,26 @@ function getStepStatus(dossier: Dossier, stepId: string): 'completed' | 'active'
   }
 
   if (stepId === 'study') {
-    if (s === STATUS.DEVIS || s === STATUS.EN_ATTENTE_PAIEMENT || s === STATUS.EN_ATTENTE_VERIFICATION_PAIEMENT || s === STATUS.NOUVEAU || s === STATUS.EN_COURS) return 'active'
+    if (s === STATUS.DEVIS || s === STATUS.EN_ATTENTE_PAIEMENT || s === STATUS.EN_ATTENTE_VERIFICATION_PAIEMENT || s === STATUS.NOUVEAU || s === STATUS.EN_COURS || s === STATUS.SOLDE_A_PAYER) return 'active'
     return 'pending'
   }
 
   if (stepId === 'devis') {
-    if (s === STATUS.EN_ATTENTE_PAIEMENT || s === STATUS.EN_ATTENTE_VERIFICATION_PAIEMENT || s === STATUS.NOUVEAU || s === STATUS.EN_COURS) return 'completed'
+    if (s === STATUS.EN_ATTENTE_PAIEMENT || s === STATUS.EN_ATTENTE_VERIFICATION_PAIEMENT || s === STATUS.NOUVEAU || s === STATUS.EN_COURS || s === STATUS.SOLDE_A_PAYER) return 'completed'
     if (s === STATUS.DEVIS) return 'active'
     return 'pending'
   }
 
   if (stepId === 'payment') {
     if (s === STATUS.NOUVEAU || s === STATUS.EN_COURS || s === STATUS.TERMINE) return 'completed'
-    if (s === STATUS.EN_ATTENTE_VERIFICATION_PAIEMENT) return 'active'
+    if (s === STATUS.EN_ATTENTE_VERIFICATION_PAIEMENT || s === STATUS.SOLDE_A_PAYER) return 'active'
     if (s === STATUS.EN_ATTENTE_PAIEMENT) return 'active'
     return 'pending'
   }
 
   if (stepId === 'processing') {
     if (s === STATUS.EN_COURS || s === STATUS.TERMINE) return 'active'
-    if (s === STATUS.NOUVEAU) return 'pending'
+    if (s === STATUS.NOUVEAU || s === STATUS.SOLDE_A_PAYER) return 'pending'
     return 'pending'
   }
 
@@ -160,12 +161,18 @@ export default function SuiviPage() {
         return 'Déclaration de virement'
       case 'PAIEMENT_CONFIRME':
         return 'Paiement confirmé'
+      case 'ACOMPTE_PAYE':
+        return 'Accompte payé'
       case 'STATUT_MODIFIE':
         return 'Statut modifié'
       default:
         return action || 'Événement'
     }
   }
+
+  const total = Number(dossier?.montant) || 0
+  const acompte = Number(dossier?.montant_acompte) || 0
+  const hasAcompte = acompte > 0
 
   return (
     <div className="min-h-screen bg-[#F5F7FA]">
@@ -327,6 +334,20 @@ export default function SuiviPage() {
                 </div>
               )}
 
+              {status === STATUS.SOLDE_A_PAYER && (
+                <div className="bg-orange-50 border border-orange-200 rounded-2xl p-5 sm:p-6">
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-orange-100 flex items-center justify-center shrink-0 mt-0.5">
+                      <CheckCircle2 size={18} className="text-orange-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-orange-800 mb-1">Accompte payé</p>
+                      <p className="text-sm text-orange-700 leading-relaxed">Votre acompte a bien été reçu. Le solde restant vous sera demandé ultérieurement.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {status === STATUS.NOUVEAU && (
                 <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 sm:p-6">
                   <div className="flex items-start gap-3">
@@ -374,10 +395,27 @@ export default function SuiviPage() {
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-6 space-y-4">
                   <h3 className="text-sm font-semibold text-[#1e3a5f] uppercase tracking-wider">Coordonnées bancaires</h3>
                   <div className="bg-[#f5f6f8] rounded-xl border border-gray-100 p-5 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Montant</span>
-                      <span className="text-lg font-bold text-[#1e3a5f]">{dossier.montant ?? 0} €</span>
-                    </div>
+                    {hasAcompte ? (
+                      <>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Acompte à régler</span>
+                          <span className="text-lg font-bold text-[#1e3a5f]">{acompte.toLocaleString('fr-FR')} €</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Montant total du devis</span>
+                          <span className="text-sm font-medium text-gray-800">{total.toLocaleString('fr-FR')} €</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Solde restant</span>
+                          <span className="text-sm font-medium text-gray-800">{(total - acompte).toLocaleString('fr-FR')} €</span>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Montant</span>
+                        <span className="text-lg font-bold text-[#1e3a5f]">{total.toLocaleString('fr-FR')} €</span>
+                      </div>
+                    )}
                     {dossier.titulaire && (
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Titulaire</span>
@@ -420,6 +458,11 @@ export default function SuiviPage() {
                   ) : (
                     <div className="bg-[#f5f6f8] rounded-xl border border-gray-100 p-5 space-y-4">
                       <h4 className="text-sm font-semibold text-[#1e3a5f]">Déclarer un virement</h4>
+                      {hasAcompte && (
+                        <div className="text-xs text-gray-600 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
+                          Le montant attendu pour cet acompte est de <strong>{acompte.toLocaleString('fr-FR')} €</strong>.
+                        </div>
+                      )}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <label htmlFor="decl-date" className="block text-xs font-medium text-gray-500 mb-1">Date du virement <span className="text-red-600">*</span></label>
@@ -442,6 +485,27 @@ export default function SuiviPage() {
                       </div>
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Payment Details - SOLDE_A_PAYER */}
+              {status === STATUS.SOLDE_A_PAYER && (
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-6 space-y-4">
+                  <h3 className="text-sm font-semibold text-[#1e3a5f] uppercase tracking-wider">Paiement</h3>
+                  <div className="bg-[#f5f6f8] rounded-xl border border-gray-100 p-5 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Accompte payé</span>
+                      <span className="text-lg font-bold text-green-700">{acompte.toLocaleString('fr-FR')} €</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Montant total</span>
+                      <span className="text-sm font-medium text-gray-800">{total.toLocaleString('fr-FR')} €</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Solde restant</span>
+                      <span className="text-sm font-medium text-gray-800">{(total - acompte).toLocaleString('fr-FR')} €</span>
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -554,13 +618,13 @@ export default function SuiviPage() {
                           <CheckCircle2 size={14} />
                         </div>
                          <div className="pt-1 pb-6">
-                           <div className="text-sm font-semibold text-gray-800 mb-0.5">{getHistoriqueTitle(event.action)}</div>
-                           <div className="text-xs text-gray-400 mb-1">
-                             {event.action === 'DOSSIER_DEPOSE' && event.metadata?.date_creation
-                               ? formatHistoriqueDate(event.metadata.date_creation as string)
-                               : `${formatHistoriqueDate(event.created_at)} ${formatHistoriqueTime(event.created_at)}`}
-                           </div>
-                           {event.description && <p className="text-xs text-gray-500 leading-relaxed">{event.description}</p>}
+                            <div className="text-sm font-semibold text-gray-800 mb-0.5">{getHistoriqueTitle(event.action)}</div>
+                            <div className="text-xs text-gray-400 mb-1">
+                              {event.action === 'DOSSIER_DEPOSE' && event.metadata?.date_creation
+                                ? formatHistoriqueDate(event.metadata.date_creation as string)
+                                : `${formatHistoriqueDate(event.created_at)} ${formatHistoriqueTime(event.created_at)}`}
+                            </div>
+                            {event.description && <p className="text-xs text-gray-500 leading-relaxed">{event.description}</p>}
                          </div>
                       </div>
                     ))}

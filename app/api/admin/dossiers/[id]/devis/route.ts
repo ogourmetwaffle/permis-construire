@@ -19,8 +19,21 @@ export async function POST(req: Request, context: any) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
 
-  const { montant, iban, bic, titulaire, reference, commentaire, send } = body || {}
+  const { montant, iban, bic, titulaire, reference, commentaire, send, mode_paiement, montant_acompte } = body || {}
   if (montant == null || Number.isNaN(Number(montant))) return NextResponse.json({ error: 'Montant invalide' }, { status: 400 })
+
+  const mode = String(mode_paiement || 'INTEGRAL').toUpperCase()
+  if (mode !== 'INTEGRAL' && mode !== 'ACOMPTE') return NextResponse.json({ error: 'Mode de paiement invalide' }, { status: 400 })
+
+  const acompteNum = mode === 'ACOMPTE' ? Number(montant_acompte) : 0
+  if (mode === 'ACOMPTE') {
+    if (acompteNum == null || Number.isNaN(acompteNum) || acompteNum <= 0) {
+      return NextResponse.json({ error: 'L\'acompte doit être supérieur à 0.' }, { status: 400 })
+    }
+    if (acompteNum >= Number(montant)) {
+      return NextResponse.json({ error: 'L\'acompte doit être strictement inférieur au montant total.' }, { status: 400 })
+    }
+  }
 
   try {
     let fetchRes
@@ -42,6 +55,8 @@ export async function POST(req: Request, context: any) {
       titulaire: titulaire ?? null,
       reference_virement: reference ?? null,
       commentaire_admin: typeof commentaire === 'string' ? `${dossier.commentaire_admin || ''}\n[Devis] ${commentaire}` : dossier.commentaire_admin || null,
+      mode_paiement: mode,
+      montant_acompte: acompteNum,
     }
 
     const shouldSend = send === undefined ? true : Boolean(send)
@@ -55,7 +70,7 @@ export async function POST(req: Request, context: any) {
 
     if (shouldSend) {
       try {
-        const paymentInfo = {
+        const paymentInfo: any = {
           mode: 'VIREMENT' as const,
           montant: Number(montant),
           currency: 'EUR',
@@ -63,6 +78,10 @@ export async function POST(req: Request, context: any) {
           bic: bic ?? undefined,
           titulaire: titulaire ?? undefined,
           reference: reference ?? (dossier.numero_dossier as string),
+        }
+        if (mode === 'ACOMPTE') {
+          paymentInfo.montant_acompte = acompteNum
+          paymentInfo.solde_restant = Number(montant) - acompteNum
         }
 
         try {
@@ -81,13 +100,19 @@ export async function POST(req: Request, context: any) {
       }
 
       try {
-        await recordHistorique(dossier.id, 'DEVIS_ENVOYE', 'Devis envoyé', 'ADMINISTRATION', {
+        const historiqueMetadata: Record<string, unknown> = {
           montant: Number(montant),
           reference: reference ?? dossier.numero_dossier,
           iban: iban ?? null,
           bic: bic ?? null,
           titulaire: titulaire ?? null,
-        })
+          mode_paiement: mode,
+        }
+        if (mode === 'ACOMPTE') {
+          historiqueMetadata.montant_acompte = acompteNum
+          historiqueMetadata.solde_restant = Number(montant) - acompteNum
+        }
+        await recordHistorique(dossier.id, 'DEVIS_ENVOYE', 'Devis envoyé', 'ADMINISTRATION', historiqueMetadata)
       } catch (err) {
         console.error('Error recording historique for devis', err)
       }

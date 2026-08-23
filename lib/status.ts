@@ -14,6 +14,7 @@ export type Status =
   | 'ARCHIVE'
   | 'TERMINE'
   | 'REFUSE'
+  | 'SOLDE_A_PAYER'
 
 export const STATUS = {
   DEVIS: 'DEVIS',
@@ -26,6 +27,7 @@ export const STATUS = {
   EN_ATTENTE_CLIENT: 'EN_ATTENTE_CLIENT',
   ARCHIVE: 'ARCHIVE',
   REFUSE: 'REFUSE',
+  SOLDE_A_PAYER: 'SOLDE_A_PAYER',
 } as const
 
 export const STATUS_ORDER: Status[] = [
@@ -140,6 +142,15 @@ export const STATUS_CONFIG: Record<Status, StatusConfig> = {
     showOnDashboard: false,
     order: 8,
   },
+  SOLDE_A_PAYER: {
+    label: 'Solde à payer',
+    icon: Clock,
+    badgeClass: 'bg-orange-50 text-orange-800 ring-orange-100',
+    textClass: 'text-orange-800',
+    borderClass: 'ring-orange-100',
+    showOnDashboard: true,
+    order: 9,
+  },
 }
 
 export const CLIENT_STATUS_LABELS: Record<Status, string> = {
@@ -153,6 +164,7 @@ export const CLIENT_STATUS_LABELS: Record<Status, string> = {
   ARCHIVE: 'Archivé',
   TERMINE: 'Terminé',
   REFUSE: 'Refusé',
+  SOLDE_A_PAYER: 'Solde à payer',
 }
 
 const LEGACY_MAP: Record<string, Status> = {

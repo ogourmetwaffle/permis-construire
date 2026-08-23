@@ -53,12 +53,21 @@ export async function POST(req: Request, context: any) {
       return NextResponse.json({ error: 'Statut du dossier non autorisé pour la confirmation de paiement' }, { status: 409 })
     }
 
+    const montantAcompte = Number(dossier.montant_acompte || 0)
+    const hasAcompte = montantAcompte > 0
+
     const updatePayload: Record<string, any> = {
-      paiement_effectue: true,
       date_paiement: parsedDate.toISOString(),
       reference_paiement: reference.trim(),
       commentaire_paiement: commentaire ?? null,
-      statut: 'NOUVEAU',
+    }
+
+    if (hasAcompte) {
+      updatePayload.paiement_effectue = false
+      updatePayload.statut = 'SOLDE_A_PAYER'
+    } else {
+      updatePayload.paiement_effectue = true
+      updatePayload.statut = 'NOUVEAU'
     }
 
     const updateRes = await supabaseAdmin.from('dossiers').update(updatePayload).eq('id', dossier.id).select()
@@ -74,7 +83,8 @@ export async function POST(req: Request, context: any) {
           dossier.numero_dossier,
           Number(dossier.montant) || undefined,
           'EUR',
-          reference.trim()
+          reference.trim(),
+          hasAcompte ? { mode: 'ACOMPTE', montant_acompte: montantAcompte, solde: Number(dossier.montant) - montantAcompte } : undefined
         )
       }
     } catch (err) {
@@ -82,11 +92,20 @@ export async function POST(req: Request, context: any) {
     }
 
     try {
-      await recordHistorique(dossier.id, 'PAIEMENT_CONFIRME', 'Paiement confirmé', 'ADMINISTRATION', {
+      const historiqueMetadata: Record<string, unknown> = {
         montant: Number(dossier.montant) || null,
         reference: reference.trim(),
         date_paiement: parsedDate.toISOString(),
-      })
+      }
+      if (hasAcompte) {
+        await recordHistorique(dossier.id, 'ACOMPTE_PAYE', 'Accompte payé', 'ADMINISTRATION', {
+          ...historiqueMetadata,
+          montant_acompte: montantAcompte,
+          solde_restant: Number(dossier.montant) - montantAcompte,
+        })
+      } else {
+        await recordHistorique(dossier.id, 'PAIEMENT_CONFIRME', 'Paiement confirmé', 'ADMINISTRATION', historiqueMetadata)
+      }
     } catch (err) {
       console.error('Error recording historique for payment confirmation', err)
     }
@@ -97,5 +116,3 @@ export async function POST(req: Request, context: any) {
     return NextResponse.json({ error: 'Server error' }, { status: 500 })
   }
 }
-
-

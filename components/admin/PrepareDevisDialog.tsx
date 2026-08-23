@@ -9,7 +9,7 @@ type Props = {
   open: boolean
   onClose: () => void
   dossierId: number | string
-  initial: { montant?: number | null; iban?: string | null; bic?: string | null; titulaire?: string | null; reference?: string | null; commentaire?: string | null }
+  initial: { montant?: number | null; iban?: string | null; bic?: string | null; titulaire?: string | null; reference?: string | null; commentaire?: string | null; mode_paiement?: string | null; montant_acompte?: number | null }
   onSaved?: (updated: any) => void
 }
 
@@ -22,6 +22,8 @@ export default function PrepareDevisDialog({ open, onClose, dossierId, initial, 
   const [selectedBankIndex, setSelectedBankIndex] = useState<number | null>(null)
   const [reference, setReference] = useState(initial?.reference ?? '')
   const [commentaire, setCommentaire] = useState(initial?.commentaire ?? '')
+  const [modePaiement, setModePaiement] = useState<'INTEGRAL' | 'ACOMPTE'>((initial?.mode_paiement === 'ACOMPTE' || (initial?.montant_acompte && Number(initial.montant_acompte) > 0)) ? 'ACOMPTE' : 'INTEGRAL')
+  const [montantAcompte, setMontantAcompte] = useState<number | null>(initial?.montant_acompte ?? null)
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -31,17 +33,17 @@ export default function PrepareDevisDialog({ open, onClose, dossierId, initial, 
     setTitulaire(initial?.titulaire ?? '')
     setReference(initial?.reference ?? (initial?.reference ?? ''))
     setCommentaire(initial?.commentaire ?? '')
+    setModePaiement((initial?.mode_paiement === 'ACOMPTE' || (initial?.montant_acompte && Number(initial.montant_acompte) > 0)) ? 'ACOMPTE' : 'INTEGRAL')
+    setMontantAcompte(initial?.montant_acompte ?? null)
     setSaving(false)
   }, [initial, open])
 
   useEffect(() => {
-    // if fields are empty, try to fetch default params
     const needs = !iban && !bic && !titulaire
     if (!open || !needs) return
     let mounted = true
     ;(async () => {
       try {
-        // prefer admin params endpoint (requires auth) to get bank_accounts
         const session = await supabase.auth.getSession()
         const token = session.data?.session?.access_token
         const headers: Record<string, string> = {}
@@ -55,18 +57,15 @@ export default function PrepareDevisDialog({ open, onClose, dossierId, initial, 
           if (it && it.cle) items[it.cle] = it
         }
         if (!mounted) return
-        // existing single values fallback
         setIban(prev => prev || items['iban'] || '')
         setBic(prev => prev || items['bic'] || '')
         setTitulaire(prev => prev || items['titulaire'] || '')
-        // parse bank_accounts JSON if present
         const raw = items['bank_accounts']?.valeur
         if (raw) {
           try {
             const arr = JSON.parse(raw)
             if (Array.isArray(arr)) {
               setBankAccounts(arr)
-              // if no per-dossier iban, preselect first
               if ((!iban || !bic || !titulaire) && arr.length > 0) {
                 setSelectedBankIndex(0)
                 const a = arr[0]
@@ -88,15 +87,53 @@ export default function PrepareDevisDialog({ open, onClose, dossierId, initial, 
 
   if (!open) return null
 
+  const total = Number(montant) || 0
+  const acompte = Number(montantAcompte) || 0
+  const solde = total - acompte
+
+  const validate = (): string | null => {
+    if (montant == null || Number.isNaN(Number(montant)) || total <= 0) {
+      return 'Le montant total doit être supérieur à 0.'
+    }
+    if (modePaiement === 'ACOMPTE') {
+      if (montantAcompte == null || Number.isNaN(Number(montantAcompte))) {
+        return 'L\'acompte est obligatoire.'
+      }
+      if (acompte <= 0) {
+        return 'L\'acompte doit être supérieur à 0.'
+      }
+      if (acompte >= total) {
+        return 'L\'acompte doit être strictement inférieur au montant total.'
+      }
+    }
+    return null
+  }
+
   const saveDevis = async (send = false) => {
-    if (montant == null || Number.isNaN(Number(montant))) { toast.error('Montant invalide'); return }
+    const error = validate()
+    if (error) { toast.error(error); return }
     setSaving(true)
     try {
       const session = await supabase.auth.getSession()
       const token = session.data?.session?.access_token
       if (!token) { toast.error('Session expirée — reconnectez-vous'); setSaving(false); return }
 
-      const body = { montant, iban: iban || null, bic: bic || null, titulaire: titulaire || null, reference: reference || undefined, commentaire: commentaire || undefined, send: send }
+      const body: any = {
+        montant: Number(montant),
+        iban: iban || null,
+        bic: bic || null,
+        titulaire: titulaire || null,
+        reference: reference || undefined,
+        commentaire: commentaire || undefined,
+        send: send,
+      }
+      if (modePaiement === 'ACOMPTE') {
+        body.mode_paiement = 'ACOMPTE'
+        body.montant_acompte = Number(montantAcompte)
+      } else {
+        body.mode_paiement = 'INTEGRAL'
+        body.montant_acompte = 0
+      }
 
       const resp = await fetch(`/api/admin/dossiers/${encodeURIComponent(String(dossierId))}/devis`, {
         method: 'POST',
@@ -142,10 +179,50 @@ export default function PrepareDevisDialog({ open, onClose, dossierId, initial, 
               <button type="button" onClick={() => { setSelectedBankIndex(null); setIban(''); setBic(''); setTitulaire('') }} className="text-sm text-slate-600 px-2 py-1 rounded hover:bg-slate-100">Effacer</button>
             </div>
           </div>
+
           <div>
             <label className="text-xs text-gray-500">Montant (€) <span className="text-red-600">*</span></label>
-            <input type="number" value={montant ?? ''} onChange={(e) => setMontant(e.target.value ? Number(e.target.value) : null)} className="mt-1 block w-full rounded border-gray-200 shadow-sm px-2 py-1.5" required />
+            <input type="number" value={montant ?? ''} onChange={(e) => { setMontant(e.target.value ? Number(e.target.value) : null); if (modePaiement === 'ACOMPTE') { const v = e.target.value ? Number(e.target.value) : 0; if (montantAcompte != null && Number(montantAcompte) >= v) setMontantAcompte(null) } }} className="mt-1 block w-full rounded border-gray-200 shadow-sm px-2 py-1.5" required />
           </div>
+
+          <div>
+            <label className="text-xs text-gray-500 mb-1 block">Mode de paiement</label>
+            <div className="flex gap-4">
+              <label className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors ${modePaiement === 'INTEGRAL' ? 'border-[#1e3a5f] bg-[#1e3a5f]/5' : 'border-gray-200 hover:bg-gray-50'}`}>
+                <input type="radio" name="modePaiement" value="INTEGRAL" checked={modePaiement === 'INTEGRAL'} onChange={() => { setModePaiement('INTEGRAL'); setMontantAcompte(null); }} className="accent-[#1e3a5f]" />
+                <span className="text-sm font-medium text-gray-800">Paiement intégral</span>
+              </label>
+              <label className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors ${modePaiement === 'ACOMPTE' ? 'border-[#1e3a5f] bg-[#1e3a5f]/5' : 'border-gray-200 hover:bg-gray-50'}`}>
+                <input type="radio" name="modePaiement" value="ACOMPTE" checked={modePaiement === 'ACOMPTE'} onChange={() => setModePaiement('ACOMPTE')} className="accent-[#1e3a5f]" />
+                <span className="text-sm font-medium text-gray-800">Paiement avec acompte</span>
+              </label>
+            </div>
+          </div>
+
+          {modePaiement === 'ACOMPTE' && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-gray-500">Montant de l'acompte (€) <span className="text-red-600">*</span></label>
+                <input type="number" value={montantAcompte ?? ''} onChange={(e) => { const v = e.target.value ? Number(e.target.value) : null; setMontantAcompte(v); if (v != null && v >= total) { toast.error('L\'acompte doit être strictement inférieur au montant total.'); } }} className={`mt-1 block w-full rounded border-gray-200 shadow-sm px-2 py-1.5 ${montantAcompte != null && (montantAcompte <= 0 || montantAcompte >= total) ? 'border-red-300' : ''}`} required />
+              </div>
+              <div className="flex flex-col justify-end">
+                <div className="bg-[#f5f6f8] rounded-lg border border-gray-100 p-3 space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-500">Total</span>
+                    <span className="font-semibold text-gray-800">{total.toLocaleString('fr-FR')} €</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-500">Acompte</span>
+                    <span className="font-semibold text-gray-800">{acompte.toLocaleString('fr-FR')} €</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs pt-1 border-t border-gray-200">
+                    <span className="text-gray-700 font-semibold">Solde restant</span>
+                    <span className="font-bold text-[#1e3a5f]">{solde.toLocaleString('fr-FR')} €</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div>
             <label className="text-xs text-gray-500">Titulaire</label>
@@ -177,6 +254,12 @@ export default function PrepareDevisDialog({ open, onClose, dossierId, initial, 
             <h4 className="font-semibold mb-1">Aperçu du devis</h4>
             <div className="text-sm">Numéro: <strong>{initial?.reference ?? dossierId}</strong></div>
             <div className="text-sm">Montant: <strong>{montant ?? 0} €</strong></div>
+            {modePaiement === 'ACOMPTE' && (
+              <>
+                <div className="text-sm">Acompte: <strong>{acompte.toLocaleString('fr-FR')} €</strong></div>
+                <div className="text-sm">Solde restant: <strong>{solde.toLocaleString('fr-FR')} €</strong></div>
+              </>
+            )}
             <div className="text-sm">Titulaire: <strong>{titulaire || '-'}</strong></div>
             <div className="text-sm">IBAN: <strong>{iban || '-'}</strong></div>
             <div className="text-sm">BIC: <strong>{bic || '-'}</strong></div>

@@ -52,6 +52,7 @@ type Dossier = {
   description?: string | null
   montant?: number | null
   mode_paiement?: string | null
+  montant_acompte?: number | null
   paiement_effectue?: boolean
   iban?: string | null
   bic?: string | null
@@ -457,6 +458,14 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
         detail: `Montant attendu : ${dossier.montant ?? 0} €`,
       }
     }
+    if (status === STATUS.SOLDE_A_PAYER) {
+      return {
+        label: 'Solde restant à payer',
+        action: () => {},
+        variant: 'info' as const,
+        detail: `Solde : ${(Number(dossier.montant) - Number(dossier.montant_acompte || 0)).toLocaleString('fr-FR')} €`,
+      }
+    }
     if (status === STATUS.NOUVEAU) {
       return {
         label: 'Dossier prêt à être traité',
@@ -784,7 +793,7 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Montant</div>
+                    <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Montant total</div>
                     <div className="text-lg font-bold text-gray-900">{dossier.montant ?? 0} €</div>
                   </div>
                   <div>
@@ -793,17 +802,33 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
                       <span className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[11px] font-semibold bg-green-50 text-green-700 ring-1 ring-inset ring-green-100">
                         <CheckCircle size={12} /> Payé
                       </span>
+                    ) : status === STATUS.SOLDE_A_PAYER ? (
+                      <span className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[11px] font-semibold bg-orange-50 text-orange-700 ring-1 ring-inset ring-orange-100">
+                        <Clock size={12} /> Solde à payer
+                      </span>
                     ) : (
                       <span className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-100">
                         <XCircle size={12} /> Non payé
                       </span>
                     )}
                   </div>
+                  {dossier.montant_acompte && Number(dossier.montant_acompte) > 0 && (
+                    <>
+                      <div>
+                        <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Acompte</div>
+                        <div className="text-sm font-medium text-gray-800">{Number(dossier.montant_acompte).toLocaleString('fr-FR')} €</div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Solde restant</div>
+                        <div className="text-sm font-medium text-gray-800">{(Number(dossier.montant) - Number(dossier.montant_acompte)).toLocaleString('fr-FR')} €</div>
+                      </div>
+                    </>
+                  )}
                   <div>
                     <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Mode</div>
                     <div className="text-sm text-gray-800">{dossier.mode_paiement || '—'}</div>
                   </div>
-                  {dossier.paiement_effectue && (
+                  {(dossier.paiement_effectue || status === STATUS.SOLDE_A_PAYER) && (
                     <>
                       <div>
                         <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Date du paiement</div>
@@ -839,6 +864,7 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
                     <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-2">
                       {(() => {
                         const last = declarations[0]
+                        const expectedAmount = (dossier.montant_acompte && Number(dossier.montant_acompte) > 0) ? Number(dossier.montant_acompte) : Number(dossier.montant || 0)
                         return (
                           <>
                             <div className="flex items-center justify-between">
@@ -855,13 +881,38 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
                             </div>
                             <div className="flex items-center justify-between">
                               <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Montant attendu</span>
-                              <span className="text-sm font-medium text-gray-800">{dossier.montant ?? 0} €</span>
+                              <span className="text-sm font-medium text-gray-800">{expectedAmount.toLocaleString('fr-FR')} €</span>
                             </div>
                           </>
                         )
                       })()}
                     </div>
                   )}
+                </div>
+              )}
+
+              {status === STATUS.SOLDE_A_PAYER && (
+                <div className="bg-[#f5f6f8] rounded-xl border border-gray-100 p-5">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-7 h-7 rounded-lg bg-green-50 flex items-center justify-center shrink-0">
+                      <CheckCircle size={14} className="text-green-600" />
+                    </div>
+                    <h3 className="text-sm font-semibold text-gray-800">Accompte payé</h3>
+                  </div>
+                  <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Accompte payé</span>
+                      <span className="text-sm font-medium text-green-700">{Number(dossier.montant_acompte || 0).toLocaleString('fr-FR')} €</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Montant total</span>
+                      <span className="text-sm font-medium text-gray-800">{Number(dossier.montant || 0).toLocaleString('fr-FR')} €</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Solde restant</span>
+                      <span className="text-sm font-medium text-gray-800">{(Number(dossier.montant || 0) - Number(dossier.montant_acompte || 0)).toLocaleString('fr-FR')} €</span>
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -887,7 +938,7 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
                 </div>
               )}
 
-              {!dossier.paiement_effectue && (
+              {!dossier.paiement_effectue && status !== STATUS.SOLDE_A_PAYER && (
                 <button
                   type="button"
                   onClick={() => setShowPaymentDialog(true)}

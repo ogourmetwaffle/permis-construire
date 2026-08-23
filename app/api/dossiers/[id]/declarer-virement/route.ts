@@ -25,7 +25,7 @@ export async function POST(req: any, context: any) {
 
     const { data: dossier, error } = await supabaseAdmin
       .from('dossiers')
-      .select('id, numero_dossier, mot_de_passe_suivi, statut')
+      .select('id, numero_dossier, mot_de_passe_suivi, statut, montant, montant_acompte')
       .eq('id', dossierId)
       .maybeSingle()
 
@@ -36,6 +36,11 @@ export async function POST(req: any, context: any) {
     if (!dossier) return NextResponse.json({ error: 'Dossier not found' }, { status: 404 })
 
     if (String(dossier.mot_de_passe_suivi || '') !== String(mot_de_passe)) return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
+
+    const montantAcompte = Number(dossier.montant_acompte || 0)
+    if (montantAcompte > 0 && montantNum !== montantAcompte) {
+      return NextResponse.json({ error: `Le montant déclaré (${montantNum} €) ne correspond pas au montant attendu (${montantAcompte} €).` }, { status: 400 })
+    }
 
     const insertPayload: Record<string, unknown> = {
       dossier_id: dossierId,

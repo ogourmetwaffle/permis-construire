@@ -48,6 +48,8 @@ export type PaymentInfo = {
   titulaire?: string
   reference?: string
   transactionId?: string
+  montant_acompte?: number
+  solde_restant?: number
 }
 
 export async function sendClientConfirmationEmail(
@@ -84,33 +86,38 @@ export async function sendClientConfirmationEmail(
   }
 
   const subject = `Instructions de paiement par virement — Dossier ${numeroDossier}`
-  const amountLine = paymentInfo?.montant ? `<p><strong>Montant à payer :</strong> ${paymentInfo.montant} ${paymentInfo.currency ?? 'EUR'}</p>` : ''
+  const acompteLine = paymentInfo?.montant_acompte ? `<p><strong>Acompte à régler :</strong> ${paymentInfo.montant_acompte} ${paymentInfo.currency ?? 'EUR'}</p>` : ''
+  const totalLine = paymentInfo?.montant ? `<p><strong>Montant total du devis :</strong> ${paymentInfo.montant} ${paymentInfo.currency ?? 'EUR'}</p>` : ''
+  const soldeLine = paymentInfo?.solde_restant ? `<p><strong>Solde restant :</strong> ${paymentInfo.solde_restant} ${paymentInfo.currency ?? 'EUR'}</p>` : ''
   const virementDetails = `
     <h3>Coordonnées bancaires</h3>
     <p><strong>IBAN :</strong> ${paymentInfo?.iban ?? '—'}</p>
     <p><strong>BIC :</strong> ${paymentInfo?.bic ?? '—'}</p>
     <p><strong>Titulaire :</strong> ${paymentInfo?.titulaire ?? '—'}</p>
-    <p><strong>Référence à indiquer :</strong> ${paymentInfo?.reference ?? numeroDossier}</p>
-    <p>Merci d'effectuer le virement avec la référence indiquée afin que nous puissions retrouver rapidement votre paiement.</p>
+    <p><strong>Référence :</strong> ${paymentInfo?.reference ?? numeroDossier}</p>
   `
-  const html = `
-    <html>
-      <body style="font-family: Arial, sans-serif; color: #111;">
-        <h2>Votre devis est disponible</h2>
-        <p>Bonjour ${prenom} ${nom},</p>
-        <p>Nous avons étudié votre dossier et vous transmettons un devis personnalisé.</p>
-        ${amountLine}
-        ${virementDetails}
-        <p>Vous pouvez suivre l'avancement de votre dossier depuis votre espace de suivi.</p>
-        <p>Cordialement,<br/>${sender().name}</p>
-      </body>
-    </html>
-  `
-  const textParts = [
+   const html = `
+      <html>
+        <body style="font-family: Arial, sans-serif; color: #111;">
+          <h2>Instructions de paiement</h2>
+          <p>Bonjour ${prenom} ${nom},</p>
+          <p>Nous avons étudié votre dossier et vous transmettons un devis personnalisé.</p>
+          ${acompteLine}
+          ${totalLine}
+          ${soldeLine}
+          ${virementDetails}
+          <p>Vous pouvez suivre l'avancement de votre dossier depuis votre espace de suivi.</p>
+          <p>Cordialement,<br/>${sender().name}</p>
+        </body>
+      </html>
+    `
+   const textParts = [
     `Bonjour ${prenom} ${nom},`,
     'Nous avons étudié votre dossier et vous transmettons un devis personnalisé.',
     `Numéro de dossier : ${numeroDossier}`,
-    paymentInfo?.montant ? `Montant à payer : ${paymentInfo.montant} ${paymentInfo.currency ?? 'EUR'}` : '',
+    paymentInfo?.montant_acompte ? `Acompte à régler : ${paymentInfo.montant_acompte} ${paymentInfo.currency ?? 'EUR'}` : '',
+    paymentInfo?.montant ? `Montant total du devis : ${paymentInfo.montant} ${paymentInfo.currency ?? 'EUR'}` : '',
+    paymentInfo?.solde_restant ? `Solde restant : ${paymentInfo.solde_restant} ${paymentInfo.currency ?? 'EUR'}` : '',
     'Coordonnées bancaires :',
     `IBAN: ${paymentInfo?.iban ?? '—'}`,
     `BIC: ${paymentInfo?.bic ?? '—'}`,
@@ -177,16 +184,21 @@ export async function sendPaymentConfirmationEmail(
   numeroDossier: string,
   montant?: number,
   currency?: string,
-  reference?: string
+  reference?: string,
+  acompteInfo?: { mode?: 'ACOMPTE'; montant_acompte?: number; solde?: number }
 ): Promise<EmailResult> {
-  const amountLine = montant ? `<p><strong>Montant payé :</strong> ${montant} ${currency ?? 'EUR'}</p>` : ''
+  const amountLine = montant ? `<p><strong>Montant total :</strong> ${montant} ${currency ?? 'EUR'}</p>` : ''
+  const acompteLine = acompteInfo?.montant_acompte ? `<p><strong>Accompte payé :</strong> ${acompteInfo.montant_acompte} ${currency ?? 'EUR'}</p>` : ''
+  const soldeLine = acompteInfo?.solde ? `<p><strong>Solde restant :</strong> ${acompteInfo.solde} ${currency ?? 'EUR'}</p>` : ''
 
   const html = `
     <html>
       <body style="font-family: Arial, sans-serif; color: #111;">
         <h2>Paiement confirmé</h2>
         <p>Merci, votre paiement a bien été enregistré.</p>
+        ${acompteLine}
         ${amountLine}
+        ${soldeLine}
         <p><strong>Numéro de dossier :</strong><br/>${numeroDossier}</p>
         <p><strong>Référence :</strong><br/>${reference ?? '—'}</p>
         <p>Cordialement,<br/>${sender().name}</p>
@@ -194,12 +206,14 @@ export async function sendPaymentConfirmationEmail(
     </html>
   `
 
+  const textContent = `Votre paiement a été enregistré.\n\nNuméro de dossier: ${numeroDossier}\n${acompteInfo?.montant_acompte ? `Accompte payé: ${acompteInfo.montant_acompte} ${currency ?? 'EUR'}\n` : ''}${montant ? `Montant total: ${montant} ${currency ?? 'EUR'}\n` : ''}${acompteInfo?.solde ? `Solde restant: ${acompteInfo.solde} ${currency ?? 'EUR'}\n` : ''}Référence: ${reference ?? '—'}`
+
   const payload = {
     sender: sender(),
     to: [{ email }],
     subject: `Paiement confirmé — Dossier ${numeroDossier}`,
     htmlContent: html,
-    textContent: `Votre paiement a été enregistré.\n\nNuméro de dossier: ${numeroDossier}\nRéférence: ${reference ?? '—'}${montant ? `\nMontant: ${montant} ${currency ?? 'EUR'}` : ''}`
+    textContent
   }
 
   const result = await sendEmailRaw(payload)
