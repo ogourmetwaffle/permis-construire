@@ -4,6 +4,7 @@ import ReassuranceBar from '@/components/sections/ReassuranceBar'
 import Showcase from '@/components/sections/Showcase'
 import Advantages from '@/components/sections/Advantages'
 import ProcessSteps from '@/components/sections/ProcessSteps'
+import RealisationsSection from '@/components/sections/RealisationsSection'
 import StatsGallery from '@/components/sections/StatsGallery'
 import FAQ from '@/components/FAQ'
 import CTASection from '@/components/sections/CTASection'
@@ -21,6 +22,7 @@ export default function Home() {
         <Showcase />
         <Advantages />
         <ProcessSteps />
+        <RealisationsSection />
         <StatsGallery />
         <FAQ />
         <CTASection />
