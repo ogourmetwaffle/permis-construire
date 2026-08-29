@@ -97,8 +97,8 @@ export default function StatsGallery() {
         </Reveal>
 
         <Reveal>
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[55fr_45fr] lg:grid-rows-2 lg:gap-5">
-            <figure className="group relative aspect-[4/5] overflow-hidden rounded-xl bg-gray-100 lg:row-span-2 lg:aspect-auto">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[55fr_45fr] lg:grid-rows-2 lg:gap-5 lg:h-[460px] xl:h-[540px]">
+            <figure className="group relative aspect-[4/5] overflow-hidden rounded-xl bg-gray-100 lg:row-span-2 lg:aspect-auto lg:min-h-0">
               <Image
                 src={main.src}
                 alt={main.alt}
@@ -110,7 +110,7 @@ export default function StatsGallery() {
               <Caption title={main.title} category={main.category} icon={main.icon} />
             </figure>
 
-            <figure className="group relative aspect-[16/10] overflow-hidden rounded-xl bg-gray-100">
+            <figure className="group relative aspect-[16/10] overflow-hidden rounded-xl bg-gray-100 lg:aspect-auto lg:min-h-0">
               <Image
                 src={rest[0].src}
                 alt={rest[0].alt}
@@ -121,11 +121,11 @@ export default function StatsGallery() {
               <Caption title={rest[0].title} category={rest[0].category} icon={rest[0].icon} />
             </figure>
 
-            <div className="grid grid-cols-2 gap-4 lg:gap-5">
+            <div className="grid grid-cols-2 gap-4 lg:gap-5 lg:min-h-0">
               {rest.slice(1).map((item) => (
                 <figure
                   key={item.src}
-                  className="group relative aspect-[4/3] overflow-hidden rounded-xl bg-gray-100"
+                  className="group relative aspect-[4/3] overflow-hidden rounded-xl bg-gray-100 lg:aspect-auto lg:min-h-0"
                 >
                   <Image
                     src={item.src}
