@@ -16,12 +16,14 @@ interface BeforeAfterSliderProps {
   items: BeforeAfterItem[]
   defaultIndex?: number
   defaultPosition?: number
+  variant?: 'default' | 'compact'
 }
 
 export default function BeforeAfterSlider({
   items,
   defaultIndex = 0,
   defaultPosition = 20,
+  variant = 'default',
 }: BeforeAfterSliderProps) {
   const [index, setIndex] = useState(defaultIndex)
   const [position, setPosition] = useState(defaultPosition)
@@ -137,18 +139,27 @@ export default function BeforeAfterSlider({
         </div>
       </div>
 
-      <div className="flex gap-3 mt-4 justify-center flex-wrap">
+      <div className={variant === 'compact' ? 'flex gap-4 mt-4 justify-center flex-wrap' : 'flex gap-3 mt-4 justify-center flex-wrap'}>
         {items.map((item, i) => (
           <button
             key={item.id}
             onClick={() => selectItem(i)}
-            className={`rounded-lg overflow-hidden border-2 transition-colors ${i === index ? 'border-[#7b2020]' : 'border-transparent hover:border-gray-200'}`}
+            className={variant === 'compact' ? 'flex flex-col items-center gap-1.5 group' : `rounded-lg overflow-hidden border-2 transition-colors ${i === index ? 'border-[#7b2020]' : 'border-transparent hover:border-gray-200'}`}
             aria-label={`Voir ${item.label}`}
           >
-            <div className="relative w-20 h-14 sm:w-24 sm:h-16">
-              <Image src={item.afterSrc} alt={item.label} fill className="object-cover" />
-            </div>
-            <span className="block text-xs text-center py-1.5 text-gray-600 font-medium">{item.label}</span>
+            {variant === 'compact' ? (
+              <>
+                <span className={`block w-3 h-3 rounded-full transition-colors ${i === index ? 'bg-[#7b2020]' : 'bg-gray-300 group-hover:bg-gray-400'}`} />
+                <span className={`block text-[11px] font-medium ${i === index ? 'text-[#0c1c33]' : 'text-gray-500'}`}>{item.label}</span>
+              </>
+            ) : (
+              <>
+                <div className="relative w-20 h-14 sm:w-24 sm:h-16">
+                  <Image src={item.afterSrc} alt={item.label} fill className="object-cover" />
+                </div>
+                <span className="block text-xs text-center py-1.5 text-gray-600 font-medium">{item.label}</span>
+              </>
+            )}
           </button>
         ))}
       </div>
