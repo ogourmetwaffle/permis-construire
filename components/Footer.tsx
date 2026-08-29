@@ -22,8 +22,8 @@ export default function Footer() {
   const year = new Date().getFullYear()
 
   return (
-    <footer className="bg-[#0f1f35] text-white">
-      <div className="max-w-7xl mx-auto px-6 py-16">
+    <footer className="bg-[#0b1622] text-white">
+      <div className="max-w-7xl mx-auto px-6 py-14">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
 
           {/* Brand */}
@@ -32,9 +32,9 @@ export default function Footer() {
               <Image
                 src="/logo.png"
                 alt="Esquiss Habitat"
-                width={40}
-                height={40}
-                className="rounded-lg object-contain"
+                width={36}
+                height={36}
+                className="rounded object-contain"
               />
               <div className="leading-tight">
                 <div className="font-bold text-white">Esquiss Habitat</div>
@@ -48,7 +48,7 @@ export default function Footer() {
 
           {/* Navigation */}
           <div>
-            <h3 className="text-white/80 text-sm font-semibold uppercase tracking-widest mb-5">Navigation</h3>
+            <h3 className="text-white/80 text-xs font-semibold uppercase tracking-widest mb-5">Navigation</h3>
             <ul className="space-y-3">
               {navLinks.map((link) => (
                 <li key={link.href}>
@@ -62,7 +62,7 @@ export default function Footer() {
 
           {/* Services */}
           <div>
-            <h3 className="text-white/80 text-sm font-semibold uppercase tracking-widest mb-5">Prestations</h3>
+            <h3 className="text-white/80 text-xs font-semibold uppercase tracking-widest mb-5">Prestations</h3>
             <ul className="space-y-3">
               {services.map((s) => (
                 <li key={s}>
@@ -76,7 +76,7 @@ export default function Footer() {
 
           {/* Contact */}
           <div>
-            <h3 className="text-white/80 text-sm font-semibold uppercase tracking-widest mb-5">Contact</h3>
+            <h3 className="text-white/80 text-xs font-semibold uppercase tracking-widest mb-5">Contact</h3>
             <ul className="space-y-3 text-sm text-white/50">
               <li>
                 <a href="tel:+33750896486" className="hover:text-white transition-colors">+33 7 50 89 64 86</a>
@@ -87,7 +87,7 @@ export default function Footer() {
                 </a>
               </li>
               <li>
-                <Link href="/deposer-dossier" className="inline-flex items-center gap-2 text-[#a8c8e8] hover:text-white transition-colors font-medium">
+                <Link href="/deposer-dossier" className="inline-flex items-center gap-2 text-white/70 hover:text-white transition-colors font-medium">
                   Déposer mon dossier →
                 </Link>
               </li>

@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react'
 import FileUpload from './FileUpload'
-import Button from '@/components/Button'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { STATUS } from '@/lib/status'
@@ -177,5 +176,20 @@ export default function DossierForm() {
         </div>
       </div>
     </form>
+  )
+}
+
+// Simple local Button replacement to avoid external dependency
+type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & { loading?: boolean }
+
+const Button: React.FC<ButtonProps> = ({ loading, children, className = '', ...props }) => {
+  return (
+    <button
+      {...props}
+      disabled={props.disabled || loading}
+      className={`${className} ${loading ? 'opacity-60 pointer-events-none' : ''}`}
+    >
+      {loading ? 'Chargement...' : children}
+    </button>
   )
 }

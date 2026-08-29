@@ -2,14 +2,14 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #1a1a2e;
+  --foreground: #111827;
   color-scheme: light;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-work-sans);
   --font-mono: var(--font-geist-mono);
 }
 
@@ -20,7 +20,7 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans, Arial, Helvetica, sans-serif);
+  font-family: var(--font-work-sans, Arial, Helvetica, sans-serif);
 }
 
 /* Accessibility – focus ring */
@@ -33,15 +33,18 @@ a:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.25);
+  box-shadow: 0 0 0 3px rgba(12, 28, 51, 0.25);
   border-radius: 6px;
 }
 
 /* Design tokens – Esquiss Habitat */
 :root {
-  --eh-primary: #1e3a5f;
+  --eh-navy: #0c1c33;
+  --eh-navy-light: #1e3a5f;
   --eh-bordeaux: #7b2020;
-  --eh-light: #f5f6f8;
+  --eh-bordeaux-hover: #6a1a1a;
+  --eh-light: #f7f8fa;
+  --eh-border: #e5e7eb;
 }
 
 /* Form controls */
@@ -55,8 +58,8 @@ textarea {
 
 input:focus, select:focus, textarea:focus {
   outline: none;
-  box-shadow: 0 0 0 4px rgba(99,102,241,0.08), 0 0 0 1px rgba(99,102,241,0.12);
-  border-color: rgba(99,102,241,0.8);
+  box-shadow: 0 0 0 4px rgba(12, 28, 51, 0.08), 0 0 0 1px rgba(12, 28, 51, 0.12);
+  border-color: rgba(12, 28, 51, 0.8);
 }
 
 button[disabled] {
@@ -64,25 +67,22 @@ button[disabled] {
   cursor: not-allowed;
 }
 
-/* Wizard fade-in animation */
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(8px); }
+/* Scroll reveal animation */
+@keyframes reveal {
+  from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.animate-fade-in {
-  animation: fade-in 0.25s ease-out both;
+.reveal {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
-}
-
-/* subtle floating animation used for hero illustration */
-@keyframes float-slow {
-  0% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
-  100% { transform: translateY(0); }
-}
-.animate-float-slow {
-  animation: float-slow 9s ease-in-out infinite;
+  .reveal { opacity: 1; transform: none; }
 }

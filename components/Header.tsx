@@ -30,14 +30,14 @@ export default function Header() {
   }, [])
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 transition-all duration-300 bg-white/95 backdrop-blur-md shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 h-24 flex items-center justify-between">
+    <header className="fixed top-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-sm border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3 shrink-0">
           <Image
             src="/logo.png"
             alt="Esquiss Habitat"
-            width={80}
-            height={80}
+            width={72}
+            height={72}
             className="rounded-lg object-contain"
             priority
           />
@@ -51,12 +51,12 @@ export default function Header() {
             const isSuivi = link.href === '/suivi'
 
             if (isSuivi) {
-              const activeClass = isActive ? 'border-[#1e3a5f] text-[#1e3a5f] bg-[#f5f6f8]' : 'border-gray-200 text-gray-700 hover:text-[#1e3a5f] hover:border-[#1e3a5f]/30 hover:bg-[#f5f6f8]'
+              const activeClass = isActive ? 'border-[#0c1c33] text-[#0c1c33] bg-[#f7f8fa]' : 'border-gray-200 text-gray-700 hover:text-[#0c1c33] hover:border-[#0c1c33]/30 hover:bg-[#f7f8fa]'
               return (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`inline-flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-lg border transition-all ${activeClass}`}
+                  className={`inline-flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-lg border transition-colors ${activeClass}`}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -70,7 +70,7 @@ export default function Header() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`text-sm font-medium transition-all px-2 py-1 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#1e3a5f] ${isActive ? 'text-[#7b2020] font-semibold bg-white shadow-md' : 'text-gray-700 hover:text-[#1e3a5f] hover:shadow-md hover:bg-white/80'}`}
+                className={`text-sm font-medium transition-colors px-2 py-1 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#0c1c33] ${isActive ? 'text-[#7b2020] font-semibold' : 'text-gray-700 hover:text-[#0c1c33]'}`}
               >
                 {link.label}
               </Link>
@@ -78,7 +78,7 @@ export default function Header() {
           })}
           <Link
             href="/deposer-dossier"
-            className="ml-2 px-5 py-2.5 bg-[#7b2020] hover:bg-[#6a1a1a] text-white text-sm font-semibold rounded-lg shadow-sm transition-all hover:shadow-md"
+            className="ml-2 px-5 py-2.5 bg-[#7b2020] hover:bg-[#6a1a1a] text-white text-sm font-semibold rounded-lg transition-colors"
           >
             Déposer mon dossier
           </Link>
