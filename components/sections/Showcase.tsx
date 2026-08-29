@@ -38,9 +38,9 @@ const items = [
 
 export default function Showcase() {
   return (
-    <section className="bg-white" aria-label="Présentation et réalisations">
-      <div className="max-w-7xl mx-auto px-6 py-12 sm:py-16">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-12 items-center">
+    <section className="bg-[#f7f8fa]" aria-label="Présentation et réalisations">
+      <div className="max-w-7xl mx-auto px-6 py-16 sm:py-24">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           
           {/* Colonne éditoriale */}
           <div className="max-w-xl">
@@ -77,8 +77,8 @@ export default function Showcase() {
 
           {/* Colonne comparateur compact */}
           <div className="flex justify-center lg:justify-end">
-            <div className="w-full max-w-[400px]">
-              <BeforeAfterSlider items={items} defaultPosition={50} variant="compact" />
+            <div className="w-full max-w-[360px]">
+              <BeforeAfterSlider items={items} defaultPosition={20} variant="compact" />
             </div>
           </div>
         </div>
