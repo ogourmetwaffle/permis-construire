@@ -8,7 +8,7 @@ const items = [
   },
   {
     icon: FolderOpen,
-    title: '+12 000 dossiers réalisés',
+    title: '+1000 dossiers réalisés',
     desc: 'Pour la construction de piscines, garages, pergolas, extensions, maisons',
   },
   {
@@ -25,9 +25,9 @@ const items = [
 
 export default function ReassuranceBar() {
   return (
-    <section className="bg-white border-b border-gray-100" aria-label="Réassurance">
+    <section className="bg-white" aria-label="Réassurance">
       <div className="max-w-7xl mx-auto px-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-gray-100">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-gray-200">
           {items.map((item) => (
             <div key={item.title} className="flex items-start gap-4 py-6 sm:py-0 sm:px-6">
               <div className="w-10 h-10 rounded-lg bg-[#f7f8fa] text-[#7b2020] flex items-center justify-center shrink-0">
