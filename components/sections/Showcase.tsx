@@ -39,7 +39,7 @@ const items = [
 export default function Showcase() {
   return (
     <section className="bg-[#f7f8fa]" aria-label="Présentation et réalisations">
-      <div className="max-w-7xl mx-auto px-6 py-16 sm:py-24">
+      <div className="max-w-7xl mx-auto px-6 pt-12 sm:pt-16 pb-16 sm:pb-24">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           
           {/* Colonne éditoriale */}
