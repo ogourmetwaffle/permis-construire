@@ -4,7 +4,7 @@ import BeforeAfterSlider from './BeforeAfterSlider'
 const items = [
   {
     id: 'maison-1',
-    label: 'Maison',
+    label: 'Maison 1',
     beforeSrc: '/maison_1_before.jpeg',
     afterSrc: '/maison_1_after.jpeg',
     beforeAlt: 'Maison avant travaux',
@@ -12,7 +12,7 @@ const items = [
   },
   {
     id: 'maison-2',
-    label: 'Façade',
+    label: 'Maison 2',
     beforeSrc: '/maison_2_before.jpeg',
     afterSrc: '/maison_2_after.jpeg',
     beforeAlt: 'Façade avant travaux',
@@ -39,8 +39,8 @@ const items = [
 export default function Showcase() {
   return (
     <section className="bg-white" aria-label="Présentation et réalisations">
-      <div className="max-w-7xl mx-auto px-6 py-20 sm:py-28">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+      <div className="max-w-7xl mx-auto px-6 py-12 sm:py-16">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-12 items-center">
           
           {/* Colonne éditoriale */}
           <div className="max-w-xl">
@@ -77,7 +77,7 @@ export default function Showcase() {
 
           {/* Colonne comparateur compact */}
           <div className="flex justify-center lg:justify-end">
-            <div className="w-full max-w-[520px]">
+            <div className="w-full max-w-[400px]">
               <BeforeAfterSlider items={items} defaultPosition={50} variant="compact" />
             </div>
           </div>

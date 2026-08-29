@@ -84,7 +84,7 @@ export default function BeforeAfterSlider({
     <div>
       <div
         ref={containerRef}
-        className="relative w-full aspect-[16/10] select-none overflow-hidden rounded-lg bg-gray-100 cursor-ew-resize"
+        className="relative w-full aspect-[4/3] select-none overflow-hidden rounded-lg bg-gray-100 cursor-ew-resize"
         style={{ touchAction: 'none' }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -119,19 +119,19 @@ export default function BeforeAfterSlider({
           />
         </div>
 
-        <span className="absolute top-4 left-4 bg-black/40 text-white text-xs font-semibold tracking-wider px-2.5 py-1 rounded">
+        <span className="absolute top-3 left-3 bg-black/20 text-white/90 text-[10px] font-medium tracking-wider px-2 py-0.5 rounded-sm">
           AVANT
         </span>
-        <span className="absolute top-4 right-4 bg-black/40 text-white text-xs font-semibold tracking-wider px-2.5 py-1 rounded">
+        <span className="absolute top-3 right-3 bg-black/20 text-white/90 text-[10px] font-medium tracking-wider px-2 py-0.5 rounded-sm">
           APRÈS
         </span>
 
         <div
-          className="absolute top-0 bottom-0 w-[2px] bg-white"
+          className="absolute top-0 bottom-0 w-px bg-white/70"
           style={{ left: `${position}%` }}
         >
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 sm:w-10 sm:h-10 bg-white rounded-full flex items-center justify-center">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className="text-[#0c1c33]">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 sm:w-8 sm:h-8 bg-white rounded-full flex items-center justify-center">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" className="text-[#0c1c33]">
               <path d="M8 6L4 10L8 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               <path d="M12 6L16 10L12 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
@@ -139,7 +139,7 @@ export default function BeforeAfterSlider({
         </div>
       </div>
 
-      <div className={variant === 'compact' ? 'flex gap-4 mt-4 justify-center flex-wrap' : 'flex gap-3 mt-4 justify-center flex-wrap'}>
+      <div className={variant === 'compact' ? 'flex gap-3 mt-3 justify-center flex-wrap' : 'flex gap-3 mt-4 justify-center flex-wrap'}>
         {items.map((item, i) => (
           <button
             key={item.id}
@@ -149,7 +149,7 @@ export default function BeforeAfterSlider({
           >
             {variant === 'compact' ? (
               <>
-                <span className={`block w-3 h-3 rounded-full transition-colors ${i === index ? 'bg-[#7b2020]' : 'bg-gray-300 group-hover:bg-gray-400'}`} />
+                <span className={`block w-2.5 h-2.5 rounded-full transition-colors ${i === index ? 'bg-[#7b2020]' : 'bg-gray-300 group-hover:bg-gray-400'}`} />
                 <span className={`block text-[11px] font-medium ${i === index ? 'text-[#0c1c33]' : 'text-gray-500'}`}>{item.label}</span>
               </>
             ) : (
