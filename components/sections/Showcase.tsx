@@ -78,7 +78,7 @@ export default function Showcase() {
           {/* Colonne comparateur compact */}
           <div className="flex justify-center lg:justify-end">
             <div className="w-full max-w-[360px]">
-              <BeforeAfterSlider items={items} defaultPosition={20} variant="compact" />
+              <BeforeAfterSlider items={items} defaultPosition={50} variant="compact" />
             </div>
           </div>
         </div>
