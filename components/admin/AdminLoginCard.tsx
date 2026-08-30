@@ -16,7 +16,7 @@ export default function AdminLoginCard({ email, setEmail, password, setPassword,
     <div className="w-full max-w-md mx-auto">
       <div className="bg-white rounded-lg shadow-md p-6 animate-fade-in">
         <div className="flex items-center gap-3 mb-4">
-          <img src="/logo.png" alt="Esquiss Habitat" className="w-10 h-10 rounded-md object-cover" />
+          <img src="/favicon.png" alt="Esquiss Habitat" className="w-10 h-10 rounded-md object-cover" />
           <div>
             <h3 className="text-lg font-semibold">Connexion administrateur</h3>
             <p className="text-sm text-gray-600">Accédez à votre espace sécurisé.</p>
