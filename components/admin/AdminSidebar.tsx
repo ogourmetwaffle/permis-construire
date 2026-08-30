@@ -29,7 +29,7 @@ function SidebarContent({ pathname, onClose }: { pathname: string; onClose?: () 
       {/* Logo */}
       <div className="px-4 py-4 border-b border-white/10">
         <div className="flex items-center gap-2">
-          <img src="/logo.png" alt="Esquiss Habitat" className="w-7 h-7 rounded-md object-cover ring-1 ring-blue-400/40" />
+          <img src="/favicon.png" alt="Esquiss Habitat" className="w-7 h-7 rounded-md object-cover ring-1 ring-blue-400/40" />
           <div>
             <div className="text-sm font-semibold text-white leading-tight">Esquiss Habitat</div>
             <div className="text-[11px] text-blue-200/80 mt-0.5">Administration</div>
