@@ -52,7 +52,7 @@ const gallery: Realisation[] = [
 ]
 
 const stats: { value: string; label: string; icon: LucideIcon }[] = [
-  { value: '12 000+', label: 'Dossiers réalisés', icon: FileText },
+  { value: '1000+', label: 'Dossiers réalisés', icon: FileText },
   { value: '5 jours', label: 'Délai moyen', icon: Clock },
   { value: '98%', label: 'De permis validés', icon: CheckCircle2 },
   { value: 'France entière', label: 'Accompagnement partout en France', icon: MapPin },
