@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   keywords:
     "permis de construire, déclaration préalable, extension maison, véranda, plans 3D, dossier administratif, Esquiss Habitat",
   icons: {
-    icon: "/favico.png",
+    icon: "/favicon.png",
   },
 };
 
