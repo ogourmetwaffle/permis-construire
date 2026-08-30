@@ -15,6 +15,9 @@ export const metadata: Metadata = {
     "Esquiss Habitat, votre expert en permis de construire, déclarations préalables, extensions, vérandas et plans 3D. Accompagnement personnalisé partout en France.",
   keywords:
     "permis de construire, déclaration préalable, extension maison, véranda, plans 3D, dossier administratif, Esquiss Habitat",
+  icons: {
+    icon: "/favico.png",
+  },
 };
 
 export default function RootLayout({
