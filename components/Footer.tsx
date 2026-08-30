@@ -23,27 +23,33 @@ export default function Footer() {
 
   return (
     <footer className="bg-[#0b1622] text-white">
-      <div className="max-w-7xl mx-auto px-6 py-14">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
-
+      <div className="max-w-7xl mx-auto px-6 py-12 sm:py-16">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-12">
+          
           {/* Brand */}
           <div className="lg:col-span-1">
             <Link href="/" className="flex items-center gap-3 mb-4">
               <Image
                 src="/logo.png"
                 alt="Esquiss Habitat"
-                width={36}
-                height={36}
+                width={40}
+                height={40}
                 className="rounded object-contain"
               />
-              <div className="leading-tight">
-                <div className="font-bold text-white">Esquiss Habitat</div>
-                <div className="text-white/40 text-xs">Permis de construire &amp; plans</div>
-              </div>
+              <span className="font-bold text-white text-lg">Esquiss Habitat</span>
             </Link>
-            <p className="text-white/50 text-sm leading-relaxed">
-              Votre expert en permis de construire, déclarations préalables et plans 3D. Partout en France.
+            <p className="text-white/50 text-sm leading-relaxed mb-6">
+              Depuis 2018, nous vous accompagnons dans vos projets de construction, extension et aménagement partout en France.
             </p>
+            <Link
+              href="#contact"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-lg transition-colors text-sm min-h-[44px]"
+            >
+              Parlons de votre projet
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              </svg>
+            </Link>
           </div>
 
           {/* Navigation */}
@@ -66,9 +72,7 @@ export default function Footer() {
             <ul className="space-y-3">
               {services.map((s) => (
                 <li key={s}>
-                  <Link href="#prestations" className="text-white/50 hover:text-white text-sm transition-colors">
-                    {s}
-                  </Link>
+                  <span className="text-white/50 text-sm">{s}</span>
                 </li>
               ))}
             </ul>
@@ -77,19 +81,19 @@ export default function Footer() {
           {/* Contact */}
           <div>
             <h3 className="text-white/80 text-xs font-semibold uppercase tracking-widest mb-5">Contact</h3>
-            <ul className="space-y-3 text-sm text-white/50">
+            <ul className="space-y-4 text-sm">
               <li>
-                <a href="tel:+33750896486" className="hover:text-white transition-colors">+33 7 50 89 64 86</a>
-              </li>
-              <li>
-                <a href="mailto:contact@esquisshabitat.com" className="hover:text-white transition-colors">
-                  contact@esquisshabitat.com
+                <a href="tel:+33750896486" className="text-white/70 hover:text-white transition-colors">
+                  +33 7 50 89 64 86
                 </a>
               </li>
               <li>
-                <Link href="/deposer-dossier" className="inline-flex items-center gap-2 text-white/70 hover:text-white transition-colors font-medium">
-                  Déposer mon dossier →
-                </Link>
+                <a href="mailto:contact@esquisshabitat.com" className="text-white/70 hover:text-white transition-colors">
+                  contact@esquisshabitat.com
+                </a>
+              </li>
+              <li className="text-white/50">
+                Partout en France
               </li>
             </ul>
           </div>
