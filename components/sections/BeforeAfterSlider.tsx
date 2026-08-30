@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react'
 import Image from 'next/image'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface BeforeAfterItem {
   id: string
@@ -27,10 +28,31 @@ export default function BeforeAfterSlider({
 }: BeforeAfterSliderProps) {
   const [index, setIndex] = useState(defaultIndex)
   const [position, setPosition] = useState(defaultPosition)
+  const [fadeIn, setFadeIn] = useState(true)
   const containerRef = useRef<HTMLDivElement>(null)
   const rafRef = useRef<number | null>(null)
 
   const current = items[index]
+
+  const goTo = useCallback((i: number) => {
+    if (i === index) return
+    setFadeIn(false)
+    setPosition(defaultPosition)
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setIndex(i)
+        setFadeIn(true)
+      })
+    })
+  }, [index, defaultPosition])
+
+  const goPrev = useCallback(() => {
+    goTo((index - 1 + items.length) % items.length)
+  }, [index, items.length, goTo])
+
+  const goNext = useCallback(() => {
+    goTo((index + 1) % items.length)
+  }, [index, items.length, goTo])
 
   const getPercentage = useCallback((clientX: number) => {
     if (!containerRef.current) return defaultPosition
@@ -75,92 +97,105 @@ export default function BeforeAfterSlider({
     }
   }, [])
 
-  const selectItem = useCallback((i: number) => {
-    setIndex(i)
-    setPosition(defaultPosition)
-  }, [defaultPosition])
-
   return (
     <div>
-      <div
-        ref={containerRef}
-        className="relative w-full aspect-[4/3] select-none overflow-hidden rounded-lg bg-gray-100 cursor-ew-resize"
-        style={{ touchAction: 'none' }}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
-        role="slider"
-        aria-label="Comparer la réalisation avant et après"
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={Math.round(position)}
-        tabIndex={0}
-        onKeyDown={handleKeyDown}
-      >
-        <Image
-          src={current.afterSrc}
-          alt={current.afterAlt}
-          fill
-          className="object-cover pointer-events-none"
-          quality={85}
-        />
+      <div className="relative">
+        <button
+          type="button"
+          onClick={goPrev}
+          className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 z-10 w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full bg-white/90 shadow-sm ring-1 ring-black/5 text-[#0c1c33] hover:bg-white hover:shadow-md transition-all"
+          aria-label="Réalisation précédente"
+        >
+          <ChevronLeft size={20} strokeWidth={1.5} />
+        </button>
+
+        <button
+          type="button"
+          onClick={goNext}
+          className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 z-10 w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full bg-white/90 shadow-sm ring-1 ring-black/5 text-[#0c1c33] hover:bg-white hover:shadow-md transition-all"
+          aria-label="Réalisation suivante"
+        >
+          <ChevronRight size={20} strokeWidth={1.5} />
+        </button>
 
         <div
-          className="absolute inset-0 overflow-hidden"
-          style={{ width: `${position}%` }}
+          ref={containerRef}
+          className="relative w-full aspect-[4/3] select-none overflow-hidden rounded-lg bg-gray-100 cursor-ew-resize"
+          style={{ touchAction: 'none' }}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          role="slider"
+          aria-label="Comparer la réalisation avant et après"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(position)}
+          tabIndex={0}
+          onKeyDown={handleKeyDown}
         >
-          <Image
-            src={current.beforeSrc}
-            alt={current.beforeAlt}
-            fill
-            className="object-cover pointer-events-none"
-            quality={85}
-          />
-        </div>
+          <div
+            className="absolute inset-0 transition-opacity duration-400 ease-out"
+            style={{ opacity: fadeIn ? 1 : 0 }}
+          >
+            <Image
+              src={current.afterSrc}
+              alt={current.afterAlt}
+              fill
+              className="object-cover pointer-events-none"
+              quality={85}
+            />
+          </div>
 
-        <span className="absolute top-3 left-3 bg-black/20 text-white/90 text-[10px] font-medium tracking-wider px-2 py-0.5 rounded-sm">
-          AVANT
-        </span>
-        <span className="absolute top-3 right-3 bg-black/20 text-white/90 text-[10px] font-medium tracking-wider px-2 py-0.5 rounded-sm">
-          APRÈS
-        </span>
+          <div
+            className="absolute inset-0 overflow-hidden transition-opacity duration-400 ease-out"
+            style={{
+              width: `${position}%`,
+              opacity: fadeIn ? 1 : 0,
+            }}
+          >
+            <Image
+              src={current.beforeSrc}
+              alt={current.beforeAlt}
+              fill
+              className="object-cover pointer-events-none"
+              quality={85}
+            />
+          </div>
 
-        <div
-          className="absolute top-0 bottom-0 w-px bg-white/70"
-          style={{ left: `${position}%` }}
-        >
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 sm:w-8 sm:h-8 bg-white rounded-full flex items-center justify-center">
-            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" className="text-[#0c1c33]">
-              <path d="M8 6L4 10L8 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M12 6L16 10L12 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+          <span className="absolute top-3 left-3 bg-black/20 text-white/90 text-[10px] font-medium tracking-wider px-2 py-0.5 rounded-sm">
+            AVANT
+          </span>
+          <span className="absolute top-3 right-3 bg-black/20 text-white/90 text-[10px] font-medium tracking-wider px-2 py-0.5 rounded-sm">
+            APRÈS
+          </span>
+
+          <div
+            className="absolute top-0 bottom-0 w-px bg-white/70"
+            style={{ left: `${position}%` }}
+          >
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 sm:w-8 sm:h-8 bg-white rounded-full flex items-center justify-center">
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" className="text-[#0c1c33]">
+                <path d="M8 6L4 10L8 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M12 6L16 10L12 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className={variant === 'compact' ? 'flex gap-3 mt-3 justify-center flex-wrap' : 'flex gap-3 mt-4 justify-center flex-wrap'}>
+      <div className="flex gap-2.5 mt-4 justify-center">
         {items.map((item, i) => (
           <button
             key={item.id}
-            onClick={() => selectItem(i)}
-            className={variant === 'compact' ? 'flex flex-col items-center gap-1.5 group' : `rounded-lg overflow-hidden border-2 transition-colors ${i === index ? 'border-[#7b2020]' : 'border-transparent hover:border-gray-200'}`}
+            onClick={() => goTo(i)}
+            className={`rounded-full transition-all duration-300 ${
+              i === index
+                ? 'w-2.5 h-2.5 bg-[#7b2020]'
+                : 'w-2 h-2 bg-gray-300 hover:bg-gray-400'
+            }`}
             aria-label={`Voir ${item.label}`}
-          >
-            {variant === 'compact' ? (
-              <>
-                <span className={`block w-2.5 h-2.5 rounded-full transition-colors ${i === index ? 'bg-[#7b2020]' : 'bg-gray-300 group-hover:bg-gray-400'}`} />
-                <span className={`block text-[11px] font-medium ${i === index ? 'text-[#0c1c33]' : 'text-gray-500'}`}>{item.label}</span>
-              </>
-            ) : (
-              <>
-                <div className="relative w-20 h-14 sm:w-24 sm:h-16">
-                  <Image src={item.afterSrc} alt={item.label} fill className="object-cover" />
-                </div>
-                <span className="block text-xs text-center py-1.5 text-gray-600 font-medium">{item.label}</span>
-              </>
-            )}
-          </button>
+          />
         ))}
       </div>
     </div>
