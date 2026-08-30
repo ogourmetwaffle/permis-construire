@@ -52,15 +52,15 @@ export default function Showcase() {
               Des projets bien pensés, des dossiers bien préparés.
             </h2>
 
-            <p className="text-[#111827]/80 text-lg leading-relaxed mb-4">
+            <p className="text-[#111827]/80 text-lg font-normal tracking-wide leading-[1.7] mb-6">
               Depuis 2018, Esquiss Habitat accompagne les particuliers dans leurs projets de construction, d&apos;extension et d&apos;aménagement.
             </p>
 
-            <p className="text-gray-500 leading-relaxed mb-4">
+            <p className="text-gray-500 font-normal tracking-wide leading-[1.7] mb-6">
               Nous concevons et préparons vos dossiers avec soin afin de simplifier vos démarches administratives et vous permettre de concrétiser votre projet sereinement.
             </p>
 
-            <p className="text-gray-500 leading-relaxed mb-8">
+            <p className="text-gray-500 font-normal tracking-wide leading-[1.7] mb-6">
               De la conception du dossier à son dépôt, nous vous accompagnons à chaque étape de votre projet, partout en France.
             </p>
 
