@@ -269,7 +269,6 @@ export default function PrepareDevisDialog({ open, onClose, dossierId, initial, 
 
         <div className="mt-4 flex justify-end gap-2">
           <button type="button" onClick={onClose} disabled={saving} className="px-3 py-1.5 rounded border bg-white text-sm text-gray-700 hover:bg-gray-50">Annuler</button>
-          <button type="button" onClick={() => saveDevis(false)} disabled={saving} className="px-3 py-1.5 rounded bg-gray-800 text-white hover:bg-black text-sm">Enregistrer le devis</button>
           <button type="button" onClick={() => saveDevis(true)} disabled={saving} className="inline-flex items-center gap-2 px-3 py-1.5 rounded bg-[#7b2020] text-white hover:bg-[#5f1919] text-sm">{saving ? 'Envoi…' : (<><Check size={14} /> Envoyer le devis</>)}</button>
         </div>
       </form>

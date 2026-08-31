@@ -17,7 +17,7 @@ export default function StepPaiement({ data, tarif, onSubmit, onPrev, loading, e
   const surfaceNum = parseFloat(data.surface)
   const isPrestation = data.typeProjet === 'PRESTATION'
   const needsDevis = isPrestation || (!isNaN(surfaceNum) && surfaceNum > 150)
-  const [cardEnabled, setCardEnabled] = useState<boolean>(true)
+  const [cardEnabled, setCardEnabled] = useState<boolean>(false)
 
   useEffect(() => {
     let mounted = true
