@@ -30,7 +30,7 @@ const steps = [
   {
     number: '06',
     title: 'Suivi du dossier',
-    desc: 'Suivi et échanges avec l\'administration jusqu\'à la réponse.',
+    desc: 'Esquiss Habitat assure le suivi de votre dossier jusqu’à sa finalisation et vous accompagne à chaque étape.',
   },
 ]
 

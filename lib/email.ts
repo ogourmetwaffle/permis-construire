@@ -344,7 +344,7 @@ export async function sendStatusChangeEmail(
   } else if (statut === 'DEPOT_MAIRIE') {
     subject = `Dossier déposé en mairie — Dossier ${numeroDossier}`
     title = 'Dossier déposé en mairie'
-    message = 'Votre dossier a été déposé en mairie. Vous recevrez prochainement un retour de leur part.'
+    message = 'Votre dossier est désormais déposé en mairie. Vous serez informé par nos services de la suite donnée à votre demande.'
   } else if (statut === 'TERMINE') {
     subject = `Dossier terminé — Dossier ${numeroDossier}`
     title = 'Dossier terminé'
