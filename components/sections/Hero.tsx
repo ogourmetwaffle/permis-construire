@@ -6,15 +6,21 @@ export default function Hero() {
     <section id="accueil" className="bg-white">
       <div className="max-w-7xl mx-auto px-6 py-16 sm:py-24">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
-          <div className="relative w-full h-[400px] sm:h-[500px] lg:h-[550px] rounded-lg overflow-hidden bg-gray-100">
+          <div className="relative w-full h-[400px] sm:h-[500px] lg:h-[550px] rounded-lg bg-gray-100">
             <Image
               src="/backround.png"
               alt=""
               fill
               priority
-              className="object-cover"
+              className="object-cover rounded-lg"
               quality={85}
             />
+            <div className="absolute top-4 left-0 sm:top-6 sm:left-0 z-10">
+              <div className="bg-[#7b2020] text-white px-4 py-2 sm:px-6 sm:py-3 rounded-r-lg shadow-lg ring-1 ring-[#7b2020]/20">
+                <div className="text-sm sm:text-base font-bold leading-tight">DEVIS 100% GRATUIT</div>
+                <div className="text-[10px] sm:text-xs font-medium opacity-90 tracking-wide">SANS ENGAGEMENT</div>
+              </div>
+            </div>
           </div>
 
           <div>
