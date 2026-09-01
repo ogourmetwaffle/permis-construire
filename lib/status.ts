@@ -9,6 +9,7 @@ export type Status =
   | 'DEVIS'
   | 'NOUVEAU'
   | 'EN_COURS'
+  | 'DEPOT_MAIRIE'
   | 'INFORMATIONS_MANQUANTES'
   | 'EN_ATTENTE_CLIENT'
   | 'ARCHIVE'
@@ -22,6 +23,7 @@ export const STATUS = {
   EN_ATTENTE_VERIFICATION_PAIEMENT: 'EN_ATTENTE_VERIFICATION_PAIEMENT',
   NOUVEAU: 'NOUVEAU',
   EN_COURS: 'EN_COURS',
+  DEPOT_MAIRIE: 'DEPOT_MAIRIE',
   INFORMATIONS_MANQUANTES: 'INFORMATIONS_MANQUANTES',
   TERMINE: 'TERMINE',
   EN_ATTENTE_CLIENT: 'EN_ATTENTE_CLIENT',
@@ -36,6 +38,7 @@ export const STATUS_ORDER: Status[] = [
   STATUS.DEVIS,
   STATUS.NOUVEAU,
   STATUS.EN_COURS,
+  STATUS.DEPOT_MAIRIE,
   STATUS.INFORMATIONS_MANQUANTES,
   STATUS.TERMINE,
   STATUS.REFUSE,
@@ -106,14 +109,23 @@ export const STATUS_CONFIG: Record<Status, StatusConfig> = {
     showOnDashboard: false,
     order: 5,
   },
+  DEPOT_MAIRIE: {
+    label: 'Dépôt mairie',
+    icon: FileText,
+    badgeClass: 'bg-teal-50 text-teal-800 ring-teal-100',
+    textClass: 'text-teal-800',
+    borderClass: 'ring-teal-100',
+    showOnDashboard: true,
+    order: 6,
+  },
   EN_ATTENTE_CLIENT: {
-    label: 'En attente (client)',
+    label: 'Validation client',
     icon: Clock,
     badgeClass: 'bg-yellow-50 text-yellow-800 ring-yellow-100',
     textClass: 'text-yellow-800',
     borderClass: 'ring-yellow-100',
     showOnDashboard: false,
-    order: 6,
+    order: 7,
   },
   ARCHIVE: {
     label: 'Archivé',
@@ -131,7 +143,7 @@ export const STATUS_CONFIG: Record<Status, StatusConfig> = {
     textClass: 'text-emerald-700',
     borderClass: 'ring-emerald-100',
     showOnDashboard: true,
-    order: 7,
+    order: 8,
   },
   REFUSE: {
     label: 'Refusé',
@@ -140,7 +152,7 @@ export const STATUS_CONFIG: Record<Status, StatusConfig> = {
     textClass: 'text-red-700',
     borderClass: 'ring-red-100',
     showOnDashboard: false,
-    order: 8,
+    order: 9,
   },
   SOLDE_A_PAYER: {
     label: 'Solde à payer',
@@ -149,7 +161,7 @@ export const STATUS_CONFIG: Record<Status, StatusConfig> = {
     textClass: 'text-orange-800',
     borderClass: 'ring-orange-100',
     showOnDashboard: true,
-    order: 9,
+    order: 10,
   },
 }
 
@@ -159,8 +171,9 @@ export const CLIENT_STATUS_LABELS: Record<Status, string> = {
   EN_ATTENTE_VERIFICATION_PAIEMENT: 'Paiement en cours de vérification',
   NOUVEAU: 'Paiement confirmé',
   EN_COURS: 'En cours de traitement',
+  DEPOT_MAIRIE: 'Dépôt en mairie',
   INFORMATIONS_MANQUANTES: 'Informations manquantes',
-  EN_ATTENTE_CLIENT: 'En attente (client)',
+  EN_ATTENTE_CLIENT: 'Validation client',
   ARCHIVE: 'Archivé',
   TERMINE: 'Terminé',
   REFUSE: 'Refusé',

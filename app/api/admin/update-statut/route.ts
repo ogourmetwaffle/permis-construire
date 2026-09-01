@@ -41,9 +41,9 @@ export async function POST(req: Request) {
       console.error('Error recording historique for statut change', err)
     }
 
-    if (statut === 'INFORMATIONS_MANQUANTES' && existing?.email && commentaire) {
+    if ((statut === 'INFORMATIONS_MANQUANTES' || statut === 'DEPOT_MAIRIE' || statut === 'TERMINE') && existing?.email) {
       try {
-        await emailClient.sendStatusChangeEmail(existing.email, existing.nom ?? '', existing.prenom ?? '', existing.numero_dossier, statut, commentaire)
+        await emailClient.sendStatusChangeEmail(existing.email, existing.nom ?? '', existing.prenom ?? '', existing.numero_dossier, statut, commentaire ?? null)
       } catch (err) {
         console.error('Error sending status change email', err)
       }

@@ -68,7 +68,7 @@ function getStepStatus(dossier: Dossier, stepId: string): 'completed' | 'active'
   }
 
   if (stepId === 'processing') {
-    if (s === STATUS.EN_COURS || s === STATUS.TERMINE) return 'active'
+    if (s === STATUS.EN_COURS || s === STATUS.DEPOT_MAIRIE || s === Status.TERMINE) return 'active'
     if (s === STATUS.NOUVEAU || s === STATUS.SOLDE_A_PAYER) return 'pending'
     return 'pending'
   }

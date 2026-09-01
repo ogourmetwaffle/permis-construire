@@ -522,6 +522,13 @@ export default function AdminDossierDetail({ id, onUpdated }: { id: string; onUp
         variant: 'info' as const,
       }
     }
+    if (status === STATUS.DEPOT_MAIRIE) {
+      return {
+        label: 'Dossier déposé en mairie',
+        action: () => {},
+        variant: 'info' as const,
+      }
+    }
     if (status === STATUS.TERMINE) {
       return {
         label: 'Dossier terminé',

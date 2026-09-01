@@ -341,6 +341,10 @@ export async function sendStatusChangeEmail(
     subject = `Dossier en cours de traitement — Dossier ${numeroDossier}`
     title = 'Dossier en cours de traitement'
     message = 'Votre dossier est maintenant en cours de traitement par notre équipe.'
+  } else if (statut === 'DEPOT_MAIRIE') {
+    subject = `Dossier déposé en mairie — Dossier ${numeroDossier}`
+    title = 'Dossier déposé en mairie'
+    message = 'Votre dossier a été déposé en mairie. Vous recevrez prochainement un retour de leur part.'
   } else if (statut === 'TERMINE') {
     subject = `Dossier terminé — Dossier ${numeroDossier}`
     title = 'Dossier terminé'
