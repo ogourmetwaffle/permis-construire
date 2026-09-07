@@ -1,6 +1,7 @@
 import Header from '@/components/Header'
 import Hero from '@/components/sections/Hero'
 import ReassuranceBar from '@/components/sections/ReassuranceBar'
+import VideoSection from '@/components/sections/VideoSection'
 import Showcase from '@/components/sections/Showcase'
 import ExpertsSection from '@/components/sections/ExpertsSection'
 import StatsGallery from '@/components/sections/StatsGallery'
@@ -16,6 +17,7 @@ export default function Home() {
 
       <main className="flex-1">
         <Hero />
+        <VideoSection />
         <ReassuranceBar />
         <Showcase />
         <ExpertsSection />
